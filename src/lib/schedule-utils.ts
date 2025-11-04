@@ -22,12 +22,20 @@ export function minutesToTime(minutes: number): string {
  */
 export function timeSlotsOverlap(slot1: TimeSlot, slot2: TimeSlot): boolean {
   // Must be on the same day
-  if (slot1.day !== slot2.day) return false;
+  if (slot1.day !== slot2.day) {
+    console.log('      Different days:', slot1.day, 'vs', slot2.day);
+    return false;
+  }
 
   const start1 = timeToMinutes(slot1.startTime);
   const end1 = timeToMinutes(slot1.endTime);
   const start2 = timeToMinutes(slot2.startTime);
   const end2 = timeToMinutes(slot2.endTime);
+
+  console.log('      Same day:', slot1.day);
+  console.log('      Slot1:', slot1.startTime, '-', slot1.endTime, '=', start1, '-', end1);
+  console.log('      Slot2:', slot2.startTime, '-', slot2.endTime, '=', start2, '-', end2);
+  console.log('      Overlap check: start1 < end2 && start2 < end1 =', start1, '<', end2, '&&', start2, '<', end1, '=', start1 < end2 && start2 < end1);
 
   // Check for overlap
   return start1 < end2 && start2 < end1;
@@ -171,11 +179,19 @@ export function detectNewCourseConflicts(
 ): string[] {
   const conflicts: string[] = [];
 
+  console.log('🔍 Checking conflicts for:', newCourse.course.courseCode, newCourse.selectedSection.sectionId);
+  console.log('   Time slots:', newCourse.selectedSection.timeSlots);
+
   for (const existingCourse of existingCourses) {
+    console.log('  Against:', existingCourse.course.courseCode, existingCourse.selectedSection.sectionId);
+    console.log('    Time slots:', existingCourse.selectedSection.timeSlots);
+    
     // Check if any time slots overlap
     for (const newSlot of newCourse.selectedSection.timeSlots) {
       for (const existingSlot of existingCourse.selectedSection.timeSlots) {
-        if (timeSlotsOverlap(newSlot, existingSlot)) {
+        const overlaps = timeSlotsOverlap(newSlot, existingSlot);
+        if (overlaps) {
+          console.log('    ⚠️ CONFLICT FOUND!', newSlot, 'overlaps with', existingSlot);
           conflicts.push(existingCourse.course.courseCode);
           break; // Only add each course once
         }
@@ -184,5 +200,6 @@ export function detectNewCourseConflicts(
     }
   }
 
+  console.log('  Total conflicts found:', conflicts);
   return conflicts;
 }

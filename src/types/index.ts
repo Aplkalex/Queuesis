@@ -1,6 +1,11 @@
 // Core data types for CUHK Course Scheduler
 
 /**
+ * Academic term selector (for dropdown)
+ */
+export type TermType = '2025-26-T1' | '2025-26-T2' | '2025-26-Summer';
+
+/**
  * Days of the week
  */
 export type DayOfWeek = 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday';
@@ -68,7 +73,7 @@ export interface Course {
   enrollmentRequirements?: string; // e.g., "Not for students who have taken ACCT2111"
   prerequisites?: string[];
   sections: Section[];
-  term: string; // e.g., "2025-26 Term 1"
+  term: TermType; // e.g., "2025-26-T1"
   career: 'Undergraduate' | 'Postgraduate';
   
   // Additional metadata
@@ -110,15 +115,19 @@ export interface Conflict {
 }
 
 /**
- * User preferences for schedule optimization
+ * User preferences for schedule optimization (auto-generate mode)
  */
 export interface SchedulePreferences {
-  preferredStartTime?: string; // e.g., "09:00" - avoid early classes
-  preferredEndTime?: string;   // e.g., "18:00" - avoid late classes
-  daysOff?: DayOfWeek[];       // Preferred days without classes
-  minimizeGaps?: boolean;       // Minimize breaks between classes
-  maxGapMinutes?: number;       // Maximum acceptable gap (e.g., 60)
-  backToBack?: boolean;         // Allow back-to-back classes
+  // Time preferences
+  earliestStartTime: string; // e.g., "08:00" - No classes before this time
+  latestEndTime: string; // e.g., "18:00" - No classes after this time
+  
+  // Free days preference
+  preferredFreeDays: DayOfWeek[]; // Days user prefers to have no classes
+  
+  // Gap preferences
+  minGapMinutes: number; // Minimum gap between classes (0 = back-to-back allowed)
+  maxGapMinutes: number; // Maximum gap between classes (e.g., 120 = 2 hours)
 }
 
 /**
