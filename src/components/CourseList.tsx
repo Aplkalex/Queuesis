@@ -23,8 +23,8 @@ function CourseListItem({ course, onAddSection }: CourseListItemProps) {
             {course.courseName}
           </p>
         </div>
-        <div className="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full font-semibold ml-2 whitespace-nowrap">
-          {course.credits} cr
+        <div className="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-semibold ml-2 whitespace-nowrap">
+          {course.credits} {course.credits === 1 ? 'credit' : 'credits'}
         </div>
       </div>
 
