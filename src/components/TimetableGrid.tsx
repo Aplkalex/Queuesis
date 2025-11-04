@@ -3,9 +3,9 @@
 import { useState } from 'react';
 import { SelectedCourse, DayOfWeek } from '@/types';
 import { TIMETABLE_CONFIG, WEEKDAYS } from '@/lib/constants';
-import { timeToMinutes, formatTime } from '@/lib/schedule-utils';
+import { timeToMinutes, formatTime, hasAvailableSeats } from '@/lib/schedule-utils';
 import { cn } from '@/lib/utils';
-import { X } from 'lucide-react';
+import { X, AlertCircle } from 'lucide-react';
 
 interface TimetableGridProps {
   selectedCourses: SelectedCourse[];
@@ -103,6 +103,7 @@ export function TimetableGrid({ selectedCourses, onCourseClick, onRemoveCourse, 
                     const style = getCourseStyle(slot.startTime, slot.endTime, selectedCourse.color);
                     const blockId = `${courseIdx}-${slotIdx}-${day}`;
                     const isHovered = hoveredCourse === blockId;
+                    const isFull = !hasAvailableSeats(selectedCourse.selectedSection);
                     
                     return (
                       <div
@@ -114,7 +115,9 @@ export function TimetableGrid({ selectedCourses, onCourseClick, onRemoveCourse, 
                           // Compact padding for small blocks, comfortable for larger ones
                           'px-2.5 py-1.5',
                           // Allow delete button to overflow outside the block
-                          'overflow-visible'
+                          'overflow-visible',
+                          // Red border for full sections
+                          isFull && 'border-3 border-red-500 dark:border-red-400 shadow-[0_0_0_2px_rgba(239,68,68,0.5)]'
                         )}
                         style={style}
                         onMouseEnter={() => setHoveredCourse(blockId)}
@@ -143,8 +146,15 @@ export function TimetableGrid({ selectedCourses, onCourseClick, onRemoveCourse, 
 
                         {/* Content wrapper with overflow hidden to prevent text overflow */}
                         <div className="overflow-hidden flex flex-col">
-                          <div className="font-semibold text-xs leading-snug truncate">
-                            {selectedCourse.course.courseCode}
+                          <div className="flex items-center gap-1">
+                            <div className="font-semibold text-xs leading-snug truncate flex-1">
+                              {selectedCourse.course.courseCode}
+                            </div>
+                            {isFull && (
+                              <div title="Section is full" className="flex-shrink-0">
+                                <AlertCircle className="w-3 h-3 text-red-200" />
+                              </div>
+                            )}
                           </div>
                           <div className="text-[11px] leading-snug opacity-90 truncate">
                             {selectedCourse.selectedSection.sectionType.slice(0, 3)} {selectedCourse.selectedSection.sectionId}

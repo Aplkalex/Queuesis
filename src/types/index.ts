@@ -51,6 +51,8 @@ export interface Section {
   language?: 'English' | 'Chinese' | 'Bilingual'; // Teaching language (follows instructor)
   addConsent?: boolean; // Whether add consent is required for this section
   dropConsent?: boolean; // Whether drop consent is required for this section
+  parentLecture?: string; // For tutorials/labs: which lecture section they belong to (e.g., "A")
+  classNumber?: number; // CUSIS class number
 }
 
 /**

@@ -9,7 +9,7 @@ import { SearchBar, FilterBar, FilterButton } from '@/components/SearchBar';
 import { BuildingReference } from '@/components/BuildingReference';
 import { BuildingModal } from '@/components/BuildingModal';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { generateCourseColor, calculateTotalCredits, detectConflicts } from '@/lib/schedule-utils';
+import { generateCourseColor, calculateTotalCredits, detectConflicts, hasAvailableSeats } from '@/lib/schedule-utils';
 import { DISCLAIMER } from '@/lib/constants';
 import { Calendar, Book, AlertCircle, Trash2, X } from 'lucide-react';
 
@@ -19,6 +19,7 @@ export default function Home() {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
+  const [fullSectionWarning, setFullSectionWarning] = useState<{ course: Course; section: Section } | null>(null);
 
   // Filter courses based on search and filters
   const filteredCourses = mockCourses.filter((course) => {
@@ -39,10 +40,113 @@ export default function Home() {
 
   // Add a course section to schedule
   const handleAddSection = (course: Course, section: Section) => {
+    // Show warning if section is full
+    if (!hasAvailableSeats(section)) {
+      setFullSectionWarning({ course, section });
+      // Auto-proceed after showing warning
+      setTimeout(() => setFullSectionWarning(null), 3000);
+    }
+
+    // Get existing color for this course if any section is already selected
+    const existingCourseColor = selectedCourses.find(
+      (sc) => sc.course.courseCode === course.courseCode
+    )?.color;
+
+    // Check if this is a lecture and if another lecture from the same course is already selected
+    if (section.sectionType === 'Lecture') {
+      const existingLectureIndex = selectedCourses.findIndex(
+        (sc) => sc.course.courseCode === course.courseCode && sc.selectedSection.sectionType === 'Lecture'
+      );
+
+      if (existingLectureIndex !== -1) {
+        // Replace the existing lecture with the new one
+        const updatedCourses = [...selectedCourses];
+        updatedCourses[existingLectureIndex] = {
+          course,
+          selectedSection: section,
+          color: updatedCourses[existingLectureIndex].color, // Keep the same color
+        };
+
+        // Also remove any tutorials associated with the old lecture
+        const oldLectureId = selectedCourses[existingLectureIndex].selectedSection.sectionId;
+        const filteredCourses = updatedCourses.filter(
+          (sc) => !(sc.course.courseCode === course.courseCode && 
+                    sc.selectedSection.sectionType === 'Tutorial' && 
+                    sc.selectedSection.parentLecture === oldLectureId)
+        );
+
+        setSelectedCourses(filteredCourses);
+        return;
+      }
+    }
+
+    // For tutorials, check if the parent lecture is selected
+    if (section.sectionType === 'Tutorial' && section.parentLecture) {
+      const parentLectureCourse = selectedCourses.find(
+        (sc) => sc.course.courseCode === course.courseCode && 
+                sc.selectedSection.sectionType === 'Lecture' && 
+                sc.selectedSection.sectionId === section.parentLecture
+      );
+
+      if (!parentLectureCourse) {
+        // Auto-add the parent lecture
+        const parentLecture = course.sections.find(
+          (s) => s.sectionType === 'Lecture' && s.sectionId === section.parentLecture
+        );
+
+        if (parentLecture) {
+          const lectureColor = existingCourseColor || generateCourseColor(selectedCourses.length);
+          const newCourses = [
+            ...selectedCourses,
+            {
+              course,
+              selectedSection: parentLecture,
+              color: lectureColor,
+            },
+            {
+              course,
+              selectedSection: section,
+              color: lectureColor, // Same color as lecture
+            },
+          ];
+          setSelectedCourses(newCourses);
+          return;
+        }
+      } else {
+        // Replace existing tutorial from the same lecture
+        const existingTutorialIndex = selectedCourses.findIndex(
+          (sc) => sc.course.courseCode === course.courseCode && 
+                  sc.selectedSection.sectionType === 'Tutorial' && 
+                  sc.selectedSection.parentLecture === section.parentLecture
+        );
+
+        if (existingTutorialIndex !== -1) {
+          const updatedCourses = [...selectedCourses];
+          updatedCourses[existingTutorialIndex] = {
+            course,
+            selectedSection: section,
+            color: parentLectureCourse.color, // Use same color as lecture
+          };
+          setSelectedCourses(updatedCourses);
+          return;
+        }
+
+        // Add new tutorial with same color as lecture
+        const newCourse: SelectedCourse = {
+          course,
+          selectedSection: section,
+          color: parentLectureCourse.color,
+        };
+        setSelectedCourses([...selectedCourses, newCourse]);
+        return;
+      }
+    }
+
+    // Default: add new section
     const newCourse: SelectedCourse = {
       course,
       selectedSection: section,
-      color: generateCourseColor(selectedCourses.length),
+      color: existingCourseColor || generateCourseColor(selectedCourses.length),
     };
     setSelectedCourses([...selectedCourses, newCourse]);
   };
@@ -146,10 +250,10 @@ export default function Home() {
           </div>
         )}
 
-        <div className="flex flex-col lg:flex-row gap-3 lg:gap-4 max-w-[1800px] mx-auto">
+        <div className="flex flex-col lg:flex-row gap-3 lg:gap-4 max-w-[1800px] mx-auto h-[calc(100vh-200px)]">
           {/* Left sidebar - Course search - Flexible width */}
-          <div className="w-full lg:w-[360px] lg:min-w-[320px] lg:max-w-[400px] space-y-3">
-            <div className="bg-white/70 dark:bg-[#252526]/70 backdrop-blur-xl rounded-xl shadow-lg p-4 border border-gray-200/30 dark:border-gray-700/30">
+          <div className="w-full lg:w-[360px] lg:min-w-[320px] lg:max-w-[400px] flex flex-col gap-3 min-h-0">
+            <div className="bg-white/70 dark:bg-[#252526]/70 backdrop-blur-xl rounded-xl shadow-lg p-4 border border-gray-200/30 dark:border-gray-700/30 flex-shrink-0">
               <div className="flex items-center gap-2 mb-3">
                 <Book className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                 <h2 className="text-base font-bold text-gray-900 dark:text-white">Find Courses</h2>
@@ -191,11 +295,8 @@ export default function Home() {
               </FilterBar>
             </div>
 
-            {/* Course list - Scrollable */}
-            <div 
-              className="overflow-y-auto space-y-3 pr-1 scrollbar-thin scrollbar-thumb-purple-400 dark:scrollbar-thumb-purple-600 scrollbar-track-transparent" 
-              style={{ maxHeight: 'calc(100vh - 320px)' }}
-            >
+            {/* Course list - Scrollable - Takes remaining space */}
+            <div className="flex-1 overflow-y-auto space-y-3 pr-1 scrollbar-thin scrollbar-thumb-purple-400 dark:scrollbar-thumb-purple-600 scrollbar-track-transparent min-h-0">
               <CourseList
                 courses={filteredCourses}
                 onAddSection={handleAddSection}
@@ -206,9 +307,9 @@ export default function Home() {
           </div>
 
           {/* Right side - Timetable - Takes remaining space */}
-          <div className="flex-1 min-w-0 space-y-3">
+          <div className="flex-1 min-w-0 flex flex-col gap-3 min-h-0">
             {/* My Schedule header with inline course badges */}
-            <div className="bg-white/70 dark:bg-[#252526]/70 backdrop-blur-xl rounded-xl shadow-lg px-4 py-3 border border-gray-200/30 dark:border-gray-700/30">
+            <div className="bg-white/70 dark:bg-[#252526]/70 backdrop-blur-xl rounded-xl shadow-lg px-4 py-3 border border-gray-200/30 dark:border-gray-700/30 flex-shrink-0">
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div>
                   <h2 className="text-base font-bold text-gray-900 dark:text-white">My Schedule</h2>
@@ -267,27 +368,29 @@ export default function Home() {
               )}
             </div>
 
-            {/* Timetable - Fits viewport */}
-            {selectedCourses.length > 0 ? (
-              <TimetableGrid
-                selectedCourses={selectedCourses}
-                onRemoveCourse={(course) => {
-                  const index = selectedCourses.indexOf(course);
-                  handleRemoveCourse(index);
-                }}
-                onLocationClick={(location) => setSelectedLocation(location)}
-              />
-            ) : (
-              <div className="bg-white/70 dark:bg-[#1e1e1e]/70 backdrop-blur-xl rounded-xl shadow-lg p-8 lg:p-12 text-center border border-gray-200/30 dark:border-gray-700/30">
-                <Calendar className="w-12 h-12 lg:w-16 lg:h-16 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-                <h3 className="text-base lg:text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                  Your schedule is empty
-                </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Search for courses and click the + button to add them to your schedule
-                </p>
-              </div>
-            )}
+            {/* Timetable - Scrollable area */}
+            <div className="flex-1 overflow-y-auto overflow-x-auto scrollbar-thin scrollbar-thumb-purple-400 dark:scrollbar-thumb-purple-600 scrollbar-track-transparent min-h-0">
+              {selectedCourses.length > 0 ? (
+                <TimetableGrid
+                  selectedCourses={selectedCourses}
+                  onRemoveCourse={(course) => {
+                    const index = selectedCourses.indexOf(course);
+                    handleRemoveCourse(index);
+                  }}
+                  onLocationClick={(location) => setSelectedLocation(location)}
+                />
+              ) : (
+                <div className="bg-white/70 dark:bg-[#1e1e1e]/70 backdrop-blur-xl rounded-xl shadow-lg p-8 lg:p-12 text-center border border-gray-200/30 dark:border-gray-700/30">
+                  <Calendar className="w-12 h-12 lg:w-16 lg:h-16 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                  <h3 className="text-base lg:text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    Your schedule is empty
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Search for courses and click the + button to add them to your schedule
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </main>
@@ -325,6 +428,36 @@ export default function Home() {
                 className="flex-1 px-4 py-2 bg-red-600 dark:bg-red-500 hover:bg-red-700 dark:hover:bg-red-600 text-white rounded-lg font-medium transition-colors"
               >
                 Clear All
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Full Section Warning Toast */}
+      {fullSectionWarning && (
+        <div className="fixed top-20 right-4 z-50 animate-in slide-in-from-right-5 duration-300">
+          <div className="bg-amber-50/95 dark:bg-amber-900/95 backdrop-blur-xl border-2 border-amber-400 dark:border-amber-600 rounded-xl shadow-2xl p-4 max-w-md">
+            <div className="flex items-start gap-3">
+              <div className="bg-amber-500 dark:bg-amber-600 text-white p-2 rounded-full flex-shrink-0">
+                <AlertCircle className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-bold text-amber-900 dark:text-amber-100 mb-1">
+                  Section Full - Added to Schedule
+                </h4>
+                <p className="text-sm text-amber-800 dark:text-amber-200 mb-2">
+                  <span className="font-semibold">{fullSectionWarning.course.courseCode}</span> - {fullSectionWarning.section.sectionType} {fullSectionWarning.section.sectionId} has no available seats.
+                </p>
+                <p className="text-xs text-amber-700 dark:text-amber-300">
+                  ⚠️ You may need to join a waitlist or obtain instructor consent to enroll.
+                </p>
+              </div>
+              <button
+                onClick={() => setFullSectionWarning(null)}
+                className="text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-200 flex-shrink-0"
+              >
+                <X className="w-4 h-4" />
               </button>
             </div>
           </div>
