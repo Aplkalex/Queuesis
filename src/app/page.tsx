@@ -82,8 +82,8 @@ export default function Home() {
       {/* Dark mode background overlay - ensures solid black */}
       <div className="fixed inset-0 bg-[#1e1e1e] -z-10 dark:block hidden" />
       
-      {/* Header - More compact */}
-      <header className="bg-white dark:bg-[#252526] shadow-sm border-b border-gray-200 dark:border-gray-800 sticky top-0 z-50">
+      {/* Header - More compact with glassmorphism */}
+      <header className="bg-white/80 dark:bg-[#252526]/70 backdrop-blur-xl shadow-sm border-b border-gray-200/50 dark:border-gray-700/30 sticky top-0 z-50">
         <div className="w-full px-3 sm:px-4 lg:px-6 py-3 lg:py-4">
           <div className="flex items-center justify-between max-w-[1600px] mx-auto">
             <div className="flex items-center gap-2 sm:gap-3">
@@ -123,15 +123,15 @@ export default function Home() {
       </header>
 
       <main className="w-full px-2 sm:px-4 lg:px-6 py-4 lg:py-6 bg-transparent">
-        {/* Disclaimer - Compact on desktop, full on mobile */}
-        <div className="mb-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-lg p-3 flex items-start gap-2 max-w-[1600px] mx-auto">
+        {/* Disclaimer - Compact on desktop, full on mobile with glass effect */}
+        <div className="mb-4 bg-amber-50/70 dark:bg-amber-900/10 backdrop-blur-md border border-amber-200/50 dark:border-amber-800/30 rounded-xl p-3 flex items-start gap-2 max-w-[1600px] mx-auto shadow-lg">
           <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
           <p className="text-xs sm:text-sm text-amber-800 dark:text-amber-300">{DISCLAIMER}</p>
         </div>
 
         {/* Conflicts warning */}
         {conflicts.length > 0 && (
-          <div className="mb-4 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-lg p-3 max-w-[1600px] mx-auto">
+          <div className="mb-4 bg-red-50/70 dark:bg-red-900/10 backdrop-blur-md border border-red-200/50 dark:border-red-800/30 rounded-xl p-3 max-w-[1600px] mx-auto shadow-lg">
             <div className="flex items-start gap-2">
               <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
               <div>
@@ -146,10 +146,10 @@ export default function Home() {
           </div>
         )}
 
-        <div className="flex flex-col lg:flex-row gap-3 lg:gap-4 max-w-[1600px] mx-auto">
-          {/* Left sidebar - Course search - Narrower on desktop */}
-          <div className="w-full lg:w-80 xl:w-96 flex-shrink-0 space-y-3">
-            <div className="bg-white dark:bg-[#252526] rounded-lg shadow-sm p-4 border border-gray-100 dark:border-gray-800">
+        <div className="flex flex-col lg:flex-row gap-3 lg:gap-4 max-w-[1800px] mx-auto">
+          {/* Left sidebar - Course search - Flexible width */}
+          <div className="w-full lg:w-[360px] lg:min-w-[320px] lg:max-w-[400px] space-y-3">
+            <div className="bg-white/70 dark:bg-[#252526]/70 backdrop-blur-xl rounded-xl shadow-lg p-4 border border-gray-200/30 dark:border-gray-700/30">
               <div className="flex items-center gap-2 mb-3">
                 <Book className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                 <h2 className="text-base font-bold text-gray-900 dark:text-white">Find Courses</h2>
@@ -192,7 +192,10 @@ export default function Home() {
             </div>
 
             {/* Course list - Scrollable */}
-            <div className="max-h-[calc(100vh-280px)] lg:max-h-[calc(100vh-220px)] overflow-y-auto space-y-3 pr-1">
+            <div 
+              className="overflow-y-auto space-y-3 pr-1 scrollbar-thin scrollbar-thumb-purple-400 dark:scrollbar-thumb-purple-600 scrollbar-track-transparent" 
+              style={{ maxHeight: 'calc(100vh - 320px)' }}
+            >
               <CourseList
                 courses={filteredCourses}
                 onAddSection={handleAddSection}
@@ -205,7 +208,7 @@ export default function Home() {
           {/* Right side - Timetable - Takes remaining space */}
           <div className="flex-1 min-w-0 space-y-3">
             {/* My Schedule header with inline course badges */}
-            <div className="bg-white dark:bg-[#252526] rounded-lg shadow-sm px-4 py-3 border border-gray-100 dark:border-gray-800">
+            <div className="bg-white/70 dark:bg-[#252526]/70 backdrop-blur-xl rounded-xl shadow-lg px-4 py-3 border border-gray-200/30 dark:border-gray-700/30">
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div>
                   <h2 className="text-base font-bold text-gray-900 dark:text-white">My Schedule</h2>
@@ -275,7 +278,7 @@ export default function Home() {
                 onLocationClick={(location) => setSelectedLocation(location)}
               />
             ) : (
-              <div className="bg-white dark:bg-[#1e1e1e] rounded-lg shadow-sm p-8 lg:p-12 text-center border border-gray-100 dark:border-gray-800">
+              <div className="bg-white/70 dark:bg-[#1e1e1e]/70 backdrop-blur-xl rounded-xl shadow-lg p-8 lg:p-12 text-center border border-gray-200/30 dark:border-gray-700/30">
                 <Calendar className="w-12 h-12 lg:w-16 lg:h-16 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
                 <h3 className="text-base lg:text-lg font-semibold text-gray-900 dark:text-white mb-2">
                   Your schedule is empty
@@ -290,12 +293,12 @@ export default function Home() {
       </main>
 
       {/* Building Reference floating button */}
-      <BuildingReference />
+      <BuildingReference onBuildingClick={setSelectedLocation} />
 
       {/* Clear All Confirmation Modal */}
       {showClearConfirm && (
-        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-[#1e1e1e] rounded-xl shadow-2xl max-w-md w-full p-6 transform transition-all border border-gray-200 dark:border-gray-700">
+        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white/90 dark:bg-[#1e1e1e]/90 backdrop-blur-2xl rounded-2xl shadow-2xl max-w-md w-full p-6 transform transition-all border border-gray-200/40 dark:border-gray-700/40">
             <div className="flex items-center gap-3 mb-4">
               <div className="bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-3 rounded-full">
                 <AlertCircle className="w-6 h-6" />

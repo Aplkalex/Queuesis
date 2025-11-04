@@ -26,7 +26,7 @@ function CourseListItem({ course, onAddSection, onRemoveSection, selectedCourses
   const hasDetails = course.description || course.enrollmentRequirements;
 
   return (
-    <div className="bg-white dark:bg-[#252526] rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow border border-gray-100 dark:border-gray-700">
+    <div className="bg-white/60 dark:bg-[#252526]/60 backdrop-blur-lg rounded-xl p-3 shadow-md hover:shadow-xl transition-all border border-gray-200/40 dark:border-gray-700/40">
       {/* Course header - More compact */}
       <div className="flex items-start justify-between mb-2">
         <div className="flex-1 min-w-0">
@@ -61,7 +61,7 @@ function CourseListItem({ course, onAddSection, onRemoveSection, selectedCourses
 
       {/* Expandable Course Details */}
       {isExpanded && hasDetails && (
-        <div className="mb-3 p-2 bg-gray-50 dark:bg-[#1e1e1e] rounded-md border border-gray-200 dark:border-gray-700 space-y-2">
+        <div className="mb-3 p-2 bg-gray-50/50 dark:bg-[#1e1e1e]/50 backdrop-blur-sm rounded-lg border border-gray-200/40 dark:border-gray-700/40 space-y-2">
           {course.enrollmentRequirements && (
             <div>
               <h4 className="text-[10px] font-semibold text-gray-700 dark:text-gray-300 mb-1">Enrollment Requirements</h4>
