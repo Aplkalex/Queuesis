@@ -10,7 +10,7 @@ import { BuildingReference } from '@/components/BuildingReference';
 import { BuildingModal } from '@/components/BuildingModal';
 import { generateCourseColor, calculateTotalCredits, detectConflicts } from '@/lib/schedule-utils';
 import { DISCLAIMER } from '@/lib/constants';
-import { Calendar, Book, AlertCircle, Trash2 } from 'lucide-react';
+import { Calendar, Book, AlertCircle, Trash2, X } from 'lucide-react';
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -188,20 +188,63 @@ export default function Home() {
 
           {/* Right side - Timetable - Takes remaining space */}
           <div className="flex-1 min-w-0 space-y-3">
-            {/* My Schedule header - More compact */}
-            <div className="bg-white rounded-lg shadow-sm px-4 py-3 border border-gray-100 flex items-center justify-between">
-              <div>
-                <h2 className="text-base font-bold text-gray-900">My Schedule</h2>
-                <p className="text-xs text-gray-500">2025-26 Term 1</p>
+            {/* My Schedule header with inline course badges */}
+            <div className="bg-white rounded-lg shadow-sm px-4 py-3 border border-gray-100">
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <div>
+                  <h2 className="text-base font-bold text-gray-900">My Schedule</h2>
+                  <p className="text-xs text-gray-500">2025-26 Term 1</p>
+                </div>
+                {selectedCourses.length > 0 && (
+                  <button
+                    onClick={handleClearSchedule}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Clear All
+                  </button>
+                )}
               </div>
+
+              {/* Selected Courses - Inline compact badges */}
               {selectedCourses.length > 0 && (
-                <button
-                  onClick={handleClearSchedule}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  Clear All
-                </button>
+                <div className="border-t border-gray-100 pt-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                      Selected ({selectedCourses.length})
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedCourses.map((sc, idx) => (
+                      <div
+                        key={idx}
+                        className="group flex items-center gap-1.5 pl-2 pr-1 py-1 rounded-md border border-gray-200 hover:border-gray-300 transition-all text-xs"
+                        style={{ 
+                          backgroundColor: `${sc.color}15`,
+                          borderColor: `${sc.color}40`
+                        }}
+                      >
+                        <div
+                          className="w-2 h-2 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: sc.color }}
+                        />
+                        <span className="font-semibold text-gray-900 whitespace-nowrap">
+                          {sc.course.courseCode}
+                        </span>
+                        <span className="text-gray-600 whitespace-nowrap hidden sm:inline">
+                          {sc.selectedSection.sectionType} {sc.selectedSection.sectionId}
+                        </span>
+                        <button
+                          onClick={() => handleRemoveCourse(idx)}
+                          className="ml-1 p-0.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all opacity-60 group-hover:opacity-100"
+                          title="Remove course"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
 
@@ -224,45 +267,6 @@ export default function Home() {
                 <p className="text-sm text-gray-500">
                   Search for courses and click the + button to add them to your schedule
                 </p>
-              </div>
-            )}
-
-            {/* Selected courses list */}
-            {selectedCourses.length > 0 && (
-              <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-                <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">
-                  Selected Courses ({selectedCourses.length})
-                </h3>
-                <div className="space-y-2">
-                  {selectedCourses.map((sc, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: sc.color }}
-                        />
-                        <div>
-                          <div className="font-semibold text-sm text-gray-900">
-                            {sc.course.courseCode} - {sc.selectedSection.sectionType} {sc.selectedSection.sectionId}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {sc.course.credits} credits
-                          </div>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => handleRemoveCourse(idx)}
-                        className="p-2 text-gray-400 hover:text-white hover:bg-red-500 rounded-lg transition-all"
-                        title="Remove course"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
               </div>
             )}
           </div>
