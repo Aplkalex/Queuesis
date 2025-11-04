@@ -12,9 +12,10 @@ interface TimetableGridProps {
   onCourseClick?: (course: SelectedCourse) => void;
   onRemoveCourse?: (course: SelectedCourse) => void;
   onLocationClick?: (location: string) => void;
+  conflictingCourses?: string[]; // Array of course codes that have conflicts
 }
 
-export function TimetableGrid({ selectedCourses, onCourseClick, onRemoveCourse, onLocationClick }: TimetableGridProps) {
+export function TimetableGrid({ selectedCourses, onCourseClick, onRemoveCourse, onLocationClick, conflictingCourses = [] }: TimetableGridProps) {
   const [hoveredCourse, setHoveredCourse] = useState<string | null>(null);
   const { startHour, endHour, slotHeight } = TIMETABLE_CONFIG;
   
@@ -104,6 +105,7 @@ export function TimetableGrid({ selectedCourses, onCourseClick, onRemoveCourse, 
                     const blockId = `${courseIdx}-${slotIdx}-${day}`;
                     const isHovered = hoveredCourse === blockId;
                     const isFull = !hasAvailableSeats(selectedCourse.selectedSection);
+                    const hasConflict = conflictingCourses.includes(selectedCourse.course.courseCode);
                     
                     return (
                       <div
@@ -118,7 +120,9 @@ export function TimetableGrid({ selectedCourses, onCourseClick, onRemoveCourse, 
                           // Allow delete button to overflow outside the block
                           'overflow-visible',
                           // Red border for full sections
-                          isFull && 'border-2 border-red-500 dark:border-red-400 shadow-[0_0_0_1px_rgba(239,68,68,0.5)]'
+                          isFull && 'border-2 border-red-500 dark:border-red-400 shadow-[0_0_0_1px_rgba(239,68,68,0.5)]',
+                          // Conflict pattern
+                          hasConflict && 'conflict-pattern border-2 border-red-500'
                         )}
                         style={{
                           ...style,

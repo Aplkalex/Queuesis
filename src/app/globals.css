@@ -53,3 +53,43 @@ html.dark body {
 .timetable-block-enter {
   animation: fadeInSlide 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* Toast notification animations */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes shrink {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+
+.animate-slideIn {
+  animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-shrink {
+  animation: shrink linear forwards;
+}
+
+/* Conflict highlighting pattern */
+.conflict-pattern {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 10px,
+    rgba(239, 68, 68, 0.15) 10px,
+    rgba(239, 68, 68, 0.15) 20px
+  );
+}

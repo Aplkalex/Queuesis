@@ -160,3 +160,29 @@ export function hasAvailableSeats(section: { quota: number; enrolled: number }):
 export function calculateTotalCredits(courses: SelectedCourse[]): number {
   return courses.reduce((total, course) => total + course.course.credits, 0);
 }
+
+/**
+ * Detect conflicts when adding a new course
+ * Returns array of conflicting course codes
+ */
+export function detectNewCourseConflicts(
+  newCourse: SelectedCourse,
+  existingCourses: SelectedCourse[]
+): string[] {
+  const conflicts: string[] = [];
+
+  for (const existingCourse of existingCourses) {
+    // Check if any time slots overlap
+    for (const newSlot of newCourse.selectedSection.timeSlots) {
+      for (const existingSlot of existingCourse.selectedSection.timeSlots) {
+        if (timeSlotsOverlap(newSlot, existingSlot)) {
+          conflicts.push(existingCourse.course.courseCode);
+          break; // Only add each course once
+        }
+      }
+      if (conflicts.includes(existingCourse.course.courseCode)) break;
+    }
+  }
+
+  return conflicts;
+}

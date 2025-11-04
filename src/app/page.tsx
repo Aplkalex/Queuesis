@@ -10,9 +10,10 @@ import { BuildingReference } from '@/components/BuildingReference';
 import { BuildingModal } from '@/components/BuildingModal';
 import { CourseDetailsModal } from '@/components/CourseDetailsModal';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { generateCourseColor, calculateTotalCredits, detectConflicts, hasAvailableSeats } from '@/lib/schedule-utils';
+import { generateCourseColor, calculateTotalCredits, detectConflicts, hasAvailableSeats, detectNewCourseConflicts } from '@/lib/schedule-utils';
 import { DISCLAIMER } from '@/lib/constants';
 import { Calendar, Book, AlertCircle, Trash2, X } from 'lucide-react';
+import ConflictToast from '@/components/ConflictToast';
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -23,6 +24,8 @@ export default function Home() {
   const [fullSectionWarning, setFullSectionWarning] = useState<{ course: Course; section: Section } | null>(null);
   const [showDisclaimer, setShowDisclaimer] = useState(true);
   const [selectedCourseDetails, setSelectedCourseDetails] = useState<SelectedCourse | null>(null);
+  const [conflictToast, setConflictToast] = useState<Array<{ course1: string; course2: string }>>([]);
+  const [conflictingCourses, setConflictingCourses] = useState<string[]>([]);
 
   // Filter courses based on search and filters
   const filteredCourses = mockCourses.filter((course) => {
@@ -145,6 +148,18 @@ export default function Home() {
           selectedSection: section,
           color: parentLectureCourse.color,
         };
+
+        // Detect conflicts before adding tutorial
+        const conflictingCourseCodes = detectNewCourseConflicts(newCourse, selectedCourses);
+        if (conflictingCourseCodes.length > 0) {
+          const newConflicts = conflictingCourseCodes.map(code => ({
+            course1: course.courseCode,
+            course2: code
+          }));
+          setConflictToast(newConflicts);
+          setConflictingCourses([course.courseCode, ...conflictingCourseCodes]);
+        }
+
         setSelectedCourses([...selectedCourses, newCourse]);
         return;
       }
@@ -156,21 +171,54 @@ export default function Home() {
       selectedSection: section,
       color: existingCourseColor || generateCourseColor(course.courseCode, usedColors),
     };
+
+    // Detect conflicts before adding
+    const conflictingCourseCodes = detectNewCourseConflicts(newCourse, selectedCourses);
+    if (conflictingCourseCodes.length > 0) {
+      // Show toast notification
+      const newConflicts = conflictingCourseCodes.map(code => ({
+        course1: course.courseCode,
+        course2: code
+      }));
+      setConflictToast(newConflicts);
+      
+      // Update conflicting courses list (include both the new course and conflicting ones)
+      setConflictingCourses([course.courseCode, ...conflictingCourseCodes]);
+    }
+
     setSelectedCourses([...selectedCourses, newCourse]);
   };
 
   // Remove a course from schedule
   const handleRemoveCourse = (index: number) => {
-    setSelectedCourses(selectedCourses.filter((_, i) => i !== index));
+    const updatedCourses = selectedCourses.filter((_, i) => i !== index);
+    setSelectedCourses(updatedCourses);
+    
+    // Recalculate conflicts after removal
+    const allConflicts = detectConflicts(updatedCourses);
+    const conflictingCodes = new Set<string>();
+    allConflicts.forEach(conflict => {
+      conflictingCodes.add(conflict.course1.course.courseCode);
+      conflictingCodes.add(conflict.course2.course.courseCode);
+    });
+    setConflictingCourses(Array.from(conflictingCodes));
   };
 
   // Remove section from course list
   const handleRemoveSection = (course: Course, section: Section) => {
-    setSelectedCourses(
-      selectedCourses.filter(
-        (sc) => !(sc.course.courseCode === course.courseCode && sc.selectedSection.sectionId === section.sectionId)
-      )
+    const updatedCourses = selectedCourses.filter(
+      (sc) => !(sc.course.courseCode === course.courseCode && sc.selectedSection.sectionId === section.sectionId)
     );
+    setSelectedCourses(updatedCourses);
+    
+    // Recalculate conflicts after removal
+    const allConflicts = detectConflicts(updatedCourses);
+    const conflictingCodes = new Set<string>();
+    allConflicts.forEach(conflict => {
+      conflictingCodes.add(conflict.course1.course.courseCode);
+      conflictingCodes.add(conflict.course2.course.courseCode);
+    });
+    setConflictingCourses(Array.from(conflictingCodes));
   };
 
   // Clear all courses
@@ -396,6 +444,7 @@ export default function Home() {
                     handleRemoveCourse(index);
                   }}
                   onLocationClick={(location) => setSelectedLocation(location)}
+                  conflictingCourses={conflictingCourses}
                 />
               ) : (
                 <div className="bg-white/70 dark:bg-[#1e1e1e]/70 backdrop-blur-xl rounded-xl shadow-lg p-8 lg:p-12 text-center border border-gray-200/30 dark:border-gray-700/30">
@@ -497,6 +546,18 @@ export default function Home() {
         onClose={() => setSelectedCourseDetails(null)}
         onLocationClick={(location) => setSelectedLocation(location)}
       />
+
+      {/* Conflict Toast Notification */}
+      {conflictToast.length > 0 && (
+        <ConflictToast
+          conflicts={conflictToast}
+          onClose={() => {
+            setConflictToast([]);
+            // Don't clear conflictingCourses here - they should stay highlighted
+          }}
+          duration={5000}
+        />
+      )}
     </div>
   );
 }
