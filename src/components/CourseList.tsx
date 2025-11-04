@@ -398,48 +398,78 @@ function CourseListItem({ course, onAddSection, onRemoveSection, selectedCourses
             {course.sections.map((section) => {
               const isSelected = isSectionSelected(section);
               
+              // Check if this is a tutorial course and if another tutorial is selected
+              const isTutorialCourse = course.sections.every(s => s.sectionType === 'Tutorial');
+              const selectedTutorialForThisCourse = isTutorialCourse 
+                ? selectedCourses.find(sc => 
+                    sc.course.courseCode === course.courseCode && 
+                    sc.selectedSection.sectionType === 'Tutorial'
+                  )?.selectedSection
+                : null;
+              const isOtherTutorialSelected = !!(selectedTutorialForThisCourse && 
+                                             selectedTutorialForThisCourse.sectionId !== section.sectionId);
+              const isDisabled = isOtherTutorialSelected;
+              const isFull = !hasAvailableSeats(section);
+              
               return (
-                <div
-                  key={section.sectionId}
-                  className={cn(
-                    'flex items-center justify-between p-2 rounded-md border transition-all',
-                    isSelected
-                      ? 'border-purple-400 dark:border-purple-500 bg-purple-50 dark:bg-purple-900/20 ring-2 ring-purple-200 dark:ring-purple-700'
-                      : hasAvailableSeats(section)
-                      ? 'border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/10'
-                      : 'border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-[#1e1e1e] opacity-60'
-                  )}
-                >
-                  <SectionButton
-                    section={section}
-                    course={course}
-                    isSectionSelected={isSelected}
-                    onAddSection={onAddSection}
-                    onRemoveSection={onRemoveSection}
-                  />
+                <div key={section.sectionId} className="space-y-1">
+                  <div
+                    className={cn(
+                      'flex items-center justify-between p-2 rounded-md border transition-all',
+                      isSelected
+                        ? 'border-purple-400 dark:border-purple-500 bg-purple-50 dark:bg-purple-900/20 ring-2 ring-purple-200 dark:ring-purple-700'
+                        : isDisabled
+                        ? 'border-gray-200 dark:border-gray-700 bg-gray-100/50 dark:bg-gray-800/50 opacity-50 cursor-not-allowed'
+                        : hasAvailableSeats(section)
+                        ? 'border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/10'
+                        : 'border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-[#1e1e1e] opacity-60'
+                    )}
+                  >
+                    <SectionButton
+                      section={section}
+                      course={course}
+                      isSectionSelected={isSelected}
+                      onAddSection={onAddSection}
+                      onRemoveSection={onRemoveSection}
+                    />
 
-                  {isSelected ? (
-                    <button
-                      onClick={() => onRemoveSection(course, section)}
-                      className="flex-shrink-0 p-1.5 rounded-md transition-all bg-red-600 dark:bg-red-500 hover:bg-red-700 dark:hover:bg-red-600 text-white hover:scale-110"
-                      title="Remove from schedule"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => onAddSection(course, section)}
-                      disabled={!hasAvailableSeats(section)}
-                      className={cn(
-                        'flex-shrink-0 p-1.5 rounded-md transition-all',
-                        hasAvailableSeats(section)
-                          ? 'bg-purple-600 dark:bg-purple-500 hover:bg-purple-700 dark:hover:bg-purple-600 text-white hover:scale-110'
-                          : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
-                      )}
-                      title="Add to schedule"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                    </button>
+                    {isSelected ? (
+                      <button
+                        onClick={() => onRemoveSection(course, section)}
+                        className="flex-shrink-0 p-1.5 rounded-md transition-all bg-red-600 dark:bg-red-500 hover:bg-red-700 dark:hover:bg-red-600 text-white hover:scale-110"
+                        title="Remove from schedule"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => onAddSection(course, section)}
+                        disabled={isDisabled}
+                        className={cn(
+                          'flex-shrink-0 p-1.5 rounded-md transition-all',
+                          isDisabled
+                            ? 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                            : 'bg-purple-600 dark:bg-purple-500 hover:bg-purple-700 dark:hover:bg-purple-600 text-white hover:scale-110'
+                        )}
+                        title={
+                          isDisabled 
+                            ? 'Another tutorial already selected' 
+                            : isFull
+                            ? 'Add to schedule (Full - may require waitlist/consent)'
+                            : 'Add to schedule'
+                        }
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                  
+                  {/* Show info when disabled */}
+                  {isDisabled && (
+                    <div className="px-2 py-1 bg-gray-50/50 dark:bg-gray-800/50 rounded text-[9px] text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                      <Info className="w-2.5 h-2.5 flex-shrink-0" />
+                      <span>Remove {selectedTutorialForThisCourse?.sectionId} first to select this tutorial</span>
+                    </div>
                   )}
                 </div>
               );

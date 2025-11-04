@@ -109,15 +109,15 @@ export function TimetableGrid({ selectedCourses, onCourseClick, onRemoveCourse, 
                       <div
                         key={blockId}
                         className={cn(
-                          'absolute left-1 right-1 rounded-xl cursor-pointer group',
+                          'absolute left-1 right-1 rounded-lg cursor-pointer group',
                           'transition-all hover:shadow-xl hover:scale-[1.02]',
                           'text-white flex flex-col',
-                          // Compact padding for small blocks, comfortable for larger ones
-                          'px-2.5 py-1.5',
+                          // Compact padding for denser layout
+                          'px-1.5 py-1',
                           // Allow delete button to overflow outside the block
                           'overflow-visible',
                           // Red border for full sections
-                          isFull && 'border-3 border-red-500 dark:border-red-400 shadow-[0_0_0_2px_rgba(239,68,68,0.5)]'
+                          isFull && 'border-2 border-red-500 dark:border-red-400 shadow-[0_0_0_1px_rgba(239,68,68,0.5)]'
                         )}
                         style={style}
                         onMouseEnter={() => setHoveredCourse(blockId)}
@@ -144,10 +144,13 @@ export function TimetableGrid({ selectedCourses, onCourseClick, onRemoveCourse, 
                           </button>
                         )}
 
-                        {/* Content wrapper with overflow hidden to prevent text overflow */}
-                        <div className="overflow-hidden flex flex-col">
+                        {/* Compact content - only course code and section type */}
+                        <div 
+                          className="overflow-hidden flex flex-col justify-center h-full"
+                          onClick={() => onCourseClick?.(selectedCourse)}
+                        >
                           <div className="flex items-center gap-1">
-                            <div className="font-semibold text-xs leading-snug truncate flex-1">
+                            <div className="font-semibold text-xs leading-tight truncate flex-1">
                               {selectedCourse.course.courseCode}
                             </div>
                             {isFull && (
@@ -156,23 +159,8 @@ export function TimetableGrid({ selectedCourses, onCourseClick, onRemoveCourse, 
                               </div>
                             )}
                           </div>
-                          <div className="text-[11px] leading-snug opacity-90 truncate">
-                            {selectedCourse.selectedSection.sectionType.slice(0, 3)} {selectedCourse.selectedSection.sectionId}
-                          </div>
-                          {slot.location && (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onLocationClick?.(slot.location!);
-                              }}
-                              className="text-[11px] leading-snug opacity-80 block w-full text-left cursor-pointer hover:opacity-100 hover:underline transition-opacity bg-transparent border-0 p-0 text-inherit font-inherit truncate"
-                            >
-                              {slot.location}
-                            </button>
-                          )}
-                          <div className="text-[11px] leading-snug opacity-75 truncate">
-                            {formatTime(slot.startTime)}-{formatTime(slot.endTime)}
+                          <div className="text-[10px] leading-tight opacity-90 truncate">
+                            {selectedCourse.selectedSection.sectionType === 'Lecture' ? 'LEC' : 'TUT'} {selectedCourse.selectedSection.sectionId}
                           </div>
                         </div>
                       </div>

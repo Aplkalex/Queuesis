@@ -8,6 +8,7 @@ import { CourseList } from '@/components/CourseList';
 import { SearchBar, FilterBar, FilterButton } from '@/components/SearchBar';
 import { BuildingReference } from '@/components/BuildingReference';
 import { BuildingModal } from '@/components/BuildingModal';
+import { CourseDetailsModal } from '@/components/CourseDetailsModal';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { generateCourseColor, calculateTotalCredits, detectConflicts, hasAvailableSeats } from '@/lib/schedule-utils';
 import { DISCLAIMER } from '@/lib/constants';
@@ -20,6 +21,8 @@ export default function Home() {
   const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
   const [fullSectionWarning, setFullSectionWarning] = useState<{ course: Course; section: Section } | null>(null);
+  const [showDisclaimer, setShowDisclaimer] = useState(true);
+  const [selectedCourseDetails, setSelectedCourseDetails] = useState<SelectedCourse | null>(null);
 
   // Filter courses based on search and filters
   const filteredCourses = mockCourses.filter((course) => {
@@ -186,39 +189,36 @@ export default function Home() {
       {/* Dark mode background overlay - ensures solid black */}
       <div className="fixed inset-0 bg-[#1e1e1e] -z-10 dark:block hidden" />
       
-      {/* Header - More compact with glassmorphism */}
+      {/* Header - Ultra compact */}
       <header className="bg-white/80 dark:bg-[#252526]/70 backdrop-blur-xl shadow-sm border-b border-gray-200/50 dark:border-gray-700/30 sticky top-0 z-50">
-        <div className="w-full px-3 sm:px-4 lg:px-6 py-3 lg:py-4">
+        <div className="w-full px-3 sm:px-4 lg:px-6 py-2">
           <div className="flex items-center justify-between max-w-[1600px] mx-auto">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="bg-purple-600 dark:bg-purple-500 text-white p-2 lg:p-2.5 rounded-lg shadow-lg">
-                <Calendar className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" />
+            <div className="flex items-center gap-2">
+              <div className="bg-purple-600 dark:bg-purple-500 text-white p-1.5 rounded-lg shadow-lg">
+                <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
               <div>
-                <h1 className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 dark:text-white">
+                <h1 className="text-sm sm:text-base lg:text-lg font-bold text-gray-900 dark:text-white">
                   CUHK Course Scheduler
                 </h1>
-                <p className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">
-                  Plan your perfect timetable
-                </p>
               </div>
             </div>
 
-            {/* Stats and Theme Toggle - More compact on mobile */}
-            <div className="flex items-center gap-3 sm:gap-4 lg:gap-6">
+            {/* Stats and Theme Toggle - Compact */}
+            <div className="flex items-center gap-2 sm:gap-3 lg:gap-4">
               <ThemeToggle />
               <div className="text-center">
-                <div className="text-lg sm:text-xl lg:text-2xl font-bold text-purple-600 dark:text-purple-400">{selectedCourses.length}</div>
-                <div className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">Courses</div>
+                <div className="text-base sm:text-lg lg:text-xl font-bold text-purple-600 dark:text-purple-400">{selectedCourses.length}</div>
+                <div className="text-[9px] sm:text-[10px] text-gray-500 dark:text-gray-400">Courses</div>
               </div>
               <div className="text-center hidden sm:block">
-                <div className="text-xl lg:text-2xl font-bold text-purple-600 dark:text-purple-400">{totalCredits}</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">Credits</div>
+                <div className="text-lg lg:text-xl font-bold text-purple-600 dark:text-purple-400">{totalCredits}</div>
+                <div className="text-[10px] text-gray-500 dark:text-gray-400">Credits</div>
               </div>
               {conflicts.length > 0 && (
                 <div className="text-center">
-                  <div className="text-lg sm:text-xl lg:text-2xl font-bold text-red-600 dark:text-red-400">{conflicts.length}</div>
-                  <div className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">Conflicts</div>
+                  <div className="text-base sm:text-lg lg:text-xl font-bold text-red-600 dark:text-red-400">{conflicts.length}</div>
+                  <div className="text-[9px] sm:text-[10px] text-gray-500 dark:text-gray-400">Conflicts</div>
                 </div>
               )}
             </div>
@@ -226,31 +226,43 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="w-full px-2 sm:px-4 lg:px-6 py-4 lg:py-6 bg-transparent">
-        {/* Disclaimer - Compact on desktop, full on mobile with glass effect */}
-        <div className="mb-4 bg-amber-50/70 dark:bg-amber-900/10 backdrop-blur-md border border-amber-200/50 dark:border-amber-800/30 rounded-xl p-3 flex items-start gap-2 max-w-[1600px] mx-auto shadow-lg">
-          <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-          <p className="text-xs sm:text-sm text-amber-800 dark:text-amber-300">{DISCLAIMER}</p>
-        </div>
+      <main className="w-full px-2 sm:px-4 lg:px-6 py-2 lg:py-3 bg-transparent">
+        {/* Warnings container - only takes space when needed */}
+        <div className="max-w-[1600px] mx-auto space-y-2 mb-2">
+          {/* Disclaimer - Compact and dismissible */}
+          {showDisclaimer && (
+            <div className="bg-amber-50/70 dark:bg-amber-900/10 backdrop-blur-md border border-amber-200/50 dark:border-amber-800/30 rounded-lg p-2 flex items-center gap-2 shadow-lg">
+              <AlertCircle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+              <p className="text-[11px] sm:text-xs text-amber-800 dark:text-amber-300 flex-1">{DISCLAIMER}</p>
+              <button
+                onClick={() => setShowDisclaimer(false)}
+                className="p-0.5 hover:bg-amber-200/50 dark:hover:bg-amber-800/30 rounded transition-colors flex-shrink-0"
+                aria-label="Dismiss disclaimer"
+              >
+                <X className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+              </button>
+            </div>
+          )}
 
-        {/* Conflicts warning */}
-        {conflicts.length > 0 && (
-          <div className="mb-4 bg-red-50/70 dark:bg-red-900/10 backdrop-blur-md border border-red-200/50 dark:border-red-800/30 rounded-xl p-3 max-w-[1600px] mx-auto shadow-lg">
-            <div className="flex items-start gap-2">
-              <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="font-semibold text-red-900 dark:text-red-300 mb-1 text-sm">Schedule Conflicts Detected!</p>
-                {conflicts.map((conflict, idx) => (
-                  <p key={idx} className="text-xs text-red-700 dark:text-red-400">
-                    {conflict.course1.course.courseCode} conflicts with {conflict.course2.course.courseCode}
-                  </p>
-                ))}
+          {/* Conflicts warning */}
+          {conflicts.length > 0 && (
+            <div className="bg-red-50/70 dark:bg-red-900/10 backdrop-blur-md border border-red-200/50 dark:border-red-800/30 rounded-xl p-3 shadow-lg">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-red-900 dark:text-red-300 mb-1 text-sm">Schedule Conflicts Detected!</p>
+                  {conflicts.map((conflict, idx) => (
+                    <p key={idx} className="text-xs text-red-700 dark:text-red-400">
+                      {conflict.course1.course.courseCode} conflicts with {conflict.course2.course.courseCode}
+                    </p>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
-        <div className="flex flex-col lg:flex-row gap-3 lg:gap-4 max-w-[1800px] mx-auto h-[calc(100vh-200px)]">
+        <div className="flex flex-col lg:flex-row gap-3 lg:gap-4 max-w-[1800px] mx-auto h-[calc(100vh-120px)]">
           {/* Left sidebar - Course search - Flexible width */}
           <div className="w-full lg:w-[360px] lg:min-w-[320px] lg:max-w-[400px] flex flex-col gap-3 min-h-0">
             <div className="bg-white/70 dark:bg-[#252526]/70 backdrop-blur-xl rounded-xl shadow-lg p-4 border border-gray-200/30 dark:border-gray-700/30 flex-shrink-0">
@@ -373,6 +385,7 @@ export default function Home() {
               {selectedCourses.length > 0 ? (
                 <TimetableGrid
                   selectedCourses={selectedCourses}
+                  onCourseClick={(course) => setSelectedCourseDetails(course)}
                   onRemoveCourse={(course) => {
                     const index = selectedCourses.indexOf(course);
                     handleRemoveCourse(index);
@@ -472,6 +485,13 @@ export default function Home() {
           onClose={() => setSelectedLocation(null)}
         />
       )}
+
+      {/* Course Details Modal */}
+      <CourseDetailsModal
+        selectedCourse={selectedCourseDetails}
+        onClose={() => setSelectedCourseDetails(null)}
+        onLocationClick={(location) => setSelectedLocation(location)}
+      />
     </div>
   );
 }
