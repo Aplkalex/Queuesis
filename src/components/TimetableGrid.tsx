@@ -48,36 +48,37 @@ export function TimetableGrid({ selectedCourses, onCourseClick, onRemoveCourse, 
   };
 
   return (
-    <div className="w-full overflow-auto bg-gray-50 rounded-xl shadow-lg p-4">
-      <div className="min-w-[900px]">
-        {/* Header with days */}
-        <div className="grid grid-cols-6 gap-2 mb-2">
-          <div className="w-20" /> {/* Empty corner */}
-          {displayDays.map((day) => (
-            <div
-              key={day}
-              className="text-center font-semibold text-gray-700 py-3 bg-white rounded-lg shadow-sm"
-            >
-              <div className="text-sm text-gray-500">{day.slice(0, 3)}</div>
-              <div className="text-lg">{day}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* Timetable grid */}
-        <div className="relative grid grid-cols-6 gap-2">
-          {/* Time labels */}
-          <div className="space-y-0">
-            {hours.map((hour) => (
+    <div className="w-full bg-gray-50 rounded-lg shadow-lg overflow-hidden">
+      <div className="overflow-x-auto">
+        <div className="min-w-[320px] sm:min-w-[600px] lg:min-w-0 p-2 sm:p-3 lg:p-4">
+          {/* Header with days */}
+          <div className="grid grid-cols-6 gap-1 sm:gap-1.5 lg:gap-2 mb-2">
+            <div className="w-12 sm:w-14 lg:w-16" /> {/* Empty corner */}
+            {displayDays.map((day) => (
               <div
-                key={hour}
-                className="text-right pr-3 text-sm text-gray-500 font-medium"
-                style={{ height: `${slotHeight}px`, lineHeight: `${slotHeight}px` }}
+                key={day}
+                className="text-center font-semibold text-gray-700 py-1.5 sm:py-2 lg:py-3 bg-white rounded-md shadow-sm"
               >
-                {formatTime(`${hour}:00`)}
+                <div className="text-[10px] sm:text-xs text-gray-500 hidden sm:block">{day.slice(0, 3)}</div>
+                <div className="text-xs sm:text-sm lg:text-base">{day}</div>
               </div>
             ))}
           </div>
+
+          {/* Timetable grid */}
+          <div className="relative grid grid-cols-6 gap-1 sm:gap-1.5 lg:gap-2">
+            {/* Time labels */}
+            <div className="space-y-0">
+              {hours.map((hour) => (
+                <div
+                  key={hour}
+                  className="text-right pr-1 sm:pr-2 lg:pr-3 text-[10px] sm:text-xs lg:text-sm text-gray-500 font-medium"
+                  style={{ height: `${slotHeight}px`, lineHeight: `${slotHeight}px` }}
+                >
+                  {formatTime(`${hour}:00`)}
+                </div>
+              ))}
+            </div>
 
           {/* Day columns */}
           {displayDays.map((day) => (
@@ -171,6 +172,7 @@ export function TimetableGrid({ selectedCourses, onCourseClick, onRemoveCourse, 
               )}
             </div>
           ))}
+          </div>
         </div>
       </div>
     </div>

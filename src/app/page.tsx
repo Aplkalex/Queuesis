@@ -69,38 +69,38 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="bg-purple-600 text-white p-3 rounded-xl shadow-lg">
-                <Calendar className="w-6 h-6" />
+      {/* Header - More compact */}
+      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+        <div className="w-full px-3 sm:px-4 lg:px-6 py-3 lg:py-4">
+          <div className="flex items-center justify-between max-w-[1600px] mx-auto">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="bg-purple-600 text-white p-2 lg:p-2.5 rounded-lg shadow-lg">
+                <Calendar className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">
+                <h1 className="text-base sm:text-lg lg:text-xl font-bold text-gray-900">
                   CUHK Course Scheduler
                 </h1>
-                <p className="text-sm text-gray-500">
+                <p className="text-xs text-gray-500 hidden sm:block">
                   Plan your perfect timetable
                 </p>
               </div>
             </div>
 
-            {/* Stats */}
-            <div className="flex items-center gap-6">
+            {/* Stats - More compact on mobile */}
+            <div className="flex items-center gap-3 sm:gap-4 lg:gap-6">
               <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">{selectedCourses.length}</div>
-                <div className="text-xs text-gray-500">Courses</div>
+                <div className="text-lg sm:text-xl lg:text-2xl font-bold text-purple-600">{selectedCourses.length}</div>
+                <div className="text-[10px] sm:text-xs text-gray-500">Courses</div>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">{totalCredits}</div>
+              <div className="text-center hidden sm:block">
+                <div className="text-xl lg:text-2xl font-bold text-purple-600">{totalCredits}</div>
                 <div className="text-xs text-gray-500">Credits</div>
               </div>
               {conflicts.length > 0 && (
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-red-600">{conflicts.length}</div>
-                  <div className="text-xs text-gray-500">Conflicts</div>
+                  <div className="text-lg sm:text-xl lg:text-2xl font-bold text-red-600">{conflicts.length}</div>
+                  <div className="text-[10px] sm:text-xs text-gray-500">Conflicts</div>
                 </div>
               )}
             </div>
@@ -108,22 +108,22 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Disclaimer */}
-        <div className="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-amber-800">{DISCLAIMER}</p>
+      <main className="w-full px-2 sm:px-4 lg:px-6 py-4 lg:py-6">
+        {/* Disclaimer - Compact on desktop, full on mobile */}
+        <div className="mb-4 bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2 max-w-[1600px] mx-auto">
+          <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+          <p className="text-xs sm:text-sm text-amber-800">{DISCLAIMER}</p>
         </div>
 
         {/* Conflicts warning */}
         {conflicts.length > 0 && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3 max-w-[1600px] mx-auto">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="font-semibold text-red-900 mb-2">Schedule Conflicts Detected!</p>
+                <p className="font-semibold text-red-900 mb-1 text-sm">Schedule Conflicts Detected!</p>
                 {conflicts.map((conflict, idx) => (
-                  <p key={idx} className="text-sm text-red-700">
+                  <p key={idx} className="text-xs text-red-700">
                     {conflict.course1.course.courseCode} conflicts with {conflict.course2.course.courseCode}
                   </p>
                 ))}
@@ -132,20 +132,20 @@ export default function Home() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left sidebar - Course search */}
-          <div className="lg:col-span-1 space-y-4">
-            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-              <div className="flex items-center gap-2 mb-4">
-                <Book className="w-5 h-5 text-purple-600" />
-                <h2 className="text-lg font-bold text-gray-900">Find Courses</h2>
+        <div className="flex flex-col lg:flex-row gap-3 lg:gap-4 max-w-[1600px] mx-auto">
+          {/* Left sidebar - Course search - Narrower on desktop */}
+          <div className="w-full lg:w-80 xl:w-96 flex-shrink-0 space-y-3">
+            <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
+              <div className="flex items-center gap-2 mb-3">
+                <Book className="w-4 h-4 text-purple-600" />
+                <h2 className="text-base font-bold text-gray-900">Find Courses</h2>
               </div>
 
               <SearchBar
                 value={searchQuery}
                 onChange={setSearchQuery}
                 placeholder="Search courses..."
-                className="mb-4"
+                className="mb-3"
               />
 
               <FilterBar
@@ -156,7 +156,7 @@ export default function Home() {
                   <label className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2 block">
                     Department
                   </label>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-1.5">
                     <FilterButton
                       active={selectedDepartment === null}
                       onClick={() => setSelectedDepartment(null)}
@@ -177,8 +177,8 @@ export default function Home() {
               </FilterBar>
             </div>
 
-            {/* Course list */}
-            <div className="max-h-[600px] overflow-y-auto space-y-4">
+            {/* Course list - Scrollable */}
+            <div className="max-h-[calc(100vh-280px)] lg:max-h-[calc(100vh-220px)] overflow-y-auto space-y-3 pr-1">
               <CourseList
                 courses={filteredCourses}
                 onAddSection={handleAddSection}
@@ -186,28 +186,26 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Right side - Timetable */}
-          <div className="lg:col-span-2 space-y-4">
-            {/* My Schedule header */}
-            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-lg font-bold text-gray-900">My Schedule</h2>
-                  <p className="text-sm text-gray-500">2025-26 Term 1</p>
-                </div>
-                {selectedCourses.length > 0 && (
-                  <button
-                    onClick={handleClearSchedule}
-                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Clear All
-                  </button>
-                )}
+          {/* Right side - Timetable - Takes remaining space */}
+          <div className="flex-1 min-w-0 space-y-3">
+            {/* My Schedule header - More compact */}
+            <div className="bg-white rounded-lg shadow-sm px-4 py-3 border border-gray-100 flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-bold text-gray-900">My Schedule</h2>
+                <p className="text-xs text-gray-500">2025-26 Term 1</p>
               </div>
+              {selectedCourses.length > 0 && (
+                <button
+                  onClick={handleClearSchedule}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Clear All
+                </button>
+              )}
             </div>
 
-            {/* Timetable */}
+            {/* Timetable - Fits viewport */}
             {selectedCourses.length > 0 ? (
               <TimetableGrid
                 selectedCourses={selectedCourses}
@@ -218,12 +216,12 @@ export default function Home() {
                 onLocationClick={(location) => setSelectedLocation(location)}
               />
             ) : (
-              <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-100">
-                <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              <div className="bg-white rounded-lg shadow-sm p-8 lg:p-12 text-center border border-gray-100">
+                <Calendar className="w-12 h-12 lg:w-16 lg:h-16 text-gray-300 mx-auto mb-3" />
+                <h3 className="text-base lg:text-lg font-semibold text-gray-900 mb-2">
                   Your schedule is empty
                 </h3>
-                <p className="text-gray-500">
+                <p className="text-sm text-gray-500">
                   Search for courses and click the + button to add them to your schedule
                 </p>
               </div>
