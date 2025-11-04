@@ -50,10 +50,15 @@ export default function Home() {
   };
 
   // Clear all courses
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  
   const handleClearSchedule = () => {
-    if (confirm('Clear your entire schedule?')) {
-      setSelectedCourses([]);
-    }
+    setShowClearConfirm(true);
+  };
+
+  const confirmClearSchedule = () => {
+    setSelectedCourses([]);
+    setShowClearConfirm(false);
   };
 
   // Calculate stats
@@ -204,11 +209,9 @@ export default function Home() {
             {selectedCourses.length > 0 ? (
               <TimetableGrid
                 selectedCourses={selectedCourses}
-                onCourseClick={(course) => {
+                onRemoveCourse={(course) => {
                   const index = selectedCourses.indexOf(course);
-                  if (confirm(`Remove ${course.course.courseCode}?`)) {
-                    handleRemoveCourse(index);
-                  }
+                  handleRemoveCourse(index);
                 }}
               />
             ) : (
@@ -251,7 +254,8 @@ export default function Home() {
                       </div>
                       <button
                         onClick={() => handleRemoveCourse(idx)}
-                        className="text-gray-400 hover:text-red-600 transition-colors"
+                        className="p-2 text-gray-400 hover:text-white hover:bg-red-500 rounded-lg transition-all"
+                        title="Remove course"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -266,6 +270,42 @@ export default function Home() {
 
       {/* Building Reference floating button */}
       <BuildingReference />
+
+      {/* Clear All Confirmation Modal */}
+      {showClearConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 transform transition-all">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="bg-red-100 text-red-600 p-3 rounded-full">
+                <AlertCircle className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">Clear Schedule?</h3>
+                <p className="text-sm text-gray-500">This will remove all courses</p>
+              </div>
+            </div>
+            
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to clear your entire schedule? This action cannot be undone.
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowClearConfirm(false)}
+                className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmClearSchedule}
+                className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
+              >
+                Clear All
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

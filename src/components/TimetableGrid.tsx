@@ -1,17 +1,21 @@
 'use client';
 
+import { useState } from 'react';
 import { SelectedCourse, DayOfWeek } from '@/types';
 import { TIMETABLE_CONFIG, WEEKDAYS } from '@/lib/constants';
 import { timeToMinutes, formatTime } from '@/lib/schedule-utils';
 import { cn } from '@/lib/utils';
 import { LocationTooltip } from '@/components/LocationTooltip';
+import { X } from 'lucide-react';
 
 interface TimetableGridProps {
   selectedCourses: SelectedCourse[];
   onCourseClick?: (course: SelectedCourse) => void;
+  onRemoveCourse?: (course: SelectedCourse) => void;
 }
 
-export function TimetableGrid({ selectedCourses, onCourseClick }: TimetableGridProps) {
+export function TimetableGrid({ selectedCourses, onCourseClick, onRemoveCourse }: TimetableGridProps) {
+  const [hoveredCourse, setHoveredCourse] = useState<string | null>(null);
   const { startHour, endHour, slotHeight } = TIMETABLE_CONFIG;
   
   // Generate hours array (8 AM to 9 PM)
@@ -90,18 +94,43 @@ export function TimetableGrid({ selectedCourses, onCourseClick }: TimetableGridP
                   .filter((slot) => slot.day === day)
                   .map((slot, slotIdx) => {
                     const style = getCourseStyle(slot.startTime, slot.endTime, selectedCourse.color);
+                    const blockId = `${courseIdx}-${slotIdx}-${day}`;
+                    const isHovered = hoveredCourse === blockId;
                     
                     return (
                       <div
-                        key={`${courseIdx}-${slotIdx}`}
+                        key={blockId}
                         className={cn(
-                          'absolute left-1 right-1 rounded-lg p-2 cursor-pointer',
-                          'transition-all hover:shadow-lg hover:scale-[1.02]',
-                          'text-white text-xs overflow-hidden'
+                          'absolute left-1 right-1 rounded-lg p-2 cursor-pointer group',
+                          'transition-all hover:shadow-xl hover:scale-[1.03]',
+                          'text-white text-xs overflow-visible'
                         )}
                         style={style}
                         onClick={() => onCourseClick?.(selectedCourse)}
+                        onMouseEnter={() => setHoveredCourse(blockId)}
+                        onMouseLeave={() => setHoveredCourse(null)}
                       >
+                        {/* Delete button - shows on hover */}
+                        {onRemoveCourse && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onRemoveCourse(selectedCourse);
+                            }}
+                            className={cn(
+                              'absolute -top-2 -right-2 w-6 h-6 rounded-full',
+                              'bg-red-500 hover:bg-red-600 text-white',
+                              'flex items-center justify-center shadow-lg',
+                              'transition-all transform',
+                              'opacity-0 group-hover:opacity-100 scale-0 group-hover:scale-100',
+                              'z-10'
+                            )}
+                            title="Remove course"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
+
                         <div className="font-bold text-sm mb-1">
                           {selectedCourse.course.courseCode}
                         </div>
