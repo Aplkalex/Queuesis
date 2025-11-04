@@ -11,6 +11,7 @@ import { BuildingModal } from '@/components/BuildingModal';
 import { CourseDetailsModal } from '@/components/CourseDetailsModal';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { generateCourseColor, calculateTotalCredits, detectConflicts, hasAvailableSeats, detectNewCourseConflicts } from '@/lib/schedule-utils';
+import { generateSchedules, type GeneratedSchedule } from '@/lib/schedule-generator';
 import { DISCLAIMER } from '@/lib/constants';
 import { Calendar, Book, AlertCircle, Trash2, X, Hand, Sparkles, ChevronDown, ChevronUp, Clock, Coffee, Check } from 'lucide-react';
 import ConflictToast from '@/components/ConflictToast';
@@ -30,10 +31,13 @@ export default function Home() {
   const [selectedTerm, setSelectedTerm] = useState<TermType>('2025-26-T1');
   
   // Schedule mode: 'manual' or 'auto-generate'
-  const [scheduleMode, setScheduleMode] = useState<'manual' | 'auto-generate'>('manual');
+  const [scheduleMode, setScheduleMode] = useState<'manual' | 'auto-generate'>('auto-generate');
   
   // Collapsible My Schedule state
   const [isScheduleCollapsed, setIsScheduleCollapsed] = useState(false);
+
+  // For auto-generate mode: just track which courses (not sections) are selected
+  const [selectedCourseCodes, setSelectedCourseCodes] = useState<string[]>([]);
 
   // Schedule generation preferences (for auto-generate mode)
   const [preferences, setPreferences] = useState<SchedulePreferences>({
@@ -47,6 +51,11 @@ export default function Home() {
   // Simple preference - only one can be selected at a time
   const [selectedPreference, setSelectedPreference] = useState<'shortBreaks' | 'longBreaks' | 'consistentStart' | 'startLate' | 'endEarly' | 'daysOff' | null>(null);
   const [preferredDaysOff, setPreferredDaysOff] = useState<DayOfWeek[]>([]);
+
+  // Generated schedules state
+  const [generatedSchedules, setGeneratedSchedules] = useState<GeneratedSchedule[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [selectedScheduleIndex, setSelectedScheduleIndex] = useState<number>(0);
 
   // Term display names
   const termNames: Record<TermType, string> = {
@@ -306,6 +315,78 @@ export default function Home() {
     setPendingTerm(null);
   };
 
+  // Toggle course selection in auto-generate mode
+  const handleToggleCourseSelection = (courseCode: string) => {
+    setSelectedCourseCodes(prev => 
+      prev.includes(courseCode)
+        ? prev.filter(code => code !== courseCode)
+        : [...prev, courseCode]
+    );
+  };
+
+  // Handle schedule generation
+  // Helper function to assign colors to a schedule
+  const assignColorsToSchedule = (sections: SelectedCourse[]): SelectedCourse[] => {
+    const colorMap = new Map<string, string>();
+    const usedColors: string[] = [];
+    
+    return sections.map(sc => {
+      const courseCode = sc.course.courseCode;
+      
+      // Get or generate color for this course
+      if (!colorMap.has(courseCode)) {
+        const color = generateCourseColor(courseCode, usedColors);
+        colorMap.set(courseCode, color);
+        usedColors.push(color);
+      }
+      
+      return {
+        ...sc,
+        color: colorMap.get(courseCode)!
+      };
+    });
+  };
+
+  const handleGenerateSchedules = async () => {
+    // In auto-generate mode, use selectedCourseCodes
+    // In manual mode, use selectedCourses
+    const coursesToGenerate = scheduleMode === 'auto-generate'
+      ? mockCourses.filter(c => selectedCourseCodes.includes(c.courseCode) && c.term === selectedTerm)
+      : Array.from(
+          new Map(selectedCourses.map(sc => [sc.course.courseCode, sc.course])).values()
+        );
+
+    if (coursesToGenerate.length === 0) return;
+
+    setIsGenerating(true);
+
+    try {
+      // Generate schedules using the algorithm
+      const schedules = generateSchedules(coursesToGenerate, {
+        preference: selectedPreference,
+        maxResults: 100,
+      });
+
+      setGeneratedSchedules(schedules);
+      setSelectedScheduleIndex(0);
+
+      // If we have schedules, load the first one with colors assigned
+      if (schedules.length > 0) {
+        const schedulesWithColors = assignColorsToSchedule(schedules[0].sections);
+        setSelectedCourses(schedulesWithColors);
+      } else {
+        alert('No valid schedules found! Try selecting different courses or changing your preference.');
+      }
+
+      console.log(`✨ Generated ${schedules.length} valid schedules`);
+    } catch (error) {
+      console.error('Error generating schedules:', error);
+      alert('Error generating schedules. Please try again.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   // Calculate stats
   const totalCredits = calculateTotalCredits(selectedCourses);
   const conflicts = detectConflicts(selectedCourses);
@@ -380,18 +461,10 @@ export default function Home() {
               <div className="bg-white/70 dark:bg-[#252526]/70 backdrop-blur-xl rounded-xl shadow-lg p-2 border border-gray-200/30 dark:border-gray-700/30 flex-shrink-0">
               <div className="flex gap-1 p-1 bg-gray-100 dark:bg-[#1e1e1e]/50 rounded-lg">
                 <button
-                  onClick={() => setScheduleMode('manual')}
-                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-xs font-medium transition-all ${
-                    scheduleMode === 'manual'
-                      ? 'bg-white dark:bg-[#2d2d30] text-purple-600 dark:text-purple-400 shadow-sm'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                  }`}
-                >
-                  <Hand className="w-4 h-4" />
-                  Manual
-                </button>
-                <button
-                  onClick={() => setScheduleMode('auto-generate')}
+                  onClick={() => {
+                    setScheduleMode('auto-generate');
+                    setGeneratedSchedules([]);
+                  }}
                   className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-xs font-medium transition-all ${
                     scheduleMode === 'auto-generate'
                       ? 'bg-white dark:bg-[#2d2d30] text-purple-600 dark:text-purple-400 shadow-sm'
@@ -400,6 +473,21 @@ export default function Home() {
                 >
                   <Sparkles className="w-4 h-4" />
                   Auto-Generate
+                </button>
+                <button
+                  onClick={() => {
+                    setScheduleMode('manual');
+                    setGeneratedSchedules([]);
+                    setSelectedCourseCodes([]);
+                  }}
+                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-xs font-medium transition-all ${
+                    scheduleMode === 'manual'
+                      ? 'bg-white dark:bg-[#2d2d30] text-purple-600 dark:text-purple-400 shadow-sm'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                  }`}
+                >
+                  <Hand className="w-4 h-4" />
+                  Manual
                 </button>
               </div>
             </div>
@@ -500,117 +588,6 @@ export default function Home() {
               )}
             </div>
 
-            {/* Schedule Preferences - Only show in Auto-Generate mode */}
-            {scheduleMode === 'auto-generate' && (
-              <div className="bg-white/70 dark:bg-[#252526]/70 backdrop-blur-xl rounded-xl shadow-lg p-4 border border-gray-200/30 dark:border-gray-700/30 flex-shrink-0">
-                <div className="flex items-center gap-2 mb-4">
-                  <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                  <h2 className="text-base font-bold text-gray-900 dark:text-white">Preferences</h2>
-                </div>
-
-                <div className="space-y-3">
-                  {/* Instruction Text */}
-                  <p className="text-xs text-gray-600 dark:text-gray-400 text-center pb-2">
-                    Choose one preference below
-                  </p>
-
-                  {/* Preference Toggles - Only one can be selected */}
-                  <div className="space-y-2">
-                    {/* Short Breaks */}
-                    <button
-                      onClick={() => setSelectedPreference(selectedPreference === 'shortBreaks' ? null : 'shortBreaks')}
-                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${
-                        selectedPreference === 'shortBreaks'
-                          ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-400 dark:border-purple-600 text-purple-700 dark:text-purple-300'
-                          : 'bg-gray-50 dark:bg-[#1e1e1e] border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
-                      }`}
-                    >
-                      <span>Short Breaks</span>
-                      {selectedPreference === 'shortBreaks' && <Check className="w-4 h-4" />}
-                    </button>
-
-                    {/* Long Breaks */}
-                    <button
-                      onClick={() => setSelectedPreference(selectedPreference === 'longBreaks' ? null : 'longBreaks')}
-                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${
-                        selectedPreference === 'longBreaks'
-                          ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-400 dark:border-purple-600 text-purple-700 dark:text-purple-300'
-                          : 'bg-gray-50 dark:bg-[#1e1e1e] border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
-                      }`}
-                    >
-                      <span>Long Breaks</span>
-                      {selectedPreference === 'longBreaks' && <Check className="w-4 h-4" />}
-                    </button>
-
-                    {/* Consistent Start Time */}
-                    <button
-                      onClick={() => setSelectedPreference(selectedPreference === 'consistentStart' ? null : 'consistentStart')}
-                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${
-                        selectedPreference === 'consistentStart'
-                          ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-400 dark:border-purple-600 text-purple-700 dark:text-purple-300'
-                          : 'bg-gray-50 dark:bg-[#1e1e1e] border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
-                      }`}
-                    >
-                      <span>Consistent Start Time</span>
-                      {selectedPreference === 'consistentStart' && <Check className="w-4 h-4" />}
-                    </button>
-
-                    {/* Start Late */}
-                    <button
-                      onClick={() => setSelectedPreference(selectedPreference === 'startLate' ? null : 'startLate')}
-                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${
-                        selectedPreference === 'startLate'
-                          ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-400 dark:border-purple-600 text-purple-700 dark:text-purple-300'
-                          : 'bg-gray-50 dark:bg-[#1e1e1e] border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
-                      }`}
-                    >
-                      <span>Start Late</span>
-                      {selectedPreference === 'startLate' && <Check className="w-4 h-4" />}
-                    </button>
-
-                    {/* End Early */}
-                    <button
-                      onClick={() => setSelectedPreference(selectedPreference === 'endEarly' ? null : 'endEarly')}
-                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${
-                        selectedPreference === 'endEarly'
-                          ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-400 dark:border-purple-600 text-purple-700 dark:text-purple-300'
-                          : 'bg-gray-50 dark:bg-[#1e1e1e] border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
-                      }`}
-                    >
-                      <span>End Early</span>
-                      {selectedPreference === 'endEarly' && <Check className="w-4 h-4" />}
-                    </button>
-
-                    {/* Days Off */}
-                    <button
-                      onClick={() => setSelectedPreference(selectedPreference === 'daysOff' ? null : 'daysOff')}
-                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${
-                        selectedPreference === 'daysOff'
-                          ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-400 dark:border-purple-600 text-purple-700 dark:text-purple-300'
-                          : 'bg-gray-50 dark:bg-[#1e1e1e] border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
-                      }`}
-                    >
-                      <span>Days Off</span>
-                      {selectedPreference === 'daysOff' && <Check className="w-4 h-4" />}
-                    </button>
-                  </div>
-
-                  {/* Generate Button */}
-                  <button
-                    onClick={() => {
-                      // TODO: Implement schedule generation
-                      alert('Schedule generation coming soon!');
-                    }}
-                    disabled={selectedCourses.length === 0}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-purple-600/90 dark:bg-purple-600/80 hover:bg-purple-700 dark:hover:bg-purple-700/90 disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:text-gray-500 dark:disabled:text-gray-500 text-white rounded-lg font-semibold transition-all shadow-md hover:shadow-lg disabled:shadow-none disabled:cursor-not-allowed mt-2 backdrop-blur-sm"
-                  >
-                    <Sparkles className="w-4 h-4" />
-                    Generate Schedules
-                  </button>
-                </div>
-              </div>
-            )}
-
             {/* Course Search */}
             <div className="bg-white/70 dark:bg-[#252526]/70 backdrop-blur-xl rounded-xl shadow-lg p-4 border border-gray-200/30 dark:border-gray-700/30 flex-shrink-0">
               <div className="flex items-center gap-2 mb-3">
@@ -661,14 +638,193 @@ export default function Home() {
                 onAddSection={handleAddSection}
                 onRemoveSection={handleRemoveSection}
                 selectedCourses={selectedCourses}
+                mode={scheduleMode}
+                selectedCourseCodes={selectedCourseCodes}
+                onToggleCourseSelection={handleToggleCourseSelection}
               />
             </div>
             </div>
           </div>
 
-          {/* Right side - Timetable - Takes full remaining width */}
-          <div className="flex-1 min-w-0 flex flex-col min-h-0">
-            {/* Timetable - Scrollable area - Full width */}
+          {/* Right side - Preferences + Timetable */}
+          <div className="flex-1 min-w-0 flex flex-col min-h-0 gap-3">
+            {/* Horizontal Preferences Bar - Only in Auto-Generate mode when courses selected */}
+            {scheduleMode === 'auto-generate' && selectedCourseCodes.length > 0 && (
+              <div className="bg-gradient-to-r from-white/80 to-white/70 dark:from-[#252526]/80 dark:to-[#252526]/70 backdrop-blur-xl rounded-2xl shadow-xl p-4 border border-purple-200/50 dark:border-purple-700/30 flex-shrink-0">
+                <div className="flex flex-wrap items-center gap-3">
+                  {/* Selected courses tags */}
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 px-2 py-1 bg-purple-50 dark:bg-purple-950/30 rounded-lg">
+                      <Book className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                      <span className="text-xs font-medium text-purple-700 dark:text-purple-300">
+                        {selectedCourseCodes.length}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {selectedCourseCodes.map(code => (
+                        <div
+                          key={code}
+                          className="group flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-purple-500 to-purple-600 dark:from-purple-600 dark:to-purple-700 rounded-lg shadow-md hover:shadow-lg transition-all"
+                        >
+                          <span className="text-xs font-bold text-white">
+                            {code}
+                          </span>
+                          <button
+                            onClick={() => handleToggleCourseSelection(code)}
+                            className="text-white/80 hover:text-white hover:bg-white/20 rounded-full p-0.5 transition-all"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Divider */}
+                  <div className="h-10 w-px bg-gradient-to-b from-transparent via-purple-300 dark:via-purple-600 to-transparent hidden lg:block"></div>
+
+                  {/* Preferences - Horizontal row */}
+                  <div className="flex flex-wrap items-center gap-2 flex-1">
+                    {[
+                      { 
+                        id: 'shortBreaks', 
+                        label: '⚡ Short Breaks', 
+                        tooltip: 'Minimizes gaps between classes - finish quickly and go home'
+                      },
+                      { 
+                        id: 'longBreaks', 
+                        label: '☕ Long Breaks', 
+                        tooltip: 'Maximizes breaks of 60+ minutes - time for lunch and studying'
+                      },
+                      { 
+                        id: 'consistentStart', 
+                        label: '🎯 Consistent', 
+                        tooltip: 'Classes start at similar times each day - predictable routine'
+                      },
+                      { 
+                        id: 'startLate', 
+                        label: '🌅 Start Late', 
+                        tooltip: 'Classes begin later in the morning - for night owls'
+                      },
+                      { 
+                        id: 'endEarly', 
+                        label: '🌆 End Early', 
+                        tooltip: 'Classes finish earlier in the afternoon - free evenings'
+                      },
+                      { 
+                        id: 'daysOff', 
+                        label: '🗓️ Days Off', 
+                        tooltip: 'Packs classes into fewer days - get full free days'
+                      },
+                    ].map(pref => (
+                      <button
+                        key={pref.id}
+                        onClick={() => setSelectedPreference(selectedPreference === pref.id ? null : pref.id as any)}
+                        title={pref.tooltip}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shadow-sm hover:shadow-md ${
+                          selectedPreference === pref.id
+                            ? 'bg-gradient-to-r from-purple-600 to-purple-700 dark:from-purple-500 dark:to-purple-600 text-white scale-105'
+                            : 'bg-white dark:bg-[#1e1e1e] text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-950/20 border border-gray-200 dark:border-gray-700'
+                        }`}
+                      >
+                        {pref.label.split(' ')[1] + (pref.label.split(' ')[2] ? ' ' + pref.label.split(' ')[2] : '')}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Generate Button */}
+                  <button
+                    onClick={handleGenerateSchedules}
+                    disabled={selectedCourseCodes.length === 0 || isGenerating}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 disabled:from-gray-300 disabled:to-gray-400 dark:disabled:from-gray-700 dark:disabled:to-gray-800 disabled:text-gray-500 dark:disabled:text-gray-500 text-white rounded-xl font-bold transition-all shadow-lg hover:shadow-xl disabled:shadow-none disabled:cursor-not-allowed backdrop-blur-sm text-sm flex-shrink-0 hover:scale-105 active:scale-95"
+                  >
+                    {isGenerating ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4 animate-pulse" />
+                        Generate
+                      </>
+                    )}
+                  </button>
+
+                  {/* Schedule Navigator - Show when schedules are generated */}
+                  {generatedSchedules.length > 0 && (
+                    <div className={`flex items-center gap-2 flex-shrink-0 px-3 py-2 rounded-xl border ${
+                      generatedSchedules.length > 1 
+                        ? 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-green-200 dark:border-green-800'
+                        : 'bg-gradient-to-r from-purple-50 to-purple-50 dark:from-purple-950/20 dark:to-purple-950/20 border-purple-200 dark:border-purple-700'
+                    }`}>
+                      {/* Previous button - Only show if more than 1 schedule */}
+                      {generatedSchedules.length > 1 && (
+                        <button
+                          onClick={() => {
+                            const newIndex = selectedScheduleIndex > 0 ? selectedScheduleIndex - 1 : generatedSchedules.length - 1;
+                            setSelectedScheduleIndex(newIndex);
+                            const schedulesWithColors = assignColorsToSchedule(generatedSchedules[newIndex].sections);
+                            setSelectedCourses(schedulesWithColors);
+                          }}
+                          className="p-2 bg-white dark:bg-[#1e1e1e] rounded-lg hover:bg-green-100 dark:hover:bg-green-900/30 transition-all shadow-sm hover:shadow-md"
+                          title="Previous schedule"
+                        >
+                          <ChevronDown className="w-4 h-4 rotate-90 text-green-600 dark:text-green-400" />
+                        </button>
+                      )}
+
+                      {/* Counter */}
+                      <div className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
+                        <span className="text-sm font-bold text-gray-700 dark:text-gray-300">
+                          {generatedSchedules.length > 1 
+                            ? `${selectedScheduleIndex + 1} / ${generatedSchedules.length}`
+                            : '1 schedule'
+                          }
+                        </span>
+                      </div>
+
+                      {/* Next button - Only show if more than 1 schedule */}
+                      {generatedSchedules.length > 1 && (
+                        <button
+                          onClick={() => {
+                            const newIndex = selectedScheduleIndex < generatedSchedules.length - 1 ? selectedScheduleIndex + 1 : 0;
+                            setSelectedScheduleIndex(newIndex);
+                            const schedulesWithColors = assignColorsToSchedule(generatedSchedules[newIndex].sections);
+                            setSelectedCourses(schedulesWithColors);
+                          }}
+                          className="p-2 bg-white dark:bg-[#1e1e1e] rounded-lg hover:bg-green-100 dark:hover:bg-green-900/30 transition-all shadow-sm hover:shadow-md"
+                          title="Next schedule"
+                        >
+                          <ChevronDown className="w-4 h-4 -rotate-90 text-green-600 dark:text-green-400" />
+                        </button>
+                      )}
+
+                      {/* Divider */}
+                      <div className={`h-6 w-px ${
+                        generatedSchedules.length > 1
+                          ? 'bg-green-300 dark:bg-green-700'
+                          : 'bg-purple-300 dark:bg-purple-700'
+                      }`}></div>
+
+                      {/* Clear button */}
+                      <button
+                        onClick={() => {
+                          setGeneratedSchedules([]);
+                          setSelectedScheduleIndex(0);
+                        }}
+                        className="p-2 bg-white dark:bg-[#1e1e1e] rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-all shadow-sm hover:shadow-md group"
+                        title="Clear schedule"
+                      >
+                        <X className="w-4 h-4 text-red-500 dark:text-red-400 group-hover:scale-110 transition-transform" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Timetable - Scrollable area */}
             <div className="flex-1 overflow-y-auto overflow-x-auto scrollbar-thin scrollbar-thumb-purple-400 dark:scrollbar-thumb-purple-600 scrollbar-track-transparent min-h-0">
               {selectedCourses.length > 0 ? (
                 <TimetableGrid

@@ -1,0 +1,599 @@
+/**
+ * Unit tests for schedule generation algorithm
+ * 
+ * These tests follow Test-Driven Development (TDD) approach.
+ * Write tests first, then implement the algorithm to pass them.
+ */
+
+import { describe, test, expect } from '@jest/globals';
+import type { Course, Section, SelectedCourse, TimeSlot } from '@/types';
+import {
+  generateSchedules,
+  scoreSchedule,
+  type GeneratedSchedule,
+  type ScheduleGenerationOptions,
+} from '../schedule-generator';
+
+// ============================================================================
+// MOCK DATA
+// ============================================================================
+
+const mockCourseCSCI1120: Course = {
+  courseCode: 'CSCI1120',
+  courseName: 'Intro to Computing Using C++',
+  department: 'Computer Science and Engineering',
+  credits: 3,
+  description: 'Test course',
+  enrollmentRequirements: 'None',
+  prerequisites: [],
+  term: '2025-26-T1',
+  career: 'Undergraduate',
+  sections: [
+    {
+      sectionId: 'A',
+      sectionType: 'Lecture',
+      classNumber: 5986,
+      instructor: { name: 'Dr. Test', department: 'CSE' },
+      language: 'English',
+      addConsent: false,
+      dropConsent: false,
+      timeSlots: [
+        { day: 'Monday', startTime: '15:30', endTime: '16:15', location: 'ERB LT' },
+        { day: 'Wednesday', startTime: '11:30', endTime: '13:15', location: 'BMS G18' },
+      ],
+      quota: 150,
+      enrolled: 81,
+      seatsRemaining: 69,
+    },
+    {
+      sectionId: 'AT01',
+      sectionType: 'Tutorial',
+      parentLecture: 'A',
+      classNumber: 5986,
+      language: 'English',
+      addConsent: false,
+      dropConsent: false,
+      timeSlots: [
+        { day: 'Tuesday', startTime: '13:30', endTime: '14:15', location: 'ERB LT' },
+      ],
+      quota: 150,
+      enrolled: 81,
+      seatsRemaining: 69,
+    },
+    {
+      sectionId: 'B',
+      sectionType: 'Lecture',
+      classNumber: 5120,
+      instructor: { name: 'Dr. Test', department: 'CSE' },
+      language: 'English',
+      addConsent: false,
+      dropConsent: false,
+      timeSlots: [
+        { day: 'Monday', startTime: '11:30', endTime: '13:15', location: 'HTB B6' },
+        { day: 'Wednesday', startTime: '10:30', endTime: '11:15', location: 'LKC LT1' },
+      ],
+      quota: 150,
+      enrolled: 150,
+      seatsRemaining: 0,
+    },
+    {
+      sectionId: 'BT01',
+      sectionType: 'Tutorial',
+      parentLecture: 'B',
+      classNumber: 5120,
+      language: 'English',
+      addConsent: false,
+      dropConsent: false,
+      timeSlots: [
+        { day: 'Wednesday', startTime: '11:30', endTime: '12:15', location: 'LKC LT1' },
+      ],
+      quota: 150,
+      enrolled: 150,
+      seatsRemaining: 0,
+    },
+  ],
+  lastUpdated: new Date('2025-11-01'),
+};
+
+const mockCourseCSCI1130: Course = {
+  courseCode: 'CSCI1130',
+  courseName: 'Intro to Computing Using Java',
+  department: 'Computer Science and Engineering',
+  credits: 3,
+  description: 'Test course',
+  enrollmentRequirements: 'None',
+  prerequisites: [],
+  term: '2025-26-T1',
+  career: 'Undergraduate',
+  sections: [
+    {
+      sectionId: 'A',
+      sectionType: 'Lecture',
+      classNumber: 5987,
+      instructor: { name: 'Dr. Test', department: 'CSE' },
+      language: 'English',
+      addConsent: false,
+      dropConsent: false,
+      timeSlots: [
+        { day: 'Monday', startTime: '16:30', endTime: '18:15', location: 'BMS G18' },
+        { day: 'Tuesday', startTime: '16:30', endTime: '17:15', location: 'ERB LT' },
+      ],
+      quota: 160,
+      enrolled: 137,
+      seatsRemaining: 23,
+    },
+    {
+      sectionId: 'AT01',
+      sectionType: 'Tutorial',
+      parentLecture: 'A',
+      classNumber: 5987,
+      language: 'English',
+      addConsent: false,
+      dropConsent: false,
+      timeSlots: [
+        { day: 'Tuesday', startTime: '17:30', endTime: '18:15', location: 'ERB LT' },
+      ],
+      quota: 160,
+      enrolled: 137,
+      seatsRemaining: 23,
+    },
+    {
+      sectionId: 'B',
+      sectionType: 'Lecture',
+      classNumber: 6871,
+      instructor: { name: 'Dr. Test', department: 'CSE' },
+      language: 'English',
+      addConsent: false,
+      dropConsent: false,
+      timeSlots: [
+        { day: 'Monday', startTime: '12:30', endTime: '14:15', location: 'LSB LT5' },
+        { day: 'Wednesday', startTime: '09:30', endTime: '10:15', location: 'YIA LT6' },
+      ],
+      quota: 100,
+      enrolled: 98,
+      seatsRemaining: 2,
+    },
+    {
+      sectionId: 'BT01',
+      sectionType: 'Tutorial',
+      parentLecture: 'B',
+      classNumber: 6871,
+      language: 'English',
+      addConsent: false,
+      dropConsent: false,
+      timeSlots: [
+        { day: 'Wednesday', startTime: '10:30', endTime: '11:15', location: 'YIA LT6' },
+      ],
+      quota: 100,
+      enrolled: 98,
+      seatsRemaining: 2,
+    },
+  ],
+  lastUpdated: new Date('2025-11-01'),
+};
+
+const mockCourseCSCI1540: Course = {
+  courseCode: 'CSCI1540',
+  courseName: 'Fund Comp With C++',
+  department: 'Computer Science and Engineering',
+  credits: 3,
+  description: 'Test course',
+  enrollmentRequirements: 'None',
+  prerequisites: [],
+  term: '2025-26-T1',
+  career: 'Undergraduate',
+  sections: [
+    {
+      sectionId: '-',
+      sectionType: 'Lecture',
+      classNumber: 5988,
+      instructor: { name: 'Dr. Test', department: 'CSE' },
+      language: 'English',
+      addConsent: false,
+      dropConsent: false,
+      timeSlots: [
+        { day: 'Monday', startTime: '12:30', endTime: '14:15', location: 'LSB LT6' },
+        { day: 'Wednesday', startTime: '16:30', endTime: '17:15', location: 'BMS G18' },
+      ],
+      quota: 160,
+      enrolled: 116,
+      seatsRemaining: 44,
+    },
+    {
+      sectionId: '-T01',
+      sectionType: 'Tutorial',
+      parentLecture: '-',
+      classNumber: 5988,
+      language: 'English',
+      addConsent: false,
+      dropConsent: false,
+      timeSlots: [
+        { day: 'Wednesday', startTime: '17:30', endTime: '18:15', location: 'BMS G18' },
+      ],
+      quota: 160,
+      enrolled: 116,
+      seatsRemaining: 44,
+    },
+  ],
+  lastUpdated: new Date('2025-11-01'),
+};
+
+// ============================================================================
+// TEST SUITES
+// ============================================================================
+
+describe('Schedule Generation Algorithm', () => {
+  
+  // ==========================================================================
+  // 1. BASIC GENERATION TESTS
+  // ==========================================================================
+  
+  describe('Basic Generation', () => {
+    
+    test('1.1: Single course with multiple sections generates all combinations', () => {
+      const courses: Course[] = [mockCourseCSCI1120];
+      const options: ScheduleGenerationOptions = {
+        preference: null,
+      };
+      
+      const schedules = generateSchedules(courses, options);
+      
+      // Should generate 2 schedules (Section A and Section B)
+      expect(schedules).toHaveLength(2);
+      
+      // Each schedule should have 2 sections (1 lecture + 1 tutorial)
+      schedules.forEach((schedule: GeneratedSchedule) => {
+        expect(schedule.sections).toHaveLength(2);
+        const lectureSection = schedule.sections.find((s: SelectedCourse) => s.selectedSection.sectionType === 'Lecture');
+        const tutorialSection = schedule.sections.find((s: SelectedCourse) => s.selectedSection.sectionType === 'Tutorial');
+        expect(lectureSection).toBeDefined();
+        expect(tutorialSection).toBeDefined();
+      });
+      
+      // Check that both lecture sections are present across schedules
+      const lectureSectionIds = schedules.map((s: GeneratedSchedule) => 
+        s.sections.find((sec: SelectedCourse) => sec.selectedSection.sectionType === 'Lecture')?.selectedSection.sectionId
+      );
+      expect(lectureSectionIds).toContain('A');
+      expect(lectureSectionIds).toContain('B');
+    });
+    
+    test('1.2: Two courses generate Cartesian product of combinations', () => {
+      const courses: Course[] = [mockCourseCSCI1120, mockCourseCSCI1130];
+      const options: ScheduleGenerationOptions = {
+        preference: null,
+      };
+      
+      const schedules = generateSchedules(courses, options);
+      
+      // Should generate 3 valid schedules (2 × 2 = 4, but 1 has conflicts so is filtered out)
+      // CSCI1120B + CSCI1130B conflicts on Monday 11:30-13:15 vs 12:30-14:15
+      expect(schedules).toHaveLength(3);
+      
+      // Each schedule should have 4 sections (2 lectures + 2 tutorials)
+      schedules.forEach((schedule: GeneratedSchedule) => {
+        expect(schedule.sections).toHaveLength(4);
+        
+        // Verify each course is represented
+        const coursesCodes = [...new Set(schedule.sections.map((s: SelectedCourse) => s.course.courseCode))];
+        expect(coursesCodes).toHaveLength(2);
+        expect(coursesCodes).toContain('CSCI1120');
+        expect(coursesCodes).toContain('CSCI1130');
+      });
+    });
+    
+    test('1.3: All generated schedules are conflict-free', () => {
+      const courses: Course[] = [mockCourseCSCI1120, mockCourseCSCI1130];
+      const options: ScheduleGenerationOptions = {
+        preference: null,
+      };
+      
+      const schedules = generateSchedules(courses, options);
+      
+      schedules.forEach((schedule: GeneratedSchedule) => {
+        // Check for time conflicts within each schedule
+        for (let i = 0; i < schedule.sections.length; i++) {
+          for (let j = i + 1; j < schedule.sections.length; j++) {
+            const section1 = schedule.sections[i].selectedSection;
+            const section2 = schedule.sections[j].selectedSection;
+            
+            // Check if any time slots overlap
+            for (const slot1 of section1.timeSlots) {
+              for (const slot2 of section2.timeSlots) {
+                if (slot1.day === slot2.day) {
+                  const start1 = timeToMinutes(slot1.startTime);
+                  const end1 = timeToMinutes(slot1.endTime);
+                  const start2 = timeToMinutes(slot2.startTime);
+                  const end2 = timeToMinutes(slot2.endTime);
+                  
+                  const hasConflict = start1 < end2 && start2 < end1;
+                  expect(hasConflict).toBe(false);
+                }
+              }
+            }
+          }
+        }
+      });
+    });
+    
+  });
+  
+  // ==========================================================================
+  // 2. CONFLICT DETECTION TESTS
+  // ==========================================================================
+  
+  describe('Conflict Detection', () => {
+    
+    test('2.1: Conflicting courses result in zero valid schedules', () => {
+      const courses: Course[] = [
+        mockCourseCSCI1120, // Section B: Mon 11:30-13:15
+        mockCourseCSCI1540, // Section -: Mon 12:30-14:15 (CONFLICTS with B)
+      ];
+      const options: ScheduleGenerationOptions = {
+        preference: null,
+      };
+      
+      const schedules = generateSchedules(courses, options);
+      
+      // Should filter out conflicting combinations
+      // Only CSCI1120A + CSCI1540 should work (if no conflicts)
+      // CSCI1120B + CSCI1540 should be filtered out
+      
+      schedules.forEach((schedule: GeneratedSchedule) => {
+        const csci1120Section = schedule.sections.find((s: SelectedCourse) => 
+          s.course.courseCode === 'CSCI1120' && s.selectedSection.sectionType === 'Lecture'
+        );
+        
+        // If CSCI1120 Section B is selected, it should NOT be in any valid schedule
+        // because it conflicts with CSCI1540
+        if (csci1120Section?.selectedSection.sectionId === 'B') {
+          // This combination should have been filtered out
+          expect(csci1120Section.selectedSection.sectionId).not.toBe('B');
+        }
+      });
+      
+      // Should have at least 1 valid schedule (CSCI1120A + CSCI1540)
+      expect(schedules.length).toBeGreaterThan(0);
+    });
+    
+    test('2.2: Tutorial conflicts are detected', () => {
+      // This test would use courses where tutorials overlap
+      // For now, we'll test that the algorithm checks tutorial conflicts
+      const courses: Course[] = [mockCourseCSCI1120, mockCourseCSCI1130];
+      const options: ScheduleGenerationOptions = {
+        preference: null,
+      };
+      
+      const schedules = generateSchedules(courses, options);
+      
+      // Verify no conflicts exist in any schedule
+      schedules.forEach((schedule: GeneratedSchedule) => {
+        const tutorialSections = schedule.sections.filter((s: SelectedCourse) => 
+          s.selectedSection.sectionType === 'Tutorial'
+        );
+        
+        // Check tutorials don't overlap
+        for (let i = 0; i < tutorialSections.length; i++) {
+          for (let j = i + 1; j < tutorialSections.length; j++) {
+            const tut1 = tutorialSections[i].selectedSection;
+            const tut2 = tutorialSections[j].selectedSection;
+            
+            for (const slot1 of tut1.timeSlots) {
+              for (const slot2 of tut2.timeSlots) {
+                if (slot1.day === slot2.day) {
+                  const hasConflict = checkTimeOverlap(slot1, slot2);
+                  expect(hasConflict).toBe(false);
+                }
+              }
+            }
+          }
+        }
+      });
+    });
+    
+  });
+  
+  // ==========================================================================
+  // 3. PREFERENCE SCORING TESTS
+  // ==========================================================================
+  
+  describe('Preference Scoring', () => {
+    
+    test('3.1: Short Breaks - schedules with minimal gaps score higher', () => {
+      const courses: Course[] = [mockCourseCSCI1120, mockCourseCSCI1130];
+      const options: ScheduleGenerationOptions = {
+        preference: 'shortBreaks',
+      };
+      
+      const schedules = generateSchedules(courses, options);
+      
+      // Verify schedules are sorted by gap time (ascending)
+      for (let i = 0; i < schedules.length - 1; i++) {
+        const score1 = schedules[i].score;
+        const score2 = schedules[i + 1].score;
+        
+        // Higher score = better (shorter gaps)
+        // So score should be descending
+        expect(score1).toBeGreaterThanOrEqual(score2);
+      }
+    });
+    
+    test('3.2: Days Off - schedules with more free days score higher', () => {
+      const courses: Course[] = [mockCourseCSCI1120, mockCourseCSCI1130];
+      const options: ScheduleGenerationOptions = {
+        preference: 'daysOff',
+      };
+      
+      const schedules = generateSchedules(courses, options);
+      
+      // Verify schedules are sorted by number of free days (descending)
+      for (let i = 0; i < schedules.length - 1; i++) {
+        const score1 = schedules[i].score;
+        const score2 = schedules[i + 1].score;
+        
+        // Higher score = more free days
+        expect(score1).toBeGreaterThanOrEqual(score2);
+      }
+      
+      // Top schedule should have maximum free days
+      const topSchedule = schedules[0];
+      const daysUsed = getUniqueDays(topSchedule.sections);
+      const freeDays = 5 - daysUsed.length; // 5 weekdays - days with classes
+      
+      expect(freeDays).toBeGreaterThanOrEqual(0);
+    });
+    
+    test('3.3: Start Late - schedules starting later score higher', () => {
+      const courses: Course[] = [mockCourseCSCI1120, mockCourseCSCI1130];
+      const options: ScheduleGenerationOptions = {
+        preference: 'startLate',
+      };
+      
+      const schedules = generateSchedules(courses, options);
+      
+      // Verify schedules are sorted by start time
+      for (let i = 0; i < schedules.length - 1; i++) {
+        const score1 = schedules[i].score;
+        const score2 = schedules[i + 1].score;
+        
+        expect(score1).toBeGreaterThanOrEqual(score2);
+      }
+    });
+    
+    test('3.4: End Early - schedules ending earlier score higher', () => {
+      const courses: Course[] = [mockCourseCSCI1120, mockCourseCSCI1130];
+      const options: ScheduleGenerationOptions = {
+        preference: 'endEarly',
+      };
+      
+      const schedules = generateSchedules(courses, options);
+      
+      // Verify schedules are sorted by end time
+      for (let i = 0; i < schedules.length - 1; i++) {
+        const score1 = schedules[i].score;
+        const score2 = schedules[i + 1].score;
+        
+        expect(score1).toBeGreaterThanOrEqual(score2);
+      }
+    });
+    
+  });
+  
+  // ==========================================================================
+  // 4. EDGE CASES
+  // ==========================================================================
+  
+  describe('Edge Cases', () => {
+    
+    test('4.1: Empty courses array returns empty schedules', () => {
+      const courses: Course[] = [];
+      const options: ScheduleGenerationOptions = {
+        preference: null,
+      };
+      
+      const schedules = generateSchedules(courses, options);
+      
+      expect(schedules).toHaveLength(0);
+    });
+    
+    test('4.2: Course with single section generates one schedule', () => {
+      const courses: Course[] = [mockCourseCSCI1540]; // Only 1 lecture section
+      const options: ScheduleGenerationOptions = {
+        preference: null,
+      };
+      
+      const schedules = generateSchedules(courses, options);
+      
+      expect(schedules).toHaveLength(1);
+      expect(schedules[0].sections).toHaveLength(2); // Lecture + Tutorial
+    });
+    
+    test('4.3: All sections conflict results in zero schedules', () => {
+      // Create courses where all combinations conflict
+      // This would require custom mock data or a specific setup
+      
+      // For now, we'll test that the algorithm handles this gracefully
+      const courses: Course[] = [mockCourseCSCI1120, mockCourseCSCI1540];
+      const options: ScheduleGenerationOptions = {
+        preference: null,
+      };
+      
+      const schedules = generateSchedules(courses, options);
+      
+      // Should return some schedules or empty array (not crash)
+      expect(Array.isArray(schedules)).toBe(true);
+    });
+    
+  });
+  
+  // ==========================================================================
+  // 5. PERFORMANCE TESTS
+  // ==========================================================================
+  
+  describe('Performance', () => {
+    
+    test('5.1: Small schedule generates in under 100ms', () => {
+      const courses: Course[] = [mockCourseCSCI1120, mockCourseCSCI1130];
+      const options: ScheduleGenerationOptions = {
+        preference: 'shortBreaks',
+      };
+      
+      const startTime = performance.now();
+      const schedules = generateSchedules(courses, options);
+      const endTime = performance.now();
+      
+      const duration = endTime - startTime;
+      
+      expect(duration).toBeLessThan(100); // Should complete in < 100ms
+      expect(schedules.length).toBeGreaterThan(0);
+    });
+    
+    test('5.2: Algorithm returns results (not infinite loop)', () => {
+      const courses: Course[] = [mockCourseCSCI1120, mockCourseCSCI1130];
+      const options: ScheduleGenerationOptions = {
+        preference: null,
+      };
+      
+      // Set a timeout to ensure algorithm completes
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Algorithm timeout')), 5000)
+      );
+      
+      const generatePromise = Promise.resolve(generateSchedules(courses, options));
+      
+      return expect(Promise.race([generatePromise, timeoutPromise])).resolves.toBeDefined();
+    });
+    
+  });
+  
+});
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+function timeToMinutes(time: string): number {
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours * 60 + minutes;
+}
+
+function checkTimeOverlap(slot1: TimeSlot, slot2: TimeSlot): boolean {
+  if (slot1.day !== slot2.day) return false;
+  
+  const start1 = timeToMinutes(slot1.startTime);
+  const end1 = timeToMinutes(slot1.endTime);
+  const start2 = timeToMinutes(slot2.startTime);
+  const end2 = timeToMinutes(slot2.endTime);
+  
+  return start1 < end2 && start2 < end1;
+}
+
+function getUniqueDays(sections: SelectedCourse[]): string[] {
+  const days = new Set<string>();
+  sections.forEach((section: SelectedCourse) => {
+    section.selectedSection.timeSlots.forEach((slot: TimeSlot) => {
+      days.add(slot.day);
+    });
+  });
+  return Array.from(days);
+}

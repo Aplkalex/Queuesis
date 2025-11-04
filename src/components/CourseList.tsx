@@ -3,7 +3,7 @@
 import { Course, Section, SelectedCourse } from '@/types';
 import { hasAvailableSeats } from '@/lib/schedule-utils';
 import { cn } from '@/lib/utils';
-import { Plus, Trash2, ChevronDown, ChevronRight, Info, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, ChevronRight, Info, AlertCircle, Check } from 'lucide-react';
 import { useState, useMemo } from 'react';
 
 interface CourseListItemProps {
@@ -11,6 +11,9 @@ interface CourseListItemProps {
   onAddSection: (course: Course, section: Section) => void;
   onRemoveSection: (course: Course, section: Section) => void;
   selectedCourses: SelectedCourse[];
+  mode?: 'manual' | 'auto-generate';
+  isSelected?: boolean;
+  onToggleSelection?: (courseCode: string) => void;
 }
 
 function SectionButton({ section, course, isSectionSelected, onAddSection, onRemoveSection }: {
@@ -81,7 +84,15 @@ function SectionButton({ section, course, isSectionSelected, onAddSection, onRem
   );
 }
 
-function CourseListItem({ course, onAddSection, onRemoveSection, selectedCourses }: CourseListItemProps) {
+function CourseListItem({ 
+  course, 
+  onAddSection, 
+  onRemoveSection, 
+  selectedCourses,
+  mode = 'manual',
+  isSelected = false,
+  onToggleSelection
+}: CourseListItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [expandedLectures, setExpandedLectures] = useState<Set<string>>(new Set());
   
@@ -143,8 +154,35 @@ function CourseListItem({ course, onAddSection, onRemoveSection, selectedCourses
             {course.courseName}
           </p>
         </div>
-        <div className="text-[10px] bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded-full font-semibold ml-2 whitespace-nowrap">
-          {course.credits} {course.credits === 1 ? 'credit' : 'credits'}
+        <div className="flex items-center gap-2">
+          <div className="text-[10px] bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded-full font-semibold whitespace-nowrap">
+            {course.credits} {course.credits === 1 ? 'credit' : 'credits'}
+          </div>
+          
+          {/* Quick Add/Remove button in Auto-Generate mode */}
+          {mode === 'auto-generate' && onToggleSelection && (
+            <button
+              onClick={() => onToggleSelection(course.courseCode)}
+              className={cn(
+                "px-3 py-1 rounded-md text-xs font-semibold transition-all flex items-center gap-1",
+                isSelected
+                  ? "bg-purple-600 text-white hover:bg-purple-700"
+                  : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+              )}
+            >
+              {isSelected ? (
+                <>
+                  <Check className="w-3 h-3" />
+                  Selected
+                </>
+              ) : (
+                <>
+                  <Plus className="w-3 h-3" />
+                  Select
+                </>
+              )}
+            </button>
+          )}
         </div>
       </div>
 
@@ -187,7 +225,8 @@ function CourseListItem({ course, onAddSection, onRemoveSection, selectedCourses
         </div>
       )}
 
-      {/* Sections - Hierarchical or flat */}
+      {/* Sections - Only show in Manual mode */}
+      {mode === 'manual' && (
       <div className="space-y-1.5">
         <div className="text-[10px] font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
           {sectionGroups ? 'Lecture & Tutorial Sections' : 'Sections'}
@@ -493,6 +532,7 @@ function CourseListItem({ course, onAddSection, onRemoveSection, selectedCourses
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }
@@ -502,9 +542,20 @@ interface CourseListProps {
   onAddSection: (course: Course, section: Section) => void;
   onRemoveSection: (course: Course, section: Section) => void;
   selectedCourses: SelectedCourse[];
+  mode?: 'manual' | 'auto-generate';
+  selectedCourseCodes?: string[];
+  onToggleCourseSelection?: (courseCode: string) => void;
 }
 
-export function CourseList({ courses, onAddSection, onRemoveSection, selectedCourses }: CourseListProps) {
+export function CourseList({ 
+  courses, 
+  onAddSection, 
+  onRemoveSection, 
+  selectedCourses,
+  mode = 'manual',
+  selectedCourseCodes = [],
+  onToggleCourseSelection
+}: CourseListProps) {
   if (courses.length === 0) {
     return (
       <div className="text-center py-12 text-gray-500 dark:text-gray-400">
@@ -523,6 +574,9 @@ export function CourseList({ courses, onAddSection, onRemoveSection, selectedCou
           onAddSection={onAddSection}
           onRemoveSection={onRemoveSection}
           selectedCourses={selectedCourses}
+          mode={mode}
+          isSelected={selectedCourseCodes.includes(course.courseCode)}
+          onToggleSelection={onToggleCourseSelection}
         />
       ))}
     </div>
