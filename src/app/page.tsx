@@ -9,6 +9,7 @@ import { SearchBar, FilterBar, FilterButton } from '@/components/SearchBar';
 import { BuildingReference } from '@/components/BuildingReference';
 import { BuildingModal } from '@/components/BuildingModal';
 import { CourseDetailsModal } from '@/components/CourseDetailsModal';
+import { SectionSwapModal } from '@/components/SectionSwapModal';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { generateCourseColor, calculateTotalCredits, detectConflicts, hasAvailableSeats, detectNewCourseConflicts } from '@/lib/schedule-utils';
 import { generateSchedules, type GeneratedSchedule } from '@/lib/schedule-generator';
@@ -26,6 +27,7 @@ export default function Home() {
   const [isWarningExiting, setIsWarningExiting] = useState(false);
   const [showDisclaimer, setShowDisclaimer] = useState(true);
   const [selectedCourseDetails, setSelectedCourseDetails] = useState<SelectedCourse | null>(null);
+  const [swapModalCourse, setSwapModalCourse] = useState<SelectedCourse | null>(null);
   const [conflictToast, setConflictToast] = useState<Array<{ course1: string; course2: string }>>([]);
   const [conflictingCourses, setConflictingCourses] = useState<string[]>([]);
   const [selectedTerm, setSelectedTerm] = useState<TermType>('2025-26-T1');
@@ -247,6 +249,86 @@ export default function Home() {
     setConflictingCourses(Array.from(conflictingCodes));
   };
 
+  // Swap lecture section and automatically assign tutorial
+  const handleSwapLectureSection = (courseCode: string, currentLectureId: string, newLectureId: string) => {
+    // Find the course data
+    const courseData = mockCourses.find(c => c.courseCode === courseCode && c.term === selectedTerm);
+    if (!courseData) return;
+
+    // Find the new lecture section
+    const newLecture = courseData.sections.find(s => s.sectionId === newLectureId && s.sectionType === 'Lecture');
+    if (!newLecture) return;
+
+    // Find available tutorials for the new lecture
+    const availableTutorials = courseData.sections.filter(
+      s => s.sectionType === 'Tutorial' && s.parentLecture === newLectureId
+    );
+
+    // Pick a random tutorial (or the first one if only one available)
+    const randomTutorial = availableTutorials.length > 0
+      ? availableTutorials[Math.floor(Math.random() * availableTutorials.length)]
+      : null;
+
+    // Update selected courses
+    setSelectedCourses(prev => {
+      const updated = prev.map(selectedCourse => {
+        if (selectedCourse.course.courseCode === courseCode) {
+          // Check if this is the lecture to swap
+          if (selectedCourse.selectedSection.sectionType === 'Lecture' && 
+              selectedCourse.selectedSection.sectionId === currentLectureId) {
+            return {
+              ...selectedCourse,
+              selectedSection: newLecture,
+            };
+          }
+          // Remove old tutorials for this lecture
+          if (selectedCourse.selectedSection.sectionType === 'Tutorial' && 
+              selectedCourse.selectedSection.parentLecture === currentLectureId) {
+            return null; // Mark for removal
+          }
+        }
+        return selectedCourse;
+      }).filter(Boolean) as SelectedCourse[];
+
+      // Add the new tutorial if available
+      if (randomTutorial) {
+        updated.push({
+          course: courseData,
+          selectedSection: randomTutorial,
+          color: updated.find(c => c.course.courseCode === courseCode)?.color || generateCourseColor(courseCode, []),
+        });
+      }
+
+      return updated;
+    });
+  };
+
+  // Swap tutorial sections (only within same lecture)
+  const handleSwapTutorialSection = (courseCode: string, fromTutorialId: string, toTutorialId: string) => {
+    // Find the course data
+    const courseData = mockCourses.find(c => c.courseCode === courseCode && c.term === selectedTerm);
+    if (!courseData) return;
+
+    // Find the target tutorial section
+    const newTutorial = courseData.sections.find(s => s.sectionId === toTutorialId && s.sectionType === 'Tutorial');
+    if (!newTutorial) return;
+
+    // Update selected courses
+    setSelectedCourses(prev => {
+      return prev.map(selectedCourse => {
+        if (selectedCourse.course.courseCode === courseCode &&
+            selectedCourse.selectedSection.sectionType === 'Tutorial' &&
+            selectedCourse.selectedSection.sectionId === fromTutorialId) {
+          return {
+            ...selectedCourse,
+            selectedSection: newTutorial,
+          };
+        }
+        return selectedCourse;
+      });
+    });
+  };
+
   // Remove section from course list
   const handleRemoveSection = (course: Course, section: Section) => {
     const updatedCourses = selectedCourses.filter(
@@ -419,6 +501,31 @@ export default function Home() {
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  // Handle drag and drop - move a course section to a new day
+  const handleDragEnd = (courseCode: string, sectionId: string, newDay: DayOfWeek) => {
+    setSelectedCourses(prev => {
+      return prev.map(course => {
+        // If this is the dragged course section, update its time slots to the new day
+        if (course.course.courseCode === courseCode && course.selectedSection.sectionId === sectionId) {
+          const updatedTimeSlots = course.selectedSection.timeSlots.map(slot => ({
+            ...slot,
+            day: newDay, // Move all time slots to the new day
+          }));
+
+          return {
+            ...course,
+            selectedSection: {
+              ...course.selectedSection,
+              timeSlots: updatedTimeSlots,
+            },
+          };
+        }
+        
+        return course;
+      });
+    });
   };
 
   // Calculate stats
@@ -860,13 +967,24 @@ export default function Home() {
               {selectedCourses.length > 0 ? (
                 <TimetableGrid
                   selectedCourses={selectedCourses}
-                  onCourseClick={(course) => setSelectedCourseDetails(course)}
+                  onCourseClick={(course) => {
+                    // If lecture, show swap modal; if tutorial, show details modal
+                    if (course.selectedSection.sectionType === 'Lecture') {
+                      setSwapModalCourse(course);
+                    } else {
+                      setSelectedCourseDetails(course);
+                    }
+                  }}
                   onRemoveCourse={(course) => {
                     const index = selectedCourses.indexOf(course);
                     handleRemoveCourse(index);
                   }}
                   onLocationClick={(location) => setSelectedLocation(location)}
                   conflictingCourses={conflictingCourses}
+                  enableDragDrop={true}
+                  onSwapLectures={handleSwapLectureSection}
+                  onSwapTutorials={handleSwapTutorialSection}
+                  availableCourses={mockCourses.filter(c => c.term === selectedTerm)}
                 />
               ) : (
                 <div className="bg-white/70 dark:bg-[#1e1e1e]/70 backdrop-blur-xl rounded-xl shadow-lg p-8 lg:p-12 text-center border border-gray-200/30 dark:border-gray-700/30">
@@ -1018,6 +1136,22 @@ export default function Home() {
         onClose={() => setSelectedCourseDetails(null)}
         onLocationClick={(location) => setSelectedLocation(location)}
       />
+
+      {/* Section Swap Modal */}
+      {swapModalCourse && (
+        <SectionSwapModal
+          course={swapModalCourse.course}
+          currentSection={swapModalCourse.selectedSection}
+          onSwap={(newSectionId) => {
+            handleSwapLectureSection(
+              swapModalCourse.course.courseCode,
+              swapModalCourse.selectedSection.sectionId,
+              newSectionId
+            );
+          }}
+          onClose={() => setSwapModalCourse(null)}
+        />
+      )}
 
       {/* Conflict Toast Notification */}
       {conflictToast.length > 0 && (

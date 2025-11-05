@@ -1,11 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { SelectedCourse, DayOfWeek } from '@/types';
 import { TIMETABLE_CONFIG, WEEKDAYS } from '@/lib/constants';
 import { timeToMinutes, formatTime, hasAvailableSeats } from '@/lib/schedule-utils';
 import { cn } from '@/lib/utils';
-import { X, AlertCircle } from 'lucide-react';
+import { X, AlertCircle, RefreshCw, GripVertical } from 'lucide-react';
+import {
+  DndContext,
+  DragOverlay,
+  useDraggable,
+  useDroppable,
+  DragStartEvent,
+  DragEndEvent,
+} from '@dnd-kit/core';
 
 interface TimetableGridProps {
   selectedCourses: SelectedCourse[];
@@ -13,10 +21,25 @@ interface TimetableGridProps {
   onRemoveCourse?: (course: SelectedCourse) => void;
   onLocationClick?: (location: string) => void;
   conflictingCourses?: string[]; // Array of course codes that have conflicts
+  onSwapLectures?: (courseCode: string, fromLectureId: string, toLectureId: string) => void;
+  onSwapTutorials?: (courseCode: string, fromTutorialId: string, toTutorialId: string) => void;
+  enableDragDrop?: boolean; // Enable drag & drop functionality
+  availableCourses?: any[]; // All available courses for showing alternatives
 }
 
-export function TimetableGrid({ selectedCourses, onCourseClick, onRemoveCourse, onLocationClick, conflictingCourses = [] }: TimetableGridProps) {
+export function TimetableGrid({ 
+  selectedCourses, 
+  onCourseClick, 
+  onRemoveCourse, 
+  onLocationClick, 
+  conflictingCourses = [],
+  onSwapLectures,
+  onSwapTutorials,
+  enableDragDrop = false,
+  availableCourses = [],
+}: TimetableGridProps) {
   const [hoveredCourse, setHoveredCourse] = useState<string | null>(null);
+  const [draggedCourse, setDraggedCourse] = useState<SelectedCourse | null>(null);
   const { startHour, endHour, slotHeight } = TIMETABLE_CONFIG;
   
   // Generate hours array (8 AM to 9 PM)
@@ -48,7 +71,286 @@ export function TimetableGrid({ selectedCourses, onCourseClick, onRemoveCourse, 
     };
   };
 
-  return (
+  // Drag & drop handlers
+  const handleDragStart = (event: DragStartEvent) => {
+    const course = event.active.data.current?.course as SelectedCourse;
+    setDraggedCourse(course);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (!over || !active.data.current || !over.data.current) {
+      setDraggedCourse(null);
+      return;
+    }
+
+    const draggedCourse = active.data.current.course as SelectedCourse;
+    const targetCourse = over.data.current.course as SelectedCourse;
+
+    // Don't swap with itself
+    if (draggedCourse === targetCourse) {
+      setDraggedCourse(null);
+      return;
+    }
+
+    const isSameCourse = draggedCourse.course.courseCode === targetCourse.course.courseCode;
+    const draggedSection = draggedCourse.selectedSection;
+    const targetSection = targetCourse.selectedSection;
+
+    // Lecture swap
+    if (draggedSection.sectionType === 'Lecture' && targetSection.sectionType === 'Lecture') {
+      if (onSwapLectures) {
+        onSwapLectures(
+          draggedCourse.course.courseCode,
+          draggedSection.sectionId,
+          targetSection.sectionId
+        );
+      }
+    }
+    // Tutorial swap (only if same parent lecture)
+    else if (draggedSection.sectionType === 'Tutorial' && targetSection.sectionType === 'Tutorial') {
+      if (isSameCourse && draggedSection.parentLecture === targetSection.parentLecture) {
+        if (onSwapTutorials) {
+          onSwapTutorials(
+            draggedCourse.course.courseCode,
+            draggedSection.sectionId,
+            targetSection.sectionId
+          );
+        }
+      }
+    }
+
+    setDraggedCourse(null);
+  };
+
+  const handleDragCancel = () => {
+    setDraggedCourse(null);
+  };
+
+  // Ghost Lecture Block Component (appears when dragging a lecture)
+  const GhostLectureBlock = memo(({ 
+    lecture, 
+    slot, 
+    day,
+    courseCode,
+    color,
+    getCourseStyle,
+  }: { 
+    lecture: any; 
+    slot: any; 
+    day: string;
+    courseCode: string;
+    color: string;
+    getCourseStyle: (startTime: string, endTime: string, color?: string) => any;
+  }) => {
+    const ghostId = `ghost-${courseCode}-${lecture.sectionId}-${slot.day}-${slot.startTime}`;
+    
+    const { setNodeRef, isOver } = useDroppable({
+      id: ghostId,
+      data: { 
+        course: { 
+          course: { courseCode }, 
+          selectedSection: lecture,
+          color,
+        } 
+      },
+    });
+
+    const style = getCourseStyle(slot.startTime, slot.endTime, color);
+
+    return (
+      <div
+        ref={setNodeRef}
+        className={cn(
+          'absolute left-1 right-1 rounded-lg border-2 border-dashed',
+          'transition-all duration-200',
+          'pointer-events-auto cursor-pointer',
+          'flex flex-col items-center justify-center',
+          'px-1.5 py-1',
+          isOver && 'border-yellow-400 bg-yellow-400/40 scale-[1.03] shadow-xl ring-2 ring-yellow-400/50',
+          !isOver && 'border-purple-400/60 bg-purple-400/10 hover:bg-purple-400/20'
+        )}
+        style={style}
+      >
+        <div className="text-xs font-bold text-purple-900 dark:text-purple-100 text-center">
+          LEC {lecture.sectionId}
+        </div>
+        {lecture.instructor && (
+          <div className="text-[9px] text-purple-800 dark:text-purple-200 text-center truncate max-w-full">
+            {lecture.instructor.name.split(' ').slice(-2).join(' ')}
+          </div>
+        )}
+        {isOver && (
+          <div className="text-[10px] text-yellow-900 dark:text-yellow-100 font-semibold mt-0.5">
+            ↓ Drop here
+          </div>
+        )}
+      </div>
+    );
+  });
+
+  // Draggable Course Block Component
+  const DraggableCourseBlock = memo(({ 
+    selectedCourse, 
+    blockId, 
+    style, 
+    day, 
+    slot,
+    isDraggedCourse,
+  }: { 
+    selectedCourse: SelectedCourse; 
+    blockId: string; 
+    style: any; 
+    day: DayOfWeek; 
+    slot: any;
+    isDraggedCourse: boolean;
+  }) => {
+    const [isLocalHovered, setIsLocalHovered] = useState(false);
+    const uniqueId = `${selectedCourse.course.courseCode}-${selectedCourse.selectedSection.sectionId}-${blockId}`;
+    
+    // Check if there are alternatives to swap to
+    const courseData = availableCourses.find(c => c.courseCode === selectedCourse.course.courseCode);
+    let hasAlternatives = false;
+    
+    if (courseData && enableDragDrop) {
+      if (selectedCourse.selectedSection.sectionType === 'Lecture') {
+        // Count lectures - need at least 2 to enable drag
+        const lectureCount = courseData.sections.filter((s: any) => s.sectionType === 'Lecture').length;
+        hasAlternatives = lectureCount > 1;
+      } else if (selectedCourse.selectedSection.sectionType === 'Tutorial') {
+        // Count tutorials with same parentLecture - need at least 2 to enable drag
+        const tutorialCount = courseData.sections.filter(
+          (s: any) => s.sectionType === 'Tutorial' && s.parentLecture === selectedCourse.selectedSection.parentLecture
+        ).length;
+        hasAlternatives = tutorialCount > 1;
+      }
+    }
+    
+    const isDraggable = enableDragDrop && hasAlternatives;
+    
+    const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+      id: uniqueId,
+      data: { course: selectedCourse },
+      disabled: !isDraggable,
+    });
+
+    const { setNodeRef: setDropRef, isOver } = useDroppable({
+      id: `drop-${uniqueId}`,
+      data: { course: selectedCourse },
+      disabled: !isDraggable,
+    });
+
+    const isFull = !hasAvailableSeats(selectedCourse.selectedSection);
+    const hasConflict = conflictingCourses.includes(selectedCourse.course.courseCode);
+
+    // Check if this is a valid drop target
+    const isValidDropTarget = isOver && draggedCourse && draggedCourse !== selectedCourse && (() => {
+      const draggedSection = draggedCourse.selectedSection;
+      const targetSection = selectedCourse.selectedSection;
+      
+      // Allow lecture to lecture swap
+      if (draggedSection.sectionType === 'Lecture' && targetSection.sectionType === 'Lecture') {
+        return true;
+      }
+      
+      // Allow tutorial to tutorial swap only if same parent lecture
+      if (draggedSection.sectionType === 'Tutorial' && targetSection.sectionType === 'Tutorial') {
+        return draggedCourse.course.courseCode === selectedCourse.course.courseCode &&
+               draggedSection.parentLecture === targetSection.parentLecture;
+      }
+      
+      return false;
+    })();
+
+    return (
+      <div
+        ref={(node) => {
+          setNodeRef(node);
+          setDropRef(node);
+        }}
+        {...attributes}
+        {...listeners}
+        className={cn(
+          'absolute left-1 right-1 rounded-lg cursor-pointer group',
+          'timetable-block-enter',
+          'hover:shadow-xl hover:scale-[1.02]',
+          'text-white flex flex-col',
+          'px-1.5 py-1',
+          'overflow-visible',
+          isFull && 'border-2 border-red-500 dark:border-red-400 shadow-[0_0_0_1px_rgba(239,68,68,0.5)]',
+          hasConflict && 'conflict-pattern border-2 border-red-500',
+          isDragging && 'opacity-30',
+          isValidDropTarget && 'ring-4 ring-yellow-400 scale-105 shadow-2xl',
+          isDraggable && 'cursor-grab active:cursor-grabbing',
+          !isDraggable && enableDragDrop && 'cursor-default',
+        )}
+        style={{
+          ...style,
+          transition: isDragging ? 'opacity 0.2s' : 'top 0.5s cubic-bezier(0.4, 0, 0.2, 1), height 0.5s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease',
+        }}
+        onMouseEnter={() => setIsLocalHovered(true)}
+        onMouseLeave={() => setIsLocalHovered(false)}
+      >
+        {/* Drag handle - only show if draggable */}
+        {isDraggable && (
+          <div className="absolute -left-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <GripVertical className="w-3 h-3 text-white drop-shadow-lg" />
+          </div>
+        )}
+
+        {/* Delete button */}
+        {onRemoveCourse && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemoveCourse(selectedCourse);
+            }}
+            className={cn(
+              'absolute -top-2 -right-2 w-6 h-6 rounded-full',
+              'bg-red-500 hover:bg-red-600 text-white',
+              'flex items-center justify-center shadow-lg',
+              'transition-all transform',
+              'opacity-0 group-hover:opacity-100 scale-0 group-hover:scale-100',
+              'z-[150]'
+            )}
+            title="Remove course"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
+
+        {/* Content */}
+        <div 
+          className="overflow-hidden flex flex-col justify-center h-full relative"
+          onClick={(e) => {
+            if (!isDragging) {
+              onCourseClick?.(selectedCourse);
+            }
+          }}
+        >
+          <div className="flex items-center gap-1">
+            <div className="font-semibold text-xs leading-tight truncate flex-1">
+              {selectedCourse.course.courseCode}
+            </div>
+            {isFull && (
+              <div title="Section is full" className="flex-shrink-0">
+                <AlertCircle className="w-3 h-3 text-red-200" />
+              </div>
+            )}
+          </div>
+          <div className="text-[10px] leading-tight opacity-90 truncate flex items-center gap-1">
+            {selectedCourse.selectedSection.sectionType === 'Lecture' ? 'LEC' : 'TUT'} {selectedCourse.selectedSection.sectionId}
+            {selectedCourse.selectedSection.sectionType === 'Lecture' && (
+              <RefreshCw className="w-3 h-3 opacity-70 group-hover:opacity-100 group-hover:scale-110 transition-all" />
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  });
+
+  const content = (
     <div className="w-full bg-white/60 dark:bg-[#252526]/60 backdrop-blur-xl rounded-xl shadow-xl overflow-hidden border border-gray-200/40 dark:border-gray-700/40">
       <div className="overflow-x-auto">
         <div className="min-w-[320px] sm:min-w-[600px] lg:min-w-0 w-full px-2 py-2 sm:px-3 sm:py-3 lg:px-4 lg:py-3">
@@ -103,78 +405,46 @@ export function TimetableGrid({ selectedCourses, onCourseClick, onRemoveCourse, 
                   .map((slot, slotIdx) => {
                     const style = getCourseStyle(slot.startTime, slot.endTime, selectedCourse.color);
                     const blockId = `${courseIdx}-${slotIdx}-${day}`;
-                    const isHovered = hoveredCourse === blockId;
-                    const isFull = !hasAvailableSeats(selectedCourse.selectedSection);
-                    const hasConflict = conflictingCourses.includes(selectedCourse.course.courseCode);
                     
                     return (
-                      <div
+                      <DraggableCourseBlock
                         key={blockId}
-                        className={cn(
-                          'absolute left-1 right-1 rounded-lg cursor-pointer group',
-                          'timetable-block-enter',
-                          'hover:shadow-xl hover:scale-[1.02]',
-                          'text-white flex flex-col',
-                          // Compact padding for denser layout
-                          'px-1.5 py-1',
-                          // Allow delete button to overflow outside the block
-                          'overflow-visible',
-                          // Red border for full sections
-                          isFull && 'border-2 border-red-500 dark:border-red-400 shadow-[0_0_0_1px_rgba(239,68,68,0.5)]',
-                          // Conflict pattern
-                          hasConflict && 'conflict-pattern border-2 border-red-500'
-                        )}
-                        style={{
-                          ...style,
-                          transition: 'top 0.5s cubic-bezier(0.4, 0, 0.2, 1), height 0.5s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease',
-                        }}
-                        onMouseEnter={() => setHoveredCourse(blockId)}
-                        onMouseLeave={() => setHoveredCourse(null)}
-                      >
-                        {/* Delete button - shows on hover, positioned OUTSIDE the block */}
-                        {onRemoveCourse && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onRemoveCourse(selectedCourse);
-                            }}
-                            className={cn(
-                              'absolute -top-2 -right-2 w-6 h-6 rounded-full',
-                              'bg-red-500 hover:bg-red-600 text-white',
-                              'flex items-center justify-center shadow-lg',
-                              'transition-all transform',
-                              'opacity-0 group-hover:opacity-100 scale-0 group-hover:scale-100',
-                              'z-[150]'
-                            )}
-                            title="Remove course"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-
-                        {/* Compact content - only course code and section type */}
-                        <div 
-                          className="overflow-hidden flex flex-col justify-center h-full"
-                          onClick={() => onCourseClick?.(selectedCourse)}
-                        >
-                          <div className="flex items-center gap-1">
-                            <div className="font-semibold text-xs leading-tight truncate flex-1">
-                              {selectedCourse.course.courseCode}
-                            </div>
-                            {isFull && (
-                              <div title="Section is full" className="flex-shrink-0">
-                                <AlertCircle className="w-3 h-3 text-red-200" />
-                              </div>
-                            )}
-                          </div>
-                          <div className="text-[10px] leading-tight opacity-90 truncate">
-                            {selectedCourse.selectedSection.sectionType === 'Lecture' ? 'LEC' : 'TUT'} {selectedCourse.selectedSection.sectionId}
-                          </div>
-                        </div>
-                      </div>
+                        selectedCourse={selectedCourse}
+                        blockId={blockId}
+                        style={style}
+                        day={day}
+                        slot={slot}
+                        isDraggedCourse={draggedCourse === selectedCourse}
+                      />
                     );
                   })
               )}
+
+              {/* Ghost blocks for alternative lectures when dragging */}
+              {draggedCourse && draggedCourse.selectedSection.sectionType === 'Lecture' && (() => {
+                const courseData = availableCourses.find(c => c.courseCode === draggedCourse.course.courseCode);
+                if (!courseData) return null;
+
+                const alternativeLectures = courseData.sections.filter(
+                  (s: any) => s.sectionType === 'Lecture' && s.sectionId !== draggedCourse.selectedSection.sectionId
+                );
+
+                return alternativeLectures.flatMap((lecture: any) =>
+                  lecture.timeSlots
+                    .filter((slot: any) => slot.day === day)
+                    .map((slot: any, idx: number) => (
+                      <GhostLectureBlock
+                        key={`ghost-${lecture.sectionId}-${idx}-${day}`}
+                        lecture={lecture}
+                        slot={slot}
+                        day={day}
+                        courseCode={draggedCourse.course.courseCode}
+                        color={draggedCourse.color || '#8B5CF6'}
+                        getCourseStyle={getCourseStyle}
+                      />
+                    ))
+                );
+              })()}
             </div>
           ))}
           </div>
@@ -182,4 +452,32 @@ export function TimetableGrid({ selectedCourses, onCourseClick, onRemoveCourse, 
       </div>
     </div>
   );
+
+  // Wrap with DndContext if drag & drop is enabled
+  if (enableDragDrop) {
+    return (
+      <>
+        <DndContext
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          onDragCancel={handleDragCancel}
+        >
+          {content}
+          
+          <DragOverlay>
+            {draggedCourse && (
+              <div className="bg-purple-500 text-white p-2 rounded-lg shadow-xl opacity-90">
+                <div className="font-bold">{draggedCourse.course.courseCode}</div>
+                <div className="text-xs">
+                  {draggedCourse.selectedSection.sectionType} {draggedCourse.selectedSection.sectionId}
+                </div>
+              </div>
+            )}
+          </DragOverlay>
+        </DndContext>
+      </>
+    );
+  }
+
+  return content;
 }
