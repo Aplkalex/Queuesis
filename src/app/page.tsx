@@ -7,7 +7,7 @@ import TimetableGrid from '@/components/TimetableGrid';
 import { CourseList } from '@/components/CourseList';
 import { SearchBar, FilterBar, FilterButton } from '@/components/SearchBar';
 import { BuildingReference } from '@/components/BuildingReference';
-import { BuildingModal } from '@/components/BuildingModal';
+import BuildingModal from '@/components/BuildingModal';
 import { CourseDetailsModal } from '@/components/CourseDetailsModal';
 import { SectionSwapModal } from '@/components/SectionSwapModal';
 import { ThemeToggle } from '@/components/ThemeToggle';

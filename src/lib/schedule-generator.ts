@@ -149,8 +149,20 @@ export function generateSchedules(
     };
   });
 
-  // Step 4: Sort by score (descending) and limit results
-  scoredSchedules.sort((a, b) => b.score - a.score);
+  // Step 4: Sort by days off (descending) first, then by score (descending)
+  // This ensures schedules with maximum free days appear at the top
+  scoredSchedules.sort((a, b) => {
+    // Primary sort: More free days first
+    const freeDaysA = a.metadata?.freeDays ?? 0;
+    const freeDaysB = b.metadata?.freeDays ?? 0;
+    
+    if (freeDaysB !== freeDaysA) {
+      return freeDaysB - freeDaysA;
+    }
+    
+    // Secondary sort: Higher score (preference + seat availability)
+    return b.score - a.score;
+  });
   
   return scoredSchedules.slice(0, maxResults);
 }

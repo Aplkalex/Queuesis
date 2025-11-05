@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { X, MapPin, ExternalLink } from 'lucide-react';
+import { X, MapPin, ExternalLink, Building2 } from 'lucide-react';
 import { formatLocation, getBuildingCode } from '@/lib/location-utils';
 
 interface BuildingModalProps {
@@ -10,132 +10,95 @@ interface BuildingModalProps {
   onClose: () => void;
 }
 
-export function BuildingModal({ location, isOpen, onClose }: BuildingModalProps) {
+export default function BuildingModal({ isOpen, onClose, location }: BuildingModalProps) {
   if (!isOpen) return null;
 
-  const fullLocation = formatLocation(location);
+  // Parse the location to extract building code and full name
   const buildingCode = getBuildingCode(location);
-  
-  // Close on escape key
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    
-    if (isOpen) {
-      document.addEventListener('keydown', handleEscape);
-      return () => document.removeEventListener('keydown', handleEscape);
-    }
-  }, [isOpen, onClose]);
-  
-  // Prevent body scroll when modal is open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-      return () => {
-        document.body.style.overflow = 'unset';
-      };
-    }
-  }, [isOpen]);
-  
-  // Generate Google Maps search URL for CUHK building
-  const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`CUHK ${fullLocation}`)}`;
-  
-  // Use a simple gradient placeholder instead of external image
-  const buildingImageStyle = {
-    background: `linear-gradient(135deg, #4B2E83 0%, #6B46A8 100%)`,
-  };
+  const fullLocation = formatLocation(location);
+  const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${fullLocation} CUHK`)}`;
 
   return (
     <>
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-black/50 dark:bg-black/70 z-[9998] animate-in fade-in duration-200"
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 transition-opacity"
         onClick={onClose}
       />
       
       {/* Modal */}
-      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] w-full max-w-2xl mx-4 animate-in zoom-in-95 fade-in duration-200">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden">
+      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl overflow-hidden border border-gray-200 dark:border-gray-700 animate-in fade-in zoom-in duration-200">
           {/* Header */}
-          <div className="relative bg-gradient-to-r from-purple-600 to-purple-800 dark:from-purple-700 dark:to-purple-900 px-6 py-4 flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-white">{fullLocation}</h2>
-              <p className="text-purple-100 text-sm mt-1">Building Code: {buildingCode}</p>
-            </div>
+          <div className="relative bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/30 border-b border-purple-200 dark:border-purple-800/50 p-4">
             <button
               onClick={onClose}
-              className="text-white hover:bg-white/20 rounded-full p-2 transition-colors"
-              aria-label="Close"
+              className="absolute top-3 right-3 p-1.5 hover:bg-white/60 dark:hover:bg-black/20 rounded-lg transition-colors"
             >
-              <X className="w-6 h-6" />
+              <X className="w-4 h-4 text-gray-600 dark:text-gray-400" />
             </button>
+            
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 bg-purple-600 rounded-lg">
+                <Building2 className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-sm font-medium text-gray-600 dark:text-gray-400">Building</h2>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-bold text-gray-900 dark:text-gray-100">{buildingCode}</span>
+                </div>
+              </div>
+            </div>
+            
+            <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">{fullLocation}</p>
           </div>
 
           {/* Content */}
-          <div className="p-6">
-            {/* Building Image */}
-            <div className="mb-6 rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-600">
-              <div 
-                style={buildingImageStyle}
-                className="w-full h-64 flex items-center justify-center text-white"
-              >
-                <div className="text-center">
-                  <div className="text-6xl font-bold mb-2">{buildingCode}</div>
-                  <div className="text-lg opacity-90">Building Photo Coming Soon</div>
-                </div>
+          <div className="p-4 space-y-4">
+            {/* Location Details */}
+            <div className="space-y-2.5">
+              <div className="flex items-center gap-2 mb-2">
+                <MapPin className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Location Details</h3>
               </div>
-              <div className="bg-gray-50 dark:bg-gray-700 px-4 py-2 text-sm text-gray-600 dark:text-gray-300 text-center">
-                📸 Real photos will be added in the next update
-              </div>
-            </div>
-
-            {/* Location Info */}
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                Location Details
-              </h3>
-              <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Building Name:</span>
-                  <span className="font-medium text-gray-900 dark:text-gray-100">{fullLocation}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Building Code:</span>
+              
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                  <span className="text-gray-600 dark:text-gray-400">Building Code</span>
                   <span className="font-medium text-gray-900 dark:text-gray-100">{buildingCode}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Room:</span>
-                  <span className="font-medium text-gray-900 dark:text-gray-100">{location.split(' ').slice(1).join(' ') || 'N/A'}</span>
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-gray-600 dark:text-gray-400">Building Name</span>
+                  <span className="font-medium text-gray-900 dark:text-gray-100 text-right">{fullLocation}</span>
                 </div>
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-3">
+            <div className="flex gap-2 pt-2">
               <a
                 href={mapUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-1 flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-4 rounded-lg transition-colors"
+                className="flex-1 flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium py-2.5 px-4 rounded-lg transition-colors"
               >
-                <MapPin className="w-5 h-5" />
-                Open in Google Maps
-                <ExternalLink className="w-4 h-4" />
+                <MapPin className="w-4 h-4" />
+                Open in Maps
+                <ExternalLink className="w-3.5 h-3.5" />
               </a>
               <button
                 onClick={onClose}
-                className="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-lg transition-colors"
+                className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg transition-colors"
               >
                 Close
               </button>
             </div>
 
-            {/* Additional Info */}
-            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-800">
-                💡 <strong>Tip:</strong> Click "Open in Google Maps" to get directions to this building on campus.
+            {/* Tip */}
+            <div className="flex items-start gap-2 p-3 bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800/50 rounded-lg">
+              <span className="text-base">💡</span>
+              <p className="text-xs text-purple-900 dark:text-purple-200 leading-relaxed">
+                Click <span className="font-semibold">"Open in Maps"</span> to get directions to this building on campus.
               </p>
             </div>
           </div>
