@@ -3,6 +3,7 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { Course, Section, SelectedCourse, TermType, SchedulePreferences, DayOfWeek } from '@/types';
 import { mockCourses } from '@/data/mock-courses';
+import { testCourses } from '@/data/test-courses';
 import TimetableGrid from '@/components/TimetableGrid';
 import { CourseList } from '@/components/CourseList';
 import { SearchBar, FilterBar, FilterButton } from '@/components/SearchBar';
@@ -14,7 +15,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { generateCourseColor, calculateTotalCredits, detectConflicts, hasAvailableSeats, detectNewCourseConflicts } from '@/lib/schedule-utils';
 import { generateSchedules, type GeneratedSchedule } from '@/lib/schedule-generator';
 import { DISCLAIMER } from '@/lib/constants';
-import { Calendar, Book, AlertCircle, Trash2, X, Hand, Sparkles, ChevronDown, ChevronUp, ChevronRight, Clock, Coffee, Check } from 'lucide-react';
+import { Calendar, Book, AlertCircle, Trash2, X, Hand, Sparkles, ChevronDown, ChevronUp, ChevronRight, Clock, Coffee, Check, FlaskConical } from 'lucide-react';
 import ConflictToast from '@/components/ConflictToast';
 
 export default function Home() {
@@ -63,6 +64,9 @@ export default function Home() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedScheduleIndex, setSelectedScheduleIndex] = useState<number>(0);
 
+  // Test mode state
+  const [isTestMode, setIsTestMode] = useState(false);
+
   // Sync selectedCourseCodes with selectedCourses (for manual mode)
   // This keeps the preferences bar in sync when switching modes
   useEffect(() => {
@@ -79,8 +83,11 @@ export default function Home() {
     '2025-26-Summer': '2025-26 Summer'
   };
 
+  // Choose courses based on test mode
+  const activeCourses = isTestMode ? testCourses : mockCourses;
+
   // Filter courses based on search, department, and selected term
-  const filteredCourses = mockCourses.filter((course) => {
+  const filteredCourses = activeCourses.filter((course) => {
     const matchesSearch = 
       course.courseCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
       course.courseName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -96,7 +103,7 @@ export default function Home() {
   });
 
   // Get unique departments
-  const departments = Array.from(new Set(mockCourses.map(c => c.department)));
+  const departments = Array.from(new Set(activeCourses.map(c => c.department)));
 
   // Memoize available courses for TimetableGrid to prevent re-renders
   const availableCourses = useMemo(() => 
@@ -534,7 +541,7 @@ export default function Home() {
     // In auto-generate mode, use selectedCourseCodes
     // In manual mode, use selectedCourses
     const coursesToGenerate = scheduleMode === 'auto-generate'
-      ? mockCourses.filter(c => selectedCourseCodes.includes(c.courseCode) && c.term === selectedTerm)
+      ? activeCourses.filter(c => selectedCourseCodes.includes(c.courseCode) && c.term === selectedTerm)
       : Array.from(
           new Map(selectedCourses.map(sc => [sc.course.courseCode, sc.course])).values()
         );
@@ -623,6 +630,38 @@ export default function Home() {
             {/* Stats and Theme Toggle - Compact */}
             <div className="flex items-center gap-2 sm:gap-3 lg:gap-4">
               <ThemeToggle />
+              
+              {/* Test Mode Toggle */}
+              <button
+                onClick={() => {
+                  const newTestMode = !isTestMode;
+                  setIsTestMode(newTestMode);
+                  // Switch to T2 when entering test mode (test courses are in T2)
+                  if (newTestMode) {
+                    setSelectedTerm('2025-26-T2');
+                  } else {
+                    setSelectedTerm('2025-26-T1');
+                  }
+                  // Clear selections when switching modes
+                  setSelectedCourses([]);
+                  setSelectedCourseCodes([]);
+                  setGeneratedSchedules([]);
+                  setSelectedScheduleIndex(0);
+                }}
+                className={`
+                  flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium
+                  transition-all duration-200 shadow-sm
+                  ${isTestMode 
+                    ? 'bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600' 
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                  }
+                `}
+                title={isTestMode ? 'Switch to Normal Mode' : 'Switch to Test Mode (Large Courses)'}
+              >
+                <FlaskConical className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Test</span>
+              </button>
+
               <div className="text-center">
                 <div className="text-base sm:text-lg lg:text-xl font-bold text-purple-600 dark:text-purple-400">{selectedCourses.length}</div>
                 <div className="text-[9px] sm:text-[10px] text-gray-500 dark:text-gray-400">Courses</div>
@@ -645,6 +684,16 @@ export default function Home() {
       <main className="flex-1 w-full px-2 sm:px-4 lg:px-6 py-2 lg:py-3 bg-transparent overflow-hidden flex flex-col">
         {/* Warnings container - only takes space when needed */}
         <div className="max-w-[1600px] w-full mx-auto space-y-2 mb-2 flex-shrink-0">
+          {/* Test Mode Banner */}
+          {isTestMode && (
+            <div className="bg-emerald-50/70 dark:bg-emerald-900/10 backdrop-blur-md border border-emerald-200/50 dark:border-emerald-800/30 rounded-lg p-2 flex items-center gap-2 shadow-lg">
+              <FlaskConical className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+              <p className="text-[11px] sm:text-xs text-emerald-800 dark:text-emerald-300 flex-1">
+                <strong>Test Mode Active:</strong> Using large test courses (ECON 102, STAT 305, CPSC 221) to evaluate auto-scheduler performance with many sections.
+              </p>
+            </div>
+          )}
+          
           {/* Disclaimer - Compact and dismissible */}
           {showDisclaimer && (
             <div className="bg-amber-50/70 dark:bg-amber-900/10 backdrop-blur-md border border-amber-200/50 dark:border-amber-800/30 rounded-lg p-2 flex items-center gap-2 shadow-lg">
