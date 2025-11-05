@@ -188,7 +188,11 @@ export function TimetableGrid({
       }
 
       // Clear swapping flag after a brief delay to allow the swap to complete
-      setTimeout(() => setIsSwapping(false), 0);
+      setTimeout(() => {
+        setIsSwapping(false);
+        // Reset drag detection flag after a short delay
+        setTimeout(() => setHasActuallyDragged(false), 100);
+      }, 0);
     });
   };
 
@@ -362,7 +366,7 @@ export function TimetableGrid({
           setDropRef(node);
         }}
         {...attributes}
-        {...listeners}
+        {...(isDraggable ? listeners : {})}
         className={cn(
           'absolute left-1 right-1 rounded-lg cursor-pointer group',
           !isSwappingProp && 'timetable-block-enter',

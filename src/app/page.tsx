@@ -309,6 +309,15 @@ export default function Home() {
         });
       }
 
+      // Recalculate conflicts after swap
+      const allConflicts = detectConflicts(updated);
+      const conflictingCodes = new Set<string>();
+      allConflicts.forEach(conflict => {
+        conflictingCodes.add(conflict.course1.course.courseCode);
+        conflictingCodes.add(conflict.course2.course.courseCode);
+      });
+      setConflictingCourses(Array.from(conflictingCodes));
+
       return updated;
     });
   }, [selectedTerm]);
@@ -325,7 +334,7 @@ export default function Home() {
 
     // Update selected courses
     setSelectedCourses(prev => {
-      return prev.map(selectedCourse => {
+      const updated = prev.map(selectedCourse => {
         if (selectedCourse.course.courseCode === courseCode &&
             selectedCourse.selectedSection.sectionType === 'Tutorial' &&
             selectedCourse.selectedSection.sectionId === fromTutorialId) {
@@ -336,6 +345,17 @@ export default function Home() {
         }
         return selectedCourse;
       });
+
+      // Recalculate conflicts after swap
+      const allConflicts = detectConflicts(updated);
+      const conflictingCodes = new Set<string>();
+      allConflicts.forEach(conflict => {
+        conflictingCodes.add(conflict.course1.course.courseCode);
+        conflictingCodes.add(conflict.course2.course.courseCode);
+      });
+      setConflictingCourses(Array.from(conflictingCodes));
+
+      return updated;
     });
   }, [selectedTerm]);
 
@@ -873,129 +893,108 @@ export default function Home() {
 
           {/* Right side - Preferences + Timetable */}
           <div className="flex-1 min-w-0 flex flex-col min-h-0 gap-3">
-            {/* Horizontal Preferences Bar - Only in Auto-Generate mode when courses selected */}
+            {/* Compact Preferences Bar - Only in Auto-Generate mode when courses selected */}
             {scheduleMode === 'auto-generate' && selectedCourseCodes.length > 0 && (
-              <div className="bg-gradient-to-r from-white/80 to-white/70 dark:from-[#252526]/80 dark:to-[#252526]/70 backdrop-blur-xl rounded-2xl shadow-xl p-4 border border-purple-200/50 dark:border-purple-700/30 flex-shrink-0">
-                <div className="flex flex-wrap items-center gap-3">
-                  {/* Selected courses tags */}
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1.5 px-2 py-1 bg-purple-50 dark:bg-purple-950/30 rounded-lg">
-                      <Book className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                      <span className="text-xs font-medium text-purple-700 dark:text-purple-300">
-                        {selectedCourseCodes.length}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {selectedCourseCodes.map(code => (
-                        <div
-                          key={code}
-                          className="group flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-purple-500 to-purple-600 dark:from-purple-600 dark:to-purple-700 rounded-lg shadow-md hover:shadow-lg transition-all"
-                        >
-                          <span className="text-xs font-bold text-white">
-                            {code}
-                          </span>
-                          <button
-                            onClick={() => handleToggleCourseSelection(code)}
-                            className="text-white/80 hover:text-white hover:bg-white/20 rounded-full p-0.5 transition-all"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
+              <div className="bg-white/90 dark:bg-[#252526]/90 backdrop-blur-xl rounded-xl shadow-lg p-2.5 border border-gray-200/50 dark:border-gray-700/30 flex-shrink-0">
+                <div className="flex items-center gap-2">
+                  {/* Course Count Badge */}
+                  <div className="flex items-center gap-1 px-2 py-1 bg-purple-100 dark:bg-purple-900/30 rounded-md flex-shrink-0">
+                    <Book className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                    <span className="text-xs font-bold text-purple-700 dark:text-purple-300">
+                      {selectedCourseCodes.length}
+                    </span>
                   </div>
 
-                  {/* Divider */}
-                  <div className="h-10 w-px bg-gradient-to-b from-transparent via-purple-300 dark:via-purple-600 to-transparent hidden lg:block"></div>
+                  {/* Compact Course Pills - Scrollable with better sizing */}
+                  <div className="flex gap-1 overflow-x-auto scrollbar-none max-w-[300px] lg:max-w-[400px]">
+                    {selectedCourseCodes.map(code => (
+                      <div
+                        key={code}
+                        className="group flex items-center gap-1 px-2 py-1 bg-purple-600 dark:bg-purple-700 rounded-md whitespace-nowrap flex-shrink-0"
+                      >
+                        <span className="text-[10px] font-bold text-white">
+                          {code}
+                        </span>
+                        <button
+                          onClick={() => handleToggleCourseSelection(code)}
+                          className="text-white/70 hover:text-white hover:bg-white/20 rounded-full p-0.5 transition-all"
+                        >
+                          <X className="w-2.5 h-2.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
 
-                  {/* Preferences - Horizontal row */}
-                  <div className="flex flex-wrap items-center gap-2 flex-1">
+                  {/* Compact Preferences - Buttons with hover text */}
+                  <div className="flex gap-1 flex-1 justify-center">
                     {[
-                      { 
-                        id: 'shortBreaks', 
-                        label: '⚡ Short Breaks', 
-                        tooltip: 'Minimizes gaps between classes - finish quickly and go home'
-                      },
-                      { 
-                        id: 'longBreaks', 
-                        label: '☕ Long Breaks', 
-                        tooltip: 'Maximizes breaks of 60+ minutes - time for lunch and studying'
-                      },
-                      { 
-                        id: 'consistentStart', 
-                        label: '🎯 Consistent', 
-                        tooltip: 'Classes start at similar times each day - predictable routine'
-                      },
-                      { 
-                        id: 'startLate', 
-                        label: '🌅 Start Late', 
-                        tooltip: 'Classes begin later in the morning - for night owls'
-                      },
-                      { 
-                        id: 'endEarly', 
-                        label: '🌆 End Early', 
-                        tooltip: 'Classes finish earlier in the afternoon - free evenings'
-                      },
-                      { 
-                        id: 'daysOff', 
-                        label: '🗓️ Days Off', 
-                        tooltip: 'Packs classes into fewer days - get full free days'
-                      },
+                      { id: 'shortBreaks', icon: '⚡', label: 'Short Breaks' },
+                      { id: 'longBreaks', icon: '☕', label: 'Long Breaks' },
+                      { id: 'consistentStart', icon: '🎯', label: 'Consistent' },
+                      { id: 'startLate', icon: '🌅', label: 'Start Late' },
+                      { id: 'endEarly', icon: '🌆', label: 'End Early' },
+                      { id: 'daysOff', icon: '🗓️', label: 'Days Off' },
                     ].map(pref => (
                       <button
                         key={pref.id}
                         onClick={() => setSelectedPreference(selectedPreference === pref.id ? null : pref.id as any)}
-                        title={pref.tooltip}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shadow-sm hover:shadow-md ${
+                        className={`group relative px-2 py-1.5 rounded-lg text-xs transition-all flex items-center gap-1 ${
                           selectedPreference === pref.id
-                            ? 'bg-gradient-to-r from-purple-600 to-purple-700 dark:from-purple-500 dark:to-purple-600 text-white scale-105'
-                            : 'bg-white dark:bg-[#1e1e1e] text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-950/20 border border-gray-200 dark:border-gray-700'
+                            ? 'bg-purple-600 dark:bg-purple-500 text-white shadow-md'
+                            : 'bg-gray-100 dark:bg-[#1e1e1e] hover:bg-gray-200 dark:hover:bg-[#2d2d30] border border-gray-200 dark:border-gray-700'
                         }`}
                       >
-                        {pref.label.split(' ')[1] + (pref.label.split(' ')[2] ? ' ' + pref.label.split(' ')[2] : '')}
+                        <span className="text-sm">{pref.icon}</span>
+                        <span className={`text-[10px] font-medium whitespace-nowrap transition-all ${
+                          selectedPreference === pref.id 
+                            ? 'opacity-100 max-w-20' 
+                            : 'opacity-0 max-w-0 group-hover:opacity-100 group-hover:max-w-20'
+                        }`}>
+                          {pref.label}
+                        </span>
                       </button>
                     ))}
                   </div>
 
-                  {/* Exclude Full Sections Toggle */}
-                  <div className="flex items-center justify-between gap-3 px-3 py-2 bg-white/50 dark:bg-[#1e1e1e]/50 backdrop-blur-sm rounded-lg border border-gray-200 dark:border-gray-700">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Skip full sections
+                  {/* Skip Full Sections Toggle */}
+                  <div className="flex items-center gap-2 px-2 py-1.5 bg-white/50 dark:bg-[#1e1e1e]/50 backdrop-blur-sm rounded-lg border border-gray-200 dark:border-gray-700 flex-shrink-0">
+                    <span className="text-[10px] font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                      Skip full
                     </span>
                     <button
                       onClick={() => setExcludeFullSections(!excludeFullSections)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
+                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-300 ${
                         excludeFullSections 
                           ? 'bg-purple-600 dark:bg-purple-500' 
                           : 'bg-gray-300 dark:bg-gray-600'
                       }`}
                       role="switch"
                       aria-checked={excludeFullSections}
-                      title="When ON: strictly exclude full sections. When OFF: prefer available sections but allow full sections if needed."
+                      title={excludeFullSections ? "Skip full sections: ON" : "Skip full sections: OFF"}
                     >
                       <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-300 ${
-                          excludeFullSections ? 'translate-x-6' : 'translate-x-1'
+                        className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform duration-300 ${
+                          excludeFullSections ? 'translate-x-5' : 'translate-x-0.5'
                         }`}
                       />
                     </button>
                   </div>
 
-                  {/* Generate Button */}
+                  {/* Compact Generate Button */}
                   <button
                     onClick={handleGenerateSchedules}
                     disabled={selectedCourseCodes.length === 0 || isGenerating}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 disabled:from-gray-300 disabled:to-gray-400 dark:disabled:from-gray-700 dark:disabled:to-gray-800 disabled:text-gray-500 dark:disabled:text-gray-500 text-white rounded-xl font-bold transition-all shadow-lg hover:shadow-xl disabled:shadow-none disabled:cursor-not-allowed backdrop-blur-sm text-sm flex-shrink-0 hover:scale-105 active:scale-95"
+                    className="flex items-center gap-1.5 px-3 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white rounded-lg font-bold transition-all shadow-md hover:shadow-lg disabled:shadow-none disabled:cursor-not-allowed text-xs flex-shrink-0"
                   >
                     {isGenerating ? (
                       <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        Generating...
+                        <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span className="hidden sm:inline">Gen...</span>
                       </>
                     ) : (
                       <>
-                        <Sparkles className="w-4 h-4 animate-pulse" />
-                        Generate
+                        <Sparkles className="w-3 h-3" />
+                        <span className="hidden sm:inline">Generate</span>
                       </>
                     )}
                   </button>
