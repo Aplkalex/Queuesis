@@ -418,7 +418,27 @@ export function hasAvailableSeats(section: { quota: number; enrolled: number }):
  * Calculate total credits for selected courses
  */
 export function calculateTotalCredits(courses: SelectedCourse[]): number {
-  return courses.reduce((total, course) => total + course.course.credits, 0);
+  const seen = new Set<string>();
+
+  return courses.reduce((total, selected) => {
+    const code = selected.course.courseCode;
+    if (seen.has(code)) {
+      return total;
+    }
+    seen.add(code);
+    return total + (selected.course.credits ?? 0);
+  }, 0);
+}
+
+/**
+ * Count distinct courses in the current selection (ignores tutorial/lab sections).
+ */
+export function countUniqueCourses(courses: SelectedCourse[]): number {
+  const seen = new Set<string>();
+  courses.forEach(({ course }) => {
+    seen.add(course.courseCode);
+  });
+  return seen.size;
 }
 
 /**

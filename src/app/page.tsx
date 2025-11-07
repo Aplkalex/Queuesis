@@ -12,7 +12,7 @@ import BuildingModal from '@/components/BuildingModal';
 import { CourseDetailsModal } from '@/components/CourseDetailsModal';
 import { SectionSwapModal } from '@/components/SectionSwapModal';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { generateCourseColor, calculateTotalCredits, detectConflicts, hasAvailableSeats, detectNewCourseConflicts } from '@/lib/schedule-utils';
+import { generateCourseColor, calculateTotalCredits, detectConflicts, hasAvailableSeats, detectNewCourseConflicts, countUniqueCourses } from '@/lib/schedule-utils';
 import { generateSchedules, type GeneratedSchedule } from '@/lib/schedule-generator';
 import { DISCLAIMER } from '@/lib/constants';
 import { Calendar, Book, AlertCircle, Trash2, X, Hand, Sparkles, ChevronDown, ChevronUp, ChevronRight, Clock, /* Coffee, Check, */ FlaskConical } from 'lucide-react';
@@ -760,6 +760,7 @@ export default function Home() {
 
   // Calculate stats
   const totalCredits = calculateTotalCredits(selectedCourses);
+  const uniqueCourseCount = countUniqueCourses(selectedCourses);
   const conflicts = detectConflicts(selectedCourses);
 
   return (
@@ -818,7 +819,7 @@ export default function Home() {
               </button>
 
               <div className="text-center">
-                <div className="text-base sm:text-lg lg:text-xl font-bold text-purple-600 dark:text-purple-400">{selectedCourses.length}</div>
+                <div className="text-base sm:text-lg lg:text-xl font-bold text-purple-600 dark:text-purple-400">{uniqueCourseCount}</div>
                 <div className="text-[9px] sm:text-[10px] text-gray-500 dark:text-gray-400">Courses</div>
               </div>
               <div className="text-center hidden sm:block">
@@ -954,7 +955,7 @@ export default function Home() {
                 </div>
                 {!isScheduleCollapsed && selectedCourses.length > 0 && (
                   <div className="text-xs text-gray-600 dark:text-gray-400">
-                    {selectedCourses.length} course{selectedCourses.length !== 1 ? 's' : ''} • {calculateTotalCredits(selectedCourses)} credits
+                    {uniqueCourseCount} course{uniqueCourseCount !== 1 ? 's' : ''} • {calculateTotalCredits(selectedCourses)} credits
                   </div>
                 )}
               </div>
@@ -1454,7 +1455,7 @@ export default function Home() {
             </div>
             
             <p className="text-gray-600 dark:text-gray-300 mb-2">
-              Switching terms will clear your current schedule with <span className="font-semibold text-gray-900 dark:text-white">{selectedCourses.length} course{selectedCourses.length !== 1 ? 's' : ''}</span>.
+              Switching terms will clear your current schedule with <span className="font-semibold text-gray-900 dark:text-white">{uniqueCourseCount} course{uniqueCourseCount !== 1 ? 's' : ''}</span>.
             </p>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
               You can switch back to {termNames[selectedTerm]} later to create a new schedule.
