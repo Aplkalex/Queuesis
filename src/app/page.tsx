@@ -668,6 +668,8 @@ export default function Home() {
             const currentSchedule = updatedSchedules[selectedScheduleIndex];
             const schedulesWithColors = assignColorsToSchedule(currentSchedule.sections);
             setSelectedCourses(schedulesWithColors);
+            updateConflicts(schedulesWithColors);
+            setConflictToast([]);
           }
         }
         
@@ -734,8 +736,12 @@ export default function Home() {
       if (schedules.length > 0) {
         const schedulesWithColors = assignColorsToSchedule(schedules[0].sections);
         setSelectedCourses(schedulesWithColors);
+        updateConflicts(schedulesWithColors);
+        setConflictToast([]);
       } else {
         alert('No valid schedules found! Try selecting different courses or changing your preference.');
+        updateConflicts([]);
+        setConflictToast([]);
       }
 
       console.log(`✨ Generated ${schedules.length} valid schedules`);
@@ -1297,6 +1303,8 @@ export default function Home() {
                             setSelectedScheduleIndex(newIndex);
                             const schedulesWithColors = assignColorsToSchedule(generatedSchedules[newIndex].sections);
                             setSelectedCourses(schedulesWithColors);
+                            updateConflicts(schedulesWithColors);
+                            setConflictToast([]);
                           }}
                           className="p-2 bg-white dark:bg-[#1e1e1e] rounded-lg hover:bg-green-100 dark:hover:bg-green-900/30 transition-all shadow-sm hover:shadow-md"
                           title="Previous schedule"
@@ -1323,6 +1331,8 @@ export default function Home() {
                             setSelectedScheduleIndex(newIndex);
                             const schedulesWithColors = assignColorsToSchedule(generatedSchedules[newIndex].sections);
                             setSelectedCourses(schedulesWithColors);
+                            updateConflicts(schedulesWithColors);
+                            setConflictToast([]);
                           }}
                           className="p-2 bg-white dark:bg-[#1e1e1e] rounded-lg hover:bg-green-100 dark:hover:bg-green-900/30 transition-all shadow-sm hover:shadow-md"
                           title="Next schedule"

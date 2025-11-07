@@ -14,18 +14,6 @@ type CourseColorShades = {
 };
 
 const PRIMARY_COURSE_COLOR_SETS: Record<string, CourseColorShades> = {
-  imperial_red: {
-    DEFAULT: '#f94144',
-    100: '#3d0203',
-    200: '#7b0406',
-    300: '#b80609',
-    400: '#f5080c',
-    500: '#f94144',
-    600: '#fa696b',
-    700: '#fc8e90',
-    800: '#fdb4b5',
-    900: '#fed9da',
-  },
   taupe: {
     DEFAULT: '#463f3a',
     100: '#0e0d0c',
@@ -49,30 +37,6 @@ const PRIMARY_COURSE_COLOR_SETS: Record<string, CourseColorShades> = {
     700: '#b9b3b0',
     800: '#d0ccca',
     900: '#e8e6e5',
-  },
-  silver: {
-    DEFAULT: '#bcb8b1',
-    100: '#282622',
-    200: '#4f4b44',
-    300: '#777165',
-    400: '#9c958a',
-    500: '#bcb8b1',
-    600: '#cac7c1',
-    700: '#d8d5d1',
-    800: '#e5e3e0',
-    900: '#f2f1f0',
-  },
-  isabelline: {
-    DEFAULT: '#f4f3ee',
-    100: '#3b3726',
-    200: '#756e4d',
-    300: '#a8a17a',
-    400: '#cfcab5',
-    500: '#f4f3ee',
-    600: '#f7f6f3',
-    700: '#f9f8f6',
-    800: '#fbfbf9',
-    900: '#fdfdfc',
   },
   melon: {
     DEFAULT: '#e0afa0',
@@ -110,18 +74,6 @@ const PRIMARY_COURSE_COLOR_SETS: Record<string, CourseColorShades> = {
     800: '#b0e0d1',
     900: '#d8efe8',
   },
-  dark_cyan: {
-    DEFAULT: '#4d908e',
-    100: '#0f1d1c',
-    200: '#1f3938',
-    300: '#2e5654',
-    400: '#3d7270',
-    500: '#4d908e',
-    600: '#68aeab',
-    700: '#8ec2c0',
-    800: '#b3d6d5',
-    900: '#d9ebea',
-  },
   paynes_gray: {
     DEFAULT: '#577590',
     100: '#11171d',
@@ -133,18 +85,6 @@ const PRIMARY_COURSE_COLOR_SETS: Record<string, CourseColorShades> = {
     700: '#96acc0',
     800: '#b9c8d5',
     900: '#dce3ea',
-  },
-  cerulean: {
-    DEFAULT: '#277da1',
-    100: '#081920',
-    200: '#103140',
-    300: '#174a60',
-    400: '#1f6380',
-    500: '#277da1',
-    600: '#37a1ce',
-    700: '#69b8db',
-    800: '#9bd0e7',
-    900: '#cde7f3',
   },
 };
 
@@ -186,16 +126,16 @@ const SECONDARY_COURSE_COLOR_SETS: Record<string, CourseColorShades> = {
     900: '#e5c3fc',
   },
   chrysler_blue: {
-    DEFAULT: '#560bad',
-    100: '#110223',
-    200: '#230445',
-    300: '#340768',
-    400: '#45098a',
-    500: '#560bad',
-    600: '#750fea',
-    700: '#9747f3',
-    800: '#ba84f7',
-    900: '#dcc2fb',
+    DEFAULT: '#a65656',
+    100: '#220d0d',
+    200: '#441a1a',
+    300: '#662828',
+    400: '#874545',
+    500: '#a65656',
+    600: '#c17c7c',
+    700: '#d6a3a3',
+    800: '#e9c8c8',
+    900: '#f7e6e6',
   },
   zaffre: {
     DEFAULT: '#3a0ca3',
@@ -233,18 +173,6 @@ const SECONDARY_COURSE_COLOR_SETS: Record<string, CourseColorShades> = {
     800: '#b4c1f8',
     900: '#dae0fc',
   },
-  chefchaouen_blue: {
-    DEFAULT: '#4895ef',
-    100: '#051d39',
-    200: '#0a3b72',
-    300: '#0f58ac',
-    400: '#1475e5',
-    500: '#4895ef',
-    600: '#6dabf2',
-    700: '#91c0f5',
-    800: '#b6d5f9',
-    900: '#daeafc',
-  },
   vivid_sky_blue: {
     DEFAULT: '#4cc9f0',
     100: '#052e3a',
@@ -261,6 +189,7 @@ const SECONDARY_COURSE_COLOR_SETS: Record<string, CourseColorShades> = {
 
 const PRIMARY_COURSE_COLORS = Object.values(PRIMARY_COURSE_COLOR_SETS).map((shades) => shades.DEFAULT);
 const SECONDARY_COURSE_COLORS = Object.values(SECONDARY_COURSE_COLOR_SETS).map((shades) => shades.DEFAULT);
+export const COURSE_COLOR_POOL = [...PRIMARY_COURSE_COLORS, ...SECONDARY_COURSE_COLORS];
 
 /**
  * Convert time string (HH:MM) to minutes since midnight
@@ -387,23 +316,19 @@ export function formatTime(time: string): string {
  * Uses courseCode hash to ensure consistent unique colors
  */
 export function generateCourseColor(courseCode: string, usedColors: string[]): string {
-  for (const color of PRIMARY_COURSE_COLORS) {
-    if (!usedColors.includes(color)) {
-      return color;
-    }
+  const availableColors = COURSE_COLOR_POOL.filter((color) => !usedColors.includes(color));
+
+  if (availableColors.length > 0) {
+    const randomIndex = Math.floor(Math.random() * availableColors.length);
+    return availableColors[randomIndex];
   }
-  for (const color of SECONDARY_COURSE_COLORS) {
-    if (!usedColors.includes(color)) {
-      return color;
-    }
-  }
-  
+
   // If all colors used, generate hash-based color
   let hash = 0;
   for (let i = 0; i < courseCode.length; i++) {
     hash = courseCode.charCodeAt(i) + ((hash << 5) - hash);
   }
-  const fallbackPalette = PRIMARY_COURSE_COLORS.concat(SECONDARY_COURSE_COLORS);
+  const fallbackPalette = COURSE_COLOR_POOL;
   return fallbackPalette[Math.abs(hash) % fallbackPalette.length];
 }
 
@@ -455,6 +380,10 @@ export function detectNewCourseConflicts(
   console.log('   Time slots:', newCourse.selectedSection.timeSlots);
 
   for (const existingCourse of existingCourses) {
+    if (existingCourse.course.courseCode === newCourse.course.courseCode) {
+      continue;
+    }
+
     console.log('  Against:', existingCourse.course.courseCode, existingCourse.selectedSection.sectionId);
     console.log('    Time slots:', existingCourse.selectedSection.timeSlots);
     

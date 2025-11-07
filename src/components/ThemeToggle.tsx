@@ -5,8 +5,8 @@ import { Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
 const BUTTON_CLASSES =
-  'p-2 rounded-lg bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 transition-colors';
-const ICON_CLASSES = 'w-5 h-5';
+  'p-2 rounded-lg border border-gray-200 bg-gray-100 hover:bg-gray-200 dark:border-transparent dark:bg-gray-700 dark:hover:bg-gray-600 transition-colors';
+const ICON_CLASSES = 'w-5 h-5 drop-shadow-sm';
 
 export function ThemeToggle() {
   const [mounted, setMounted] = useState(false);
@@ -33,7 +33,7 @@ export function ThemeToggle() {
         disabled
         aria-label="Toggle theme"
       >
-        <Sun className={`${ICON_CLASSES} text-yellow-500`} aria-hidden />
+  <Sun className={`${ICON_CLASSES} text-amber-400`} aria-hidden />
       </button>
     );
   }
@@ -47,9 +47,9 @@ export function ThemeToggle() {
       aria-label={toggleLabel}
     >
       {isDark ? (
-        <Sun className={`${ICON_CLASSES} text-yellow-500`} aria-hidden />
+        <Sun className={`${ICON_CLASSES} text-amber-400`} aria-hidden />
       ) : (
-        <Moon className={`${ICON_CLASSES} text-blue-200`} aria-hidden />
+        <Moon className={`${ICON_CLASSES} text-indigo-500`} aria-hidden />
       )}
     </button>
   );

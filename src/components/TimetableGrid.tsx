@@ -259,6 +259,7 @@ export function TimetableGrid({
     // Check if swapping would cause conflicts
     const wouldCauseConflict = selectedCourses.some(selected => {
       if (selected === draggedCourse || selected === targetCourse) return false;
+      if (selected.course.courseCode === draggedCourse.course.courseCode) return false;
       
       return selected.selectedSection.timeSlots.some(slot1 =>
         targetSection.timeSlots.some(slot2 =>

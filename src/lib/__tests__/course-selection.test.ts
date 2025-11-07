@@ -3,6 +3,7 @@ import {
   getActiveLectureId,
   removeDependentSectionsForLecture,
   removeLectureAndDependents,
+  detectNewCourseConflicts,
 } from '../schedule-utils';
 import { Course, Section, SelectedCourse } from '@/types';
 
@@ -96,8 +97,35 @@ const otherCourse: Course = {
   career: 'Undergraduate',
 };
 
+const overlappingLecture: Section = {
+  sectionId: 'Y',
+  sectionType: 'Lecture',
+  timeSlots: [
+    { day: 'Monday', startTime: '09:30', endTime: '10:30' },
+  ],
+  quota: 50,
+  enrolled: 45,
+  seatsRemaining: 5,
+};
+
+const overlappingCourse: Course = {
+  courseCode: 'CONFLICT2000',
+  courseName: 'Conflicting Course',
+  department: 'Testing Department',
+  credits: 3,
+  sections: [overlappingLecture],
+  term: '2025-26-T1',
+  career: 'Undergraduate',
+};
+
 const makeSelection = (section: Section, color?: string): SelectedCourse => ({
   course: baseCourse,
+  selectedSection: section,
+  color,
+});
+
+const makeOtherSelection = (course: Course, section: Section, color?: string): SelectedCourse => ({
+  course,
   selectedSection: section,
   color,
 });
@@ -168,5 +196,29 @@ describe('course selection helpers', () => {
     expect(
       result.some((sc) => sc.course.courseCode === otherCourse.courseCode)
     ).toBe(true);
+  });
+
+  it('does not flag conflicts against sections from the same course', () => {
+    const existing: SelectedCourse[] = [makeSelection(lectureB)];
+
+    const conflicts = detectNewCourseConflicts(
+      makeSelection(lectureA),
+      existing
+    );
+
+    expect(conflicts).toHaveLength(0);
+  });
+
+  it('flags conflicts against different courses with overlapping time slots', () => {
+    const existing: SelectedCourse[] = [
+      makeOtherSelection(overlappingCourse, overlappingLecture),
+    ];
+
+    const conflicts = detectNewCourseConflicts(
+      makeSelection(lectureA),
+      existing
+    );
+
+    expect(conflicts).toEqual(['CONFLICT2000']);
   });
 });
