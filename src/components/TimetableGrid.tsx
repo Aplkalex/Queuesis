@@ -30,8 +30,9 @@ interface TimetableGridProps {
 }
 
 const DEFAULT_COURSE_COLOR = '#8B5CF6';
-const PIXEL_GLASS_TEXTURE =
-  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='6'%3E%3Crect width='6' height='6' fill='%23FFFFFF1F'/%3E%3Crect x='0' y='0' width='1' height='1' fill='%23FFFFFF5A'/%3E%3Crect x='3' y='3' width='1' height='1' fill='%23FFFFFF36'/%3E%3C/svg%3E";
+// Old glass texture - commented out for cleaner modern look
+// const PIXEL_GLASS_TEXTURE =
+//   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Crect width='8' height='8' fill='%23FFFFFF28'/%3E%3Crect x='0' y='0' width='2' height='2' fill='%23FFFFFF70'/%3E%3Crect x='4' y='4' width='2' height='2' fill='%23FFFFFF50'/%3E%3Crect x='2' y='6' width='1' height='1' fill='%23FFFFFF40'/%3E%3Crect x='6' y='2' width='1' height='1' fill='%23FFFFFF40'/%3E%3C/svg%3E";
 
 type CourseStyle = CSSProperties & {
   '--course-glow'?: string;
@@ -79,16 +80,17 @@ const buildGlassPalette = (hexColor?: string) => {
   const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
   const prefersDarkText = luminance > 0.55;
 
-  const surfaceSubtle = `rgba(${r}, ${g}, ${b}, ${prefersDarkText ? 0.12 : 0.2})`;
-  const surface = `rgba(${r}, ${g}, ${b}, ${prefersDarkText ? 0.2 : 0.32})`;
-  const surfaceActive = `rgba(${r}, ${g}, ${b}, ${prefersDarkText ? 0.3 : 0.45})`;
-  const border = `rgba(${r}, ${g}, ${b}, ${prefersDarkText ? 0.38 : 0.55})`;
-  const borderSoft = `rgba(${r}, ${g}, ${b}, ${prefersDarkText ? 0.24 : 0.38})`;
-  const glow = `rgba(${r}, ${g}, ${b}, ${prefersDarkText ? 0.28 : 0.46})`;
-  const text = prefersDarkText ? 'rgba(36, 40, 52, 0.9)' : 'rgba(255, 255, 255, 0.95)';
+  // Enhanced opacity for better visibility and frosted glass effect
+  const surfaceSubtle = `rgba(${r}, ${g}, ${b}, ${prefersDarkText ? 0.25 : 0.35})`;
+  const surface = `rgba(${r}, ${g}, ${b}, ${prefersDarkText ? 0.4 : 0.5})`;
+  const surfaceActive = `rgba(${r}, ${g}, ${b}, ${prefersDarkText ? 0.5 : 0.65})`;
+  const border = `rgba(${r}, ${g}, ${b}, ${prefersDarkText ? 0.6 : 0.75})`;
+  const borderSoft = `rgba(${r}, ${g}, ${b}, ${prefersDarkText ? 0.4 : 0.55})`;
+  const glow = `rgba(${r}, ${g}, ${b}, ${prefersDarkText ? 0.45 : 0.6})`;
+  const text = prefersDarkText ? 'rgba(20, 25, 35, 0.95)' : 'rgba(255, 255, 255, 0.98)';
   const textShadow = prefersDarkText
-    ? '0 1px 2px rgba(255, 255, 255, 0.52)'
-    : '0 2px 6px rgba(15, 23, 42, 0.55)';
+    ? '0 1px 3px rgba(255, 255, 255, 0.65)'
+    : '0 2px 8px rgba(0, 0, 0, 0.65)';
 
   return {
     surfaceSubtle,
@@ -293,9 +295,6 @@ export function TimetableGrid({
       borderStyle: 'dashed',
       borderColor: palette.borderSoft,
       backgroundColor: isOver ? palette.surfaceActive : palette.surfaceSubtle,
-      backgroundImage: `url(${PIXEL_GLASS_TEXTURE})`,
-      backgroundSize: '6px 6px',
-      backgroundBlendMode: 'soft-light',
       boxShadow: isOver
         ? `0 28px 48px -30px ${palette.glow}`
         : `0 18px 36px -32px ${palette.glow}`,
@@ -449,25 +448,24 @@ export function TimetableGrid({
         {...attributes}
         {...(isDraggable ? listeners : {})}
         className={cn(
-          'absolute left-1 right-1 rounded-xl cursor-pointer group',
-          'flex flex-col px-1.5 py-1.5 overflow-visible border backdrop-blur-2xl',
-          'transition-[transform,box-shadow,opacity] duration-200 ease-out',
-          'hover:scale-[1.03] hover:shadow-[0_28px_45px_-30px_var(--course-glow)]',
-          'shadow-[0_22px_38px_-32px_var(--course-glow)]',
-          isFull && 'border-2 border-red-500/80 dark:border-red-400/80 shadow-[0_0_0_1px_rgba(239,68,68,0.55)] backdrop-blur-3xl',
-          hasConflict && 'border-2 border-yellow-500/80 dark:border-yellow-400/80 ring-2 ring-yellow-500/40',
+          'absolute left-1 right-1 rounded-lg cursor-pointer group',
+          'flex flex-col px-2 py-1.5 overflow-visible border backdrop-blur-xl',
+          'shadow-sm hover:shadow-md',
+          'transition-all duration-200 ease-out',
+          'hover:scale-[1.02]',
+          isFull && 'border-red-500/90 dark:border-red-400/90 ring-1 ring-red-500/30',
+          hasConflict && 'border-yellow-500/90 dark:border-yellow-400/90 ring-1 ring-yellow-500/30',
           isDragging && 'opacity-0',
-          isValidDropTarget && 'ring-4 ring-yellow-400/70 scale-105 shadow-2xl animate-pulse',
+          isValidDropTarget && 'ring-2 ring-yellow-400/80 scale-105 shadow-lg animate-pulse',
           isDraggable && 'cursor-grab active:cursor-grabbing',
           !isDraggable && enableDragDrop && 'cursor-default',
         )}
         style={{
           ...style,
           backgroundImage: hasConflict
-            ? `repeating-linear-gradient(135deg, rgba(250, 204, 21, 0.34) 0px, rgba(250, 204, 21, 0.14) 12px, transparent 12px, transparent 24px), url(${PIXEL_GLASS_TEXTURE})`
-            : `url(${PIXEL_GLASS_TEXTURE})`,
-          backgroundSize: hasConflict ? 'auto, 6px 6px' : '6px 6px',
-          backgroundBlendMode: hasConflict ? 'normal, soft-light' : 'soft-light',
+            ? `repeating-linear-gradient(135deg, rgba(250, 204, 21, 0.28) 0px, rgba(250, 204, 21, 0.08) 12px, transparent 12px, transparent 24px)`
+            : undefined,
+          backgroundSize: hasConflict ? 'auto' : undefined,
           borderColor: isFull
             ? 'rgba(244, 63, 94, 0.88)'
             : hasConflict
@@ -578,15 +576,12 @@ export function TimetableGrid({
   });
 
   const gridTemplateColumns = `70px repeat(${displayDays.length}, minmax(0, 1fr))`;
-  const pixelGlassStyle: CSSProperties = {
-    backgroundImage: `url(${PIXEL_GLASS_TEXTURE})`,
-    backgroundSize: '8px 8px',
-    backgroundBlendMode: 'soft-light',
-  };
+  // Clean modern style without texture - just subtle shadows and borders
+  const pixelGlassStyle: CSSProperties = {};
 
   const content = (
     <div
-      className="relative w-full rounded-3xl border border-white/50 bg-white/70 shadow-[0_45px_85px_-58px_rgba(59,130,246,0.35)] backdrop-blur-[28px] dark:border-white/12 dark:bg-slate-950/55 dark:shadow-[0_45px_90px_-58px_rgba(15,23,42,0.7)]"
+      className="relative w-full rounded-2xl border border-gray-200/60 bg-white/80 shadow-lg backdrop-blur-xl dark:border-gray-700/50 dark:bg-slate-900/80 dark:shadow-2xl"
       style={pixelGlassStyle}
     >
       <div className="overflow-x-auto">
@@ -622,7 +617,7 @@ export function TimetableGrid({
             {displayDays.map((day) => (
               <div
                 key={day}
-                className="relative rounded-2xl border overflow-hidden transition-all duration-300 backdrop-blur-2xl border-white/45 bg-white/55 hover:border-white/70 hover:shadow-[0_32px_58px_-35px_rgba(59,130,246,0.35)] dark:border-white/12 dark:bg-slate-950/55 dark:hover:border-white/20 dark:hover:shadow-[0_32px_58px_-35px_rgba(15,23,42,0.65)]"
+                className="relative rounded-xl border overflow-hidden transition-all duration-200 backdrop-blur-sm border-gray-200/50 bg-gray-50/30 hover:border-gray-300/60 hover:bg-gray-50/40 dark:border-gray-700/40 dark:bg-slate-800/20 dark:hover:border-gray-600/50 dark:hover:bg-slate-800/30"
                 style={{
                   ...pixelGlassStyle,
                   height: `${slotHeight * hours.length}px`,
@@ -632,7 +627,7 @@ export function TimetableGrid({
                 {hours.slice(1).map((hour, idx) => (
                   <div
                     key={hour}
-                    className="absolute w-full border-t border-gray-100/50 dark:border-gray-800/50"
+                    className="absolute w-full border-t border-gray-200/60 dark:border-gray-600/40"
                     style={{ top: `${(idx + 1) * slotHeight}px` }}
                   />
                 ))}
@@ -734,9 +729,6 @@ export function TimetableGrid({
                   className="p-3 rounded-xl border shadow-2xl backdrop-blur-2xl"
                   style={{
                     backgroundColor: palette.surfaceActive,
-                    backgroundImage: `url(${PIXEL_GLASS_TEXTURE})`,
-                    backgroundSize: '8px 8px',
-                    backgroundBlendMode: 'soft-light',
                     borderColor: palette.border,
                     color: palette.text,
                     textShadow: palette.textShadow,

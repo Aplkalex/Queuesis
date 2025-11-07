@@ -666,7 +666,11 @@ export default function Home() {
           new Map(selectedCourses.map(sc => [sc.course.courseCode, sc.course])).values()
         );
 
-    if (coursesToGenerate.length === 0) return;
+    // Prevent generation if no courses are selected
+    if (coursesToGenerate.length === 0) {
+      alert('Please select at least one course before generating schedules.');
+      return;
+    }
 
     setIsGenerating(true);
 
@@ -1168,7 +1172,7 @@ export default function Home() {
                             : 'bg-gray-100 dark:bg-[#1e1e1e] hover:bg-gray-200 dark:hover:bg-[#2d2d30] border border-gray-200 dark:border-gray-700'
                         }`}
                       >
-                        <span className="text-sm">{pref.icon}</span>
+                        <span className="text-sm leading-none">{pref.icon}</span>
                         <span className={`text-[10px] font-medium whitespace-nowrap transition-all ${
                           selectedPreference === pref.id 
                             ? 'opacity-100 max-w-20' 
@@ -1207,7 +1211,7 @@ export default function Home() {
                   {/* Compact Generate Button */}
                   <button
                     onClick={handleGenerateSchedules}
-                    disabled={selectedCourseCodes.length === 0 || isGenerating}
+                    disabled={(scheduleMode === 'auto-generate' ? selectedCourseCodes.length === 0 : selectedCourses.length === 0) || isGenerating}
                     className="flex items-center gap-1.5 px-3 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white rounded-lg font-bold transition-all shadow-md hover:shadow-lg disabled:shadow-none disabled:cursor-not-allowed text-xs flex-shrink-0"
                   >
                     {isGenerating ? (
