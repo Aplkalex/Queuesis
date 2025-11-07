@@ -12,7 +12,7 @@ interface BuildingModalProps {
   appearance?: 'frosted' | 'modern';
 }
 
-export default function BuildingModal({ isOpen, onClose, location, appearance = 'modern' }: BuildingModalProps) {
+export default function BuildingModal({ isOpen, onClose, location, appearance: _appearance = 'modern' }: BuildingModalProps) {
   const [rendered, setRendered] = useState(isOpen);
   const [visible, setVisible] = useState(false);
 
@@ -50,44 +50,35 @@ export default function BuildingModal({ isOpen, onClose, location, appearance = 
   const mapQuery = hasRoom ? fullName : buildingName;
   const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${mapQuery} CUHK`)}`;
 
-  const isFrosted = appearance === 'frosted';
-  const overlayClass = isFrosted ? 'bg-black/45 backdrop-blur-md' : 'bg-black/60';
+  // Always use the frosted glass presentation for a consistent transparent look across modes.
+  void _appearance;
+  const overlayClass = 'bg-black/45 backdrop-blur-md';
   const containerClass = cn(
     'relative overflow-hidden rounded-2xl border transition-all duration-300',
     'shadow-[0_32px_90px_-48px_rgba(15,23,42,0.55)]',
-    isFrosted
-      ? 'bg-white/55 dark:bg-white/[0.08] backdrop-blur-[28px] border-white/30 dark:border-white/[0.1]'
-      : 'bg-white/98 dark:bg-[#101421] border-gray-200/80 dark:border-white/[0.08]'
+    'bg-white/55 dark:bg-white/[0.08] backdrop-blur-[28px] border-white/30 dark:border-white/[0.1]'
   );
 
   const headerClass = cn(
     'relative flex items-start gap-4 p-6 pb-5 border-b',
-    isFrosted
-      ? 'border-white/30 dark:border-white/[0.08] bg-white/20 dark:bg-white/[0.05]'
-      : 'border-gray-200/80 dark:border-white/[0.06] bg-white/60 dark:bg-white/[0.02] backdrop-blur-[8px]'
+    'border-white/30 dark:border-white/[0.08] bg-white/20 dark:bg-white/[0.05]'
   );
 
   const detailCardClass = cn(
     'rounded-2xl border p-4 sm:p-5 transition-colors',
-    isFrosted
-      ? 'border-purple-200/40 dark:border-purple-200/15 bg-purple-500/12 dark:bg-purple-500/14 backdrop-blur-[26px]'
-      : 'border-gray-200/70 dark:border-white/[0.06] bg-white/70 dark:bg-white/[0.03]'
+    'border-purple-200/40 dark:border-purple-200/15 bg-purple-500/12 dark:bg-purple-500/14 backdrop-blur-[26px]'
   );
 
   const primaryButtonClass = cn(
     'flex-1 inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all',
     'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-500',
-    isFrosted
-      ? 'bg-purple-500/90 text-white shadow-[0_22px_46px_-22px_rgba(111,66,193,0.55)] hover:bg-purple-500/80 dark:bg-purple-500/70 dark:hover:bg-purple-500/60 backdrop-blur-md'
-      : 'bg-purple-600 text-white shadow-[0_18px_32px_-18px_rgba(111,66,193,0.6)] hover:bg-purple-500 dark:bg-purple-500 dark:hover:bg-purple-400 hover:shadow-[0_22px_44px_-20px_rgba(111,66,193,0.7)]'
+    'bg-purple-500/90 text-white shadow-[0_22px_46px_-22px_rgba(111,66,193,0.55)] hover:bg-purple-500/80 dark:bg-purple-500/70 dark:hover:bg-purple-500/60 backdrop-blur-md'
   );
 
   const secondaryButtonClass = cn(
     'inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold transition-all',
     'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-400',
-    isFrosted
-      ? 'bg-white/40 hover:bg-white/55 text-slate-700 dark:text-slate-200 dark:bg-white/[0.08] dark:hover:bg-white/[0.12]'
-      : 'bg-gray-100 hover:bg-gray-200 text-slate-700 dark:bg-[#1f2535] dark:hover:bg-[#262d42] dark:text-slate-200'
+    'bg-white/40 hover:bg-white/55 text-slate-700 dark:text-slate-200 dark:bg-white/[0.08] dark:hover:bg-white/[0.12]'
   );
 
   return (
@@ -119,12 +110,6 @@ export default function BuildingModal({ isOpen, onClose, location, appearance = 
             visible ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-3 scale-[0.97] opacity-0'
           )}
         >
-          {!isFrosted && (
-            <span
-              className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-purple-500/40 via-fuchsia-400/50 to-sky-400/40"
-              aria-hidden
-            />
-          )}
           {/* Header */}
           <div className={headerClass}>
             <button
@@ -136,9 +121,7 @@ export default function BuildingModal({ isOpen, onClose, location, appearance = 
             </button>
 
             <div className={cn('flex h-12 w-12 items-center justify-center rounded-xl',
-              isFrosted
-                ? 'bg-purple-500/90 text-white shadow-[0_20px_42px_-22px_rgba(111,66,193,0.55)] backdrop-blur-sm'
-                : 'bg-purple-600 text-white shadow-[0_22px_42px_-22px_rgba(111,66,193,0.45)]'
+              'bg-purple-500/90 text-white shadow-[0_20px_42px_-22px_rgba(111,66,193,0.55)] backdrop-blur-sm'
             )}>
               <Building2 className="w-5 h-5" />
             </div>
@@ -158,9 +141,7 @@ export default function BuildingModal({ isOpen, onClose, location, appearance = 
               <div className="flex items-center gap-3 mb-4">
                 <span className={cn(
                   'flex h-8 w-8 items-center justify-center rounded-lg',
-                  isFrosted
-                    ? 'bg-purple-500/18 text-purple-600 dark:text-purple-200 dark:bg-purple-500/14 backdrop-blur-sm'
-                    : 'bg-purple-100 text-purple-600 dark:bg-purple-900/50 dark:text-purple-200'
+                  'bg-purple-500/18 text-purple-600 dark:text-purple-200 dark:bg-purple-500/14 backdrop-blur-sm'
                 )}>
                   <MapPin className="w-4 h-4" />
                 </span>
@@ -209,9 +190,7 @@ export default function BuildingModal({ isOpen, onClose, location, appearance = 
 
             <div className={cn(
               'flex items-start gap-3 rounded-2xl border px-4 py-3 text-xs leading-relaxed',
-              isFrosted
-                ? 'border-purple-200/50 dark:border-purple-200/10 bg-purple-500/12 dark:bg-purple-500/10 text-purple-900/85 dark:text-purple-100 backdrop-blur-sm'
-                : 'border-slate-200 dark:border-white/[0.08] bg-slate-100 text-slate-700 dark:bg-[#101421] dark:text-slate-200'
+              'border-purple-200/50 dark:border-purple-200/10 bg-purple-500/12 dark:bg-purple-500/10 text-purple-900/85 dark:text-purple-100 backdrop-blur-sm'
             )}>
               <span className="text-base">💡</span>
               <p>
