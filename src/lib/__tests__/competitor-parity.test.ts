@@ -1,4 +1,4 @@
-import { generateSchedules, calculateScheduleMetrics, ScheduleGenerationOptions, ScheduleMetrics } from '@/lib/schedule-generator';
+import { generateSchedules, calculateScheduleMetrics, ScheduleGenerationOptions, ScheduleMetrics, getPreferenceScoreForMetrics } from '@/lib/schedule-generator';
 import { SelectedCourse } from '@/types';
 import { testCourses } from '@/data/test-courses';
 
@@ -89,6 +89,7 @@ const comparisons: Array<{
   competitor: MetricsSnapshot;
   ourSections: string[];
   competitorSections: string[];
+  scoreDelta: number;
 }> = [];
 
 function formatMetrics(metrics: ScheduleMetrics) {
@@ -103,6 +104,9 @@ function formatMetrics(metrics: ScheduleMetrics) {
     totalGap: metrics.totalGapMinutes,
     longBreakCount: metrics.longBreakCount,
     longBreakMinutes: metrics.totalLongBreakMinutes,
+    campusSpan: metrics.totalCampusSpan,
+    startVariance: Number(metrics.startVariance.toFixed(2)),
+    gapCount: metrics.gapCount,
   };
 }
 
@@ -128,10 +132,13 @@ describe('Competitor parity diagnostics', () => {
 
       const ourSectionList = listSections(ourTop.sections);
       const competitorSectionList = listSections(competitorSchedule);
+      const ourScore = getPreferenceScoreForMetrics(ourMetrics, preference);
+      const competitorScore = getPreferenceScoreForMetrics(competitorMetrics, preference);
 
       console.log(`\n📊 ${preference} comparison`);
       console.log('   • ours       ', ourSectionList);
       console.log('   • competitor', competitorSectionList);
+      console.log('   • scores    ', { ours: ourScore, competitor: competitorScore });
       console.table({ ours: formatMetrics(ourMetrics), competitor: formatMetrics(competitorMetrics) });
 
       comparisons.push({
@@ -140,6 +147,7 @@ describe('Competitor parity diagnostics', () => {
         competitor: formatMetrics(competitorMetrics),
         ourSections: ourSectionList,
         competitorSections: competitorSectionList,
+        scoreDelta: ourScore - competitorScore,
       });
 
       // Diagnostic assertion: verify metric objects were computed

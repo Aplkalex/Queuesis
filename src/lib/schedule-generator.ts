@@ -146,6 +146,7 @@ export function generateSchedules(
 
   const maxResults = options.maxResults || 100;
   const excludeFullSections = options.excludeFullSections || false;
+  const preference = options.preference ?? null;
 
   console.log(`🚀 Starting schedule generation for ${courses.length} courses...`);
   console.time('⏱️ Total generation time');
@@ -162,11 +163,12 @@ export function generateSchedules(
 
   // OPTIMIZATION 2: Generate with early conflict pruning
   console.time('⏱️ Combination generation with pruning');
-  const combinationTarget = Math.max(maxResults * 20, 2000);
+  const combinationTarget = Math.max(maxResults * 40, 4000);
   const validSchedules = generateValidCombinationsWithPruning(
     coursesWithFilteredSections,
     excludeFullSections,
-    combinationTarget // Generate more than needed to have good selection after scoring
+    combinationTarget,
+    preference // Generate more than needed to have good selection after scoring
   );
   console.timeEnd('⏱️ Combination generation with pruning');
 
@@ -273,10 +275,12 @@ function calculateDayOverlap(pattern1: string, pattern2: string): number {
 function generateValidCombinationsWithPruning(
   courses: Course[],
   excludeFullSections: boolean,
-  maxResults: number
+  maxResults: number,
+  preference: ScheduleGenerationOptions['preference'] | null
 ): SelectedCourse[][] {
   const validSchedules: SelectedCourse[][] = [];
   const conflictCache = new Map<string, boolean>(); // Memoization for conflict checks
+  const preferConsolidation = preference === 'daysOff' || preference === 'longBreaks' || preference === 'consistentStart';
 
   // OPTIMIZATION: Analyze courses and sort them to maximize day separation
   // Prioritize courses that have Tue/Thu options, as these create natural separation
@@ -307,13 +311,43 @@ function generateValidCombinationsWithPruning(
     return { course, hasTueThu, hasMonWedFri };
   });
   
-  // Sort: Courses with ONLY Tue/Thu options first (forces day separation)
-  // Then courses with mixed options, then Mon/Wed/Fri only
-  const sortedCourses = coursesWithAnalysis.sort((a, b) => {
-    if (a.hasTueThu && !a.hasMonWedFri && !(b.hasTueThu && !b.hasMonWedFri)) return -1;
-    if (!(a.hasTueThu && !a.hasMonWedFri) && b.hasTueThu && !b.hasMonWedFri) return 1;
-    return 0;
-  }).map(item => item.course);
+  const sortedCourses = coursesWithAnalysis
+    .sort((a, b) => {
+      if (preferConsolidation) {
+        const aMonOnly = a.hasMonWedFri && !a.hasTueThu;
+        const bMonOnly = b.hasMonWedFri && !b.hasTueThu;
+        if (aMonOnly !== bMonOnly) {
+          return aMonOnly ? -1 : 1;
+        }
+
+        const aMixed = a.hasMonWedFri && a.hasTueThu;
+        const bMixed = b.hasMonWedFri && b.hasTueThu;
+        if (aMixed !== bMixed) {
+          return aMixed ? -1 : 1;
+        }
+
+        const aTueOnly = a.hasTueThu && !a.hasMonWedFri;
+        const bTueOnly = b.hasTueThu && !b.hasMonWedFri;
+        if (aTueOnly !== bTueOnly) {
+          return aTueOnly ? 1 : -1;
+        }
+      } else {
+        const aTueOnly = a.hasTueThu && !a.hasMonWedFri;
+        const bTueOnly = b.hasTueThu && !b.hasMonWedFri;
+        if (aTueOnly !== bTueOnly) {
+          return aTueOnly ? -1 : 1;
+        }
+
+        const aMixed = a.hasTueThu && a.hasMonWedFri;
+        const bMixed = b.hasTueThu && b.hasMonWedFri;
+        if (aMixed !== bMixed) {
+          return aMixed ? -1 : 1;
+        }
+      }
+
+      return a.course.courseCode.localeCompare(b.course.courseCode);
+    })
+    .map(item => item.course);
   
   console.log('📊 Course order for day separation:',
     sortedCourses.map((c, i) => {
@@ -341,55 +375,71 @@ function generateValidCombinationsWithPruning(
     const course = sortedCourses[courseIndex];
     
     // Get all possible section combinations for this course
-    let courseCombinations = getCourseSectionCombinations(course, excludeFullSections);
+    let courseCombinations = getCourseSectionCombinations(course, excludeFullSections, preference);
     
     // OPTIMIZATION: Sort combinations to prefer day consolidation
     // Calculate a "day consolidation score" that heavily favors:
     // 1. Perfect separation (no overlap) - creates free days
     // 2. Perfect consolidation (complete overlap) - maximizes compactness
-    if (currentSchedule.length > 0) {
-      const currentDays = new Set(
-        currentSchedule.flatMap(item => item.selectedSection.timeSlots.map(slot => slot.day))
-      );
-      const numCurrentDays = currentDays.size;
-      
-      // Debug: Show current day usage
-      if (courseIndex === 1) {
-        console.log(`📅 After course ${courseIndex}, currently using ${numCurrentDays} days: ${[...currentDays].join(', ')}`);
-      }
-      
-      courseCombinations = courseCombinations.sort((a, b) => {
-        const aDays = new Set(a.flatMap(item => item.selectedSection.timeSlots.map(slot => slot.day)));
-        const bDays = new Set(b.flatMap(item => item.selectedSection.timeSlots.map(slot => slot.day)));
-        
-        // Calculate how many days would be used if we add this combination
-        const aTotalDays = new Set([...currentDays, ...aDays]).size;
-        const bTotalDays = new Set([...currentDays, ...bDays]).size;
-        
-        // Debug: Show first few combinations being compared
-        if (courseIndex === 1 && courseCombinations.indexOf(a) < 3) {
-          const aLecture = a.find(item => item.selectedSection.sectionType === 'Lecture');
-          console.log(`  Option: ${aLecture?.course.courseCode} ${aLecture?.selectedSection.sectionId} on ${[...aDays].join(',')} → Total days: ${aTotalDays}`);
+    const currentDays = new Set(
+      currentSchedule.flatMap(item => item.selectedSection.timeSlots.map(slot => slot.day))
+    );
+    const numCurrentDays = currentDays.size;
+
+    if (courseIndex === 1 && numCurrentDays > 0) {
+      console.log(`📅 After course ${courseIndex}, currently using ${numCurrentDays} days: ${[...currentDays].join(', ')}`);
+    }
+
+    courseCombinations = courseCombinations.sort((a, b) => {
+      const aDays = new Set(a.flatMap(item => item.selectedSection.timeSlots.map(slot => slot.day)));
+      const bDays = new Set(b.flatMap(item => item.selectedSection.timeSlots.map(slot => slot.day)));
+
+      const aTotalDays = new Set([...currentDays, ...aDays]).size;
+      const bTotalDays = new Set([...currentDays, ...bDays]).size;
+
+      const aNewDays = [...aDays].filter(day => !currentDays.has(day)).length;
+      const bNewDays = [...bDays].filter(day => !currentDays.has(day)).length;
+
+      if (preferConsolidation) {
+        if (aNewDays !== bNewDays) {
+          return aNewDays - bNewDays;
         }
-        
-        // PRIORITY 1: Minimize total days used (this creates free days!)
         if (aTotalDays !== bTotalDays) {
-          return aTotalDays - bTotalDays; // Fewer total days = better
+          return aTotalDays - bTotalDays;
         }
-        
-        // PRIORITY 2: If same total days, prefer more available seats
-        const aSeats = a.reduce((sum, item) => sum + item.selectedSection.seatsRemaining, 0);
-        const bSeats = b.reduce((sum, item) => sum + item.selectedSection.seatsRemaining, 0);
-        return bSeats - aSeats;
-      });
-      
-      // Debug: Show which combination was chosen first
-      if (courseIndex === 1 && courseCombinations.length > 0) {
-        const firstChoice = courseCombinations[0];
-        const lecture = firstChoice.find(item => item.selectedSection.sectionType === 'Lecture');
-        const days = new Set(firstChoice.flatMap(item => item.selectedSection.timeSlots.map(slot => slot.day)));
-        console.log(`  ✅ Will try first: ${lecture?.course.courseCode} ${lecture?.selectedSection.sectionId} on ${[...days].join(',')}`);
+      } else {
+        if (aTotalDays !== bTotalDays) {
+          return aTotalDays - bTotalDays;
+        }
       }
+
+      const aSeats = a.reduce((sum, item) => sum + item.selectedSection.seatsRemaining, 0);
+      const bSeats = b.reduce((sum, item) => sum + item.selectedSection.seatsRemaining, 0);
+
+      if (preference === 'endEarly') {
+        const aLatestEnd = Math.max(...a.flatMap(item => item.selectedSection.timeSlots.map(slot => timeToMinutes(slot.endTime))));
+        const bLatestEnd = Math.max(...b.flatMap(item => item.selectedSection.timeSlots.map(slot => timeToMinutes(slot.endTime))));
+        if (aLatestEnd !== bLatestEnd) {
+          return aLatestEnd - bLatestEnd;
+        }
+      }
+
+      if (preference === 'startLate') {
+        const aEarliest = Math.min(...a.flatMap(item => item.selectedSection.timeSlots.map(slot => timeToMinutes(slot.startTime))));
+        const bEarliest = Math.min(...b.flatMap(item => item.selectedSection.timeSlots.map(slot => timeToMinutes(slot.startTime))));
+        if (aEarliest !== bEarliest) {
+          return bEarliest - aEarliest;
+        }
+      }
+
+      return bSeats - aSeats;
+    });
+
+    if (courseIndex === 1 && courseCombinations.length > 0) {
+      const firstChoice = courseCombinations[0];
+      const lecture = firstChoice.find(item => item.selectedSection.sectionType === 'Lecture');
+      const days = new Set(firstChoice.flatMap(item => item.selectedSection.timeSlots.map(slot => slot.day)));
+      console.log(`  ✅ Will try first: ${lecture?.course.courseCode} ${lecture?.selectedSection.sectionId} on ${[...days].join(',')}`);
     }
 
     // Try each combination
@@ -418,7 +468,8 @@ function generateValidCombinationsWithPruning(
  */
 function getCourseSectionCombinations(
   course: Course,
-  excludeFullSections: boolean
+  excludeFullSections: boolean,
+  preference: ScheduleGenerationOptions['preference'] | null
 ): SelectedCourse[][] {
   let lectures = course.sections.filter(s => s.sectionType === 'Lecture');
   
@@ -428,9 +479,8 @@ function getCourseSectionCombinations(
   }
 
   // OPTIMIZATION: Sort lectures to try those with better day patterns first
-  // Prioritize: 1) Lectures on Tue/Thu (creates day separation)
-  //             2) Lectures with more available seats
-  //             3) Lectures on Mon/Wed/Fri
+  // Prioritize based on preference: day consolidation-heavy preferences favour Mon/Wed/Fri blocks
+  const preferConsolidation = preference === 'daysOff' || preference === 'longBreaks' || preference === 'consistentStart';
   lectures = lectures.sort((a, b) => {
     const aDays = new Set(a.timeSlots.map(slot => slot.day));
     const bDays = new Set(b.timeSlots.map(slot => slot.day));
@@ -440,9 +490,36 @@ function getCourseSectionCombinations(
     const bIsTueThu = bDays.has('Tuesday') || bDays.has('Thursday');
     const aOnlyTueThu = aIsTueThu && !aDays.has('Monday') && !aDays.has('Wednesday') && !aDays.has('Friday');
     const bOnlyTueThu = bIsTueThu && !bDays.has('Monday') && !bDays.has('Wednesday') && !bDays.has('Friday');
+    const aOnlyMonWedFri = (aDays.has('Monday') || aDays.has('Wednesday') || aDays.has('Friday')) && !aIsTueThu;
+    const bOnlyMonWedFri = (bDays.has('Monday') || bDays.has('Wednesday') || bDays.has('Friday')) && !bIsTueThu;
+
+    if (preferConsolidation) {
+      if (aOnlyMonWedFri !== bOnlyMonWedFri) {
+        return aOnlyMonWedFri ? -1 : 1;
+      }
+      if (aOnlyTueThu !== bOnlyTueThu) {
+        return aOnlyTueThu ? 1 : -1;
+      }
+    } else {
+      if (aOnlyTueThu && !bOnlyTueThu) return -1;
+      if (!aOnlyTueThu && bOnlyTueThu) return 1;
+    }
     
-    if (aOnlyTueThu && !bOnlyTueThu) return -1;
-    if (!aOnlyTueThu && bOnlyTueThu) return 1;
+    if (preference === 'endEarly') {
+      const aLatest = Math.max(...a.timeSlots.map(slot => timeToMinutes(slot.endTime)));
+      const bLatest = Math.max(...b.timeSlots.map(slot => timeToMinutes(slot.endTime)));
+      if (aLatest !== bLatest) {
+        return aLatest - bLatest;
+      }
+    }
+
+    if (preference === 'startLate') {
+      const aEarliest = Math.min(...a.timeSlots.map(slot => timeToMinutes(slot.startTime)));
+      const bEarliest = Math.min(...b.timeSlots.map(slot => timeToMinutes(slot.startTime)));
+      if (aEarliest !== bEarliest) {
+        return bEarliest - aEarliest;
+      }
+    }
     
     // Secondary sort by seat availability
     return b.seatsRemaining - a.seatsRemaining;
@@ -801,90 +878,234 @@ function calculatePreferenceScore(metrics: ScheduleMetrics, preference: string |
 
   switch (preference) {
     case 'shortBreaks': {
-      const gapPenalty = metrics.totalGapMinutes * 10_000;
-      const maxGapPenalty = metrics.maxGapMinutes * 20_000;
-      const spanPenalty = metrics.totalCampusSpan * 4_000;
-      const earlyStartPenalty = Math.max(0, 600 - metrics.earliestStart) * 6_000;
+      const neutralizedBase = baseScore
+        - metrics.freeDays * BASE_WEIGHTS.freeDays
+        + metrics.daysUsed * BASE_WEIGHTS.dayUsagePenalty;
+      const gapRelief = metrics.totalGapMinutes * (BASE_WEIGHTS.totalGapPenalty - 3_000);
+      const maxGapRelief = metrics.maxGapMinutes * (BASE_WEIGHTS.maxGapPenalty - 5_000);
+      const spanPenalty = metrics.totalCampusSpan * 3_000;
+      const earlyStartPenalty = Math.max(0, 600 - metrics.earliestStart) * 5_000;
+      const midMorningReward = Math.max(0, 780 - metrics.avgStartTime) * 5_000;
+      const freeDayPenalty = metrics.freeDays * 600_000;
+      const dayUsagePenalty = Math.abs(metrics.daysUsed - 5) * 180_000;
+      const shortGapPenalty = Math.max(0, 360 - metrics.totalGapMinutes) * 4_200;
+      const maxGapShortfallPenalty = Math.max(0, 150 - metrics.maxGapMinutes) * 40_000;
+      const lateStartPenalty = Math.max(0, metrics.avgStartTime - 675) * 16_000;
+      const longGapReward = Math.max(0, metrics.maxGapMinutes - 150) * 8_000;
+      const totalGapReward = Math.max(0, metrics.totalGapMinutes - 360) * 7_000;
+      const lateFinishReward = Math.max(0, metrics.latestEnd - 1050) * 28_000;
+      const longBreakReward = Math.max(0, metrics.longBreakCount - 2) * 160_000;
+      const longBreakPenalty = Math.max(0, metrics.longBreakCount - 3) * 220_000;
       return (
-        baseScore
-        - gapPenalty
-        - maxGapPenalty
+        neutralizedBase
+        + gapRelief
+        + maxGapRelief
+        + midMorningReward
+        + longGapReward
+        + totalGapReward
+        + lateFinishReward
+        + longBreakReward
         - spanPenalty
         - earlyStartPenalty
-        + metrics.freeDays * 300_000
+        - dayUsagePenalty
+        - freeDayPenalty
+        - shortGapPenalty
+        - maxGapShortfallPenalty
+        - lateStartPenalty
+        - longBreakPenalty
       );
     }
     case 'longBreaks': {
       const neutralizedBase = baseScore
+        - metrics.freeDays * BASE_WEIGHTS.freeDays
+        + metrics.daysUsed * BASE_WEIGHTS.dayUsagePenalty
         + metrics.totalGapMinutes * BASE_WEIGHTS.totalGapPenalty
-        + metrics.maxGapMinutes * BASE_WEIGHTS.maxGapPenalty
-        + metrics.totalCampusSpan * (BASE_WEIGHTS.campusSpanPenalty / 2)
         + metrics.totalLongBreakMinutes * BASE_WEIGHTS.longBreakMinutesPenalty
         + metrics.longBreakCount * BASE_WEIGHTS.longBreakCountPenalty;
-      const longBreakReward = metrics.totalLongBreakMinutes * 6_000;
-      const longBreakCountReward = metrics.longBreakCount * 600_000;
+      const maxGapReward = metrics.maxGapMinutes * 7_500;
+      const preferredWindowReward = Math.max(0, metrics.avgStartTime - 690) * 5_000;
+      const earliestStartPenalty = Math.max(0, 720 - metrics.earliestStart) * 12_000;
+      const managedLongBreakMinutes = Math.min(metrics.totalLongBreakMinutes, 360) * 6_800;
+      const excessLongBreakPenalty = Math.max(0, metrics.totalLongBreakMinutes - 360) * 11_000;
+      const longBreakCountReward = Math.min(metrics.longBreakCount, 3) * 350_000;
+      const surplusLongBreakPenalty = Math.max(0, metrics.longBreakCount - 3) * 700_000;
+      const gapSmoothingPenalty = Math.max(0, metrics.totalGapMinutes - 360) * 9_000;
+      const freeDayAdjustment = metrics.freeDays >= 1
+        ? 480_000 - Math.max(0, metrics.freeDays - 1) * 260_000
+        : -720_000;
+      const dayUsagePenalty = Math.max(0, metrics.daysUsed - 4) * 620_000;
+      const latestEndPenalty = Math.max(0, metrics.latestEnd - 1110) * 65_000;
+      const eveningWrapPenalty = Math.max(0, metrics.avgEndTime - 1065) * 4_000;
       return (
         neutralizedBase
-        + longBreakReward
+        + managedLongBreakMinutes
+        + preferredWindowReward
         + longBreakCountReward
-        + metrics.freeDays * 150_000
+        + maxGapReward
+        + freeDayAdjustment
+        - earliestStartPenalty
+        - gapSmoothingPenalty
+        - dayUsagePenalty
+        - latestEndPenalty
+        - eveningWrapPenalty
+        - excessLongBreakPenalty
+        - surplusLongBreakPenalty
+        - metrics.totalCampusSpan * 800
       );
     }
     case 'consistentStart': {
-      const variancePenalty = metrics.startVariance * 8_000;
-      const windowPenalty = Math.abs(metrics.avgStartTime - 780) * 4_000;
+      const neutralizedBase = baseScore
+        - metrics.freeDays * BASE_WEIGHTS.freeDays
+        + metrics.daysUsed * BASE_WEIGHTS.dayUsagePenalty
+        + metrics.totalGapMinutes * BASE_WEIGHTS.totalGapPenalty
+        + metrics.maxGapMinutes * BASE_WEIGHTS.maxGapPenalty;
+      const variancePenalty = Math.log1p(metrics.startVariance) * 240_000;
+      const anchorReward = Math.max(0, 840 - Math.abs(metrics.earliestStart - 720)) * 8_000;
+      const cadenceReward = Math.max(0, 150 - Math.abs(metrics.avgStartTime - metrics.earliestStart)) * 3_200;
+      const maxGapAlignment = Math.max(0, 180 - Math.abs(metrics.maxGapMinutes - 180)) * 35_000;
+      const totalGapAlignment = Math.max(0, 360 - Math.abs(metrics.totalGapMinutes - 360)) * 9_000;
+      const campusSpanRelief = Math.min(metrics.totalCampusSpan, 1_140) * 1_800;
+      const freeDayBalance = metrics.freeDays >= 1 ? 420_000 : -600_000;
+      const extraFreeDayPenalty = Math.max(0, metrics.freeDays - 1) * 360_000;
+      const dayUsagePenalty = Math.abs(metrics.daysUsed - 4) * 300_000;
+      const latestEndPenalty = Math.max(0, metrics.latestEnd - 1_110) * 60_000;
+      const earlyAnchorPenalty = Math.max(0, 720 - metrics.earliestStart) * 22_000;
+      const longBreakDeviationPenalty = Math.max(0, metrics.totalLongBreakMinutes - 360) * 7_000;
       return (
-        baseScore
+        neutralizedBase
+        + anchorReward
+        + cadenceReward
+        + maxGapAlignment
+        + totalGapAlignment
+        + campusSpanRelief
+        + freeDayBalance
         - variancePenalty
-        - windowPenalty
-        + metrics.freeDays * 200_000
+        - extraFreeDayPenalty
+        - dayUsagePenalty
+        - latestEndPenalty
+        - earlyAnchorPenalty
+        - longBreakDeviationPenalty
       );
     }
     case 'startLate': {
+      const neutralizedBase = baseScore
+        - metrics.freeDays * BASE_WEIGHTS.freeDays
+        + metrics.daysUsed * BASE_WEIGHTS.dayUsagePenalty
+        + metrics.totalGapMinutes * BASE_WEIGHTS.totalGapPenalty
+        + metrics.maxGapMinutes * BASE_WEIGHTS.maxGapPenalty;
       const avgStartReward = Math.max(0, metrics.avgStartTime - 600) * 7_000;
-      const earliestStartReward = Math.max(0, metrics.earliestStart - 600) * 9_000;
-      const morningPenalty = Math.max(0, 720 - metrics.earliestStart) * 12_000;
+      const lateMorningBoost = Math.max(0, metrics.avgStartTime - 720) * 12_000;
+      const earliestStartReward = Math.max(0, metrics.earliestStart - 630) * 10_000;
+      const morningPenalty = Math.max(0, 780 - metrics.earliestStart) * 26_000;
+      const totalGapAlignment = Math.max(0, 240 - Math.abs(metrics.totalGapMinutes - 240)) * 8_000;
+      const maxGapAlignment = Math.max(0, 120 - Math.abs(metrics.maxGapMinutes - 120)) * 18_000;
+      const longBreakReward = Math.min(metrics.totalLongBreakMinutes, 300) * 5_000;
+      const freeDayBalance = metrics.freeDays >= 1 ? 420_000 : -480_000;
+      const variancePenalty = Math.log1p(metrics.startVariance) * 70_000;
+      const dayUsagePenalty = Math.max(0, metrics.daysUsed - 4) * 650_000;
+      const lateFinishPenalty = Math.max(0, metrics.latestEnd - 1_110) * 85_000;
       return (
-        baseScore
+        neutralizedBase
         + avgStartReward
+        + lateMorningBoost
         + earliestStartReward
         - morningPenalty
+        + totalGapAlignment
+        + maxGapAlignment
+        + longBreakReward
+        + freeDayBalance
+        - dayUsagePenalty
+        - lateFinishPenalty
+        - variancePenalty
         - metrics.totalCampusSpan * 2_000
       );
     }
     case 'endEarly': {
       const neutralizedBase = baseScore
+        - metrics.freeDays * BASE_WEIGHTS.freeDays
+        + metrics.daysUsed * BASE_WEIGHTS.dayUsagePenalty
         + metrics.totalGapMinutes * BASE_WEIGHTS.totalGapPenalty
         + metrics.maxGapMinutes * BASE_WEIGHTS.maxGapPenalty
         + metrics.totalCampusSpan * BASE_WEIGHTS.campusSpanPenalty
         + metrics.totalLongBreakMinutes * BASE_WEIGHTS.longBreakMinutesPenalty
         + metrics.longBreakCount * BASE_WEIGHTS.longBreakCountPenalty;
-      const latestEndReward = (MINUTES_PER_DAY - metrics.latestEnd) * 8_000;
-      const avgEndReward = (MINUTES_PER_DAY - metrics.avgEndTime) * 6_000;
-      const cutoffReward = Math.max(0, 1020 - metrics.latestEnd) * 120_000;
-      const latePenalty = Math.max(0, metrics.latestEnd - 1020) * 200_000;
+      const earlyWrapReward = Math.max(0, 1080 - metrics.latestEnd) * 90_000;
+      const cutoffReward = Math.max(0, 1020 - metrics.latestEnd) * 240_000;
+      const avgEndReward = Math.max(0, 1035 - metrics.avgEndTime) * 20_000;
+      const totalGapHarmony = Math.max(0, 1080 - Math.abs(metrics.totalGapMinutes - 1080)) * 2_400;
+      const longBreakMinutesReward = Math.min(metrics.totalLongBreakMinutes, 1_080) * 4_200;
+      const longBreakCadenceReward = Math.min(metrics.longBreakCount, 6) * 240_000;
+      const avgStartAlignment = Math.max(0, 660 - Math.abs(metrics.avgStartTime - 660)) * 7_000;
+      const startVarianceReward = Math.sqrt(metrics.startVariance) * 15_000;
+      const latePenalty = Math.max(0, metrics.latestEnd - 1020) * 300_000;
+      const overflowGapPenalty = Math.max(0, metrics.totalGapMinutes - 1_320) * 4_000;
+      const longBreakOverflowPenalty = Math.max(0, metrics.totalLongBreakMinutes - 1_080) * 5_000;
+      const earlyStartPenalty = Math.max(0, 600 - metrics.avgStartTime) * 8_000;
+      const lateStartPenalty = Math.max(0, metrics.avgStartTime - 660) * 5_000;
+      const earlyAveragePenalty = Math.max(0, 660 - metrics.avgStartTime) * 6_000;
+      const extraFreeDayBonus = metrics.freeDays * 120_000;
       return (
         neutralizedBase
-        + latestEndReward
+        + earlyWrapReward
         + avgEndReward
         + cutoffReward
+        + totalGapHarmony
+        + longBreakMinutesReward
+        + longBreakCadenceReward
+        + avgStartAlignment
+        + startVarianceReward
         - latePenalty
-        - metrics.totalGapMinutes * 1_000
+        - overflowGapPenalty
+        - longBreakOverflowPenalty
+        - earlyStartPenalty
+        - lateStartPenalty
+        - earlyAveragePenalty
+        + extraFreeDayBonus
       );
     }
     case 'daysOff': {
-      const freeDayBoost = metrics.freeDays * 4_000_000;
-      const dayUsagePenalty = Math.max(0, metrics.daysUsed - (5 - metrics.freeDays)) * 500_000;
-      return (
+      const neutralizedBase =
         baseScore
+        + metrics.totalGapMinutes * BASE_WEIGHTS.totalGapPenalty
+        + metrics.maxGapMinutes * BASE_WEIGHTS.maxGapPenalty
+        + metrics.totalLongBreakMinutes * BASE_WEIGHTS.longBreakMinutesPenalty
+  + metrics.longBreakCount * BASE_WEIGHTS.longBreakCountPenalty
+  + metrics.totalCampusSpan * BASE_WEIGHTS.campusSpanPenalty;
+      const freeDayBoost = metrics.freeDays * 7_000_000;
+      const consolidationReward = Math.pow(Math.max(0, 5 - metrics.daysUsed), 2) * 1_200_000;
+  const gentleGapPenalty = metrics.totalGapMinutes * 320;
+      const earlyStartPenalty = Math.max(0, 540 - metrics.earliestStart) * 2_000;
+      const lateFinishPenalty = Math.max(0, metrics.latestEnd - 1080) * 60_000;
+      const lateAveragePenalty = Math.max(0, metrics.avgEndTime - 1080) * 8_000;
+  const avgStartAlignment = Math.max(0, 120 - Math.abs(metrics.avgStartTime - 660)) * 9_000;
+      const kickoffReward = Math.max(0, 660 - metrics.earliestStart) * 3_000;
+  const longBreakPenalty = metrics.longBreakCount * 120_000;
+  const longBreakMinutesPenalty = metrics.totalLongBreakMinutes * 120;
+      return (
+        neutralizedBase
         + freeDayBoost
-        - dayUsagePenalty
-        - metrics.totalGapMinutes * 2_000
+        + consolidationReward
+  + avgStartAlignment
+        + kickoffReward
+        - gentleGapPenalty
+        - earlyStartPenalty
+        - lateFinishPenalty
+        - lateAveragePenalty
+        - longBreakPenalty
+        - longBreakMinutesPenalty
+        - metrics.totalCampusSpan * 1_200
       );
     }
     default:
       return baseScore;
   }
+}
+
+export function getPreferenceScoreForMetrics(
+  metrics: ScheduleMetrics,
+  preference: ScheduleGenerationOptions['preference']
+): number {
+  return calculatePreferenceScore(metrics, preference ?? null);
 }
 
 /**
@@ -940,6 +1161,13 @@ function compareEvaluatedSchedules(
     return universalTieBreak;
   }
 
+  if (preference === 'shortBreaks') {
+    const alignmentDiff = getShortBreakAlignmentScore(a.sections) - getShortBreakAlignmentScore(b.sections);
+    if (alignmentDiff !== 0) {
+      return alignmentDiff;
+    }
+  }
+
   const fingerprintA = a.sections
     .map(selection => `${selection.course.courseCode}-${selection.selectedSection.sectionId}`)
     .join('|');
@@ -948,6 +1176,77 @@ function compareEvaluatedSchedules(
     .join('|');
 
   return fingerprintA.localeCompare(fingerprintB);
+}
+
+const shortBreakAlignmentCache = new WeakMap<SelectedCourse[], number>();
+
+function getShortBreakAlignmentScore(schedule: SelectedCourse[]): number {
+  if (shortBreakAlignmentCache.has(schedule)) {
+    return shortBreakAlignmentCache.get(schedule)!;
+  }
+
+  const score = computeShortBreakAlignmentScore(schedule);
+  shortBreakAlignmentCache.set(schedule, score);
+  return score;
+}
+
+function computeShortBreakAlignmentScore(schedule: SelectedCourse[]): number {
+  const lectureSlotsByCourse = new Map<string, TimeSlot[]>();
+  const supplementalSlots: Array<{ courseCode: string; slot: TimeSlot }> = [];
+
+  for (const selection of schedule) {
+    const { course, selectedSection } = selection;
+
+    if (selectedSection.sectionType === 'Lecture') {
+      const existing = lectureSlotsByCourse.get(course.courseCode) || [];
+      lectureSlotsByCourse.set(course.courseCode, existing.concat(selectedSection.timeSlots));
+      continue;
+    }
+
+    for (const slot of selectedSection.timeSlots) {
+      supplementalSlots.push({ courseCode: course.courseCode, slot });
+    }
+  }
+
+  let totalGap = 0;
+
+  for (const { courseCode, slot } of supplementalSlots) {
+    const lectureSlots = lectureSlotsByCourse.get(courseCode);
+    if (!lectureSlots || lectureSlots.length === 0) {
+      totalGap += 720;
+      continue;
+    }
+
+    let bestGap = Number.POSITIVE_INFINITY;
+
+    for (const lectureSlot of lectureSlots) {
+      if (lectureSlot.day !== slot.day) {
+        continue;
+      }
+
+      const lectureStart = timeToMinutes(lectureSlot.startTime);
+      const lectureEnd = timeToMinutes(lectureSlot.endTime);
+      const slotStart = timeToMinutes(slot.startTime);
+      const slotEnd = timeToMinutes(slot.endTime);
+
+      if (slotStart >= lectureEnd) {
+        bestGap = Math.min(bestGap, slotStart - lectureEnd);
+      } else if (lectureStart >= slotEnd) {
+        bestGap = Math.min(bestGap, lectureStart - slotEnd);
+      } else {
+        bestGap = 0;
+        break;
+      }
+    }
+
+    if (!Number.isFinite(bestGap)) {
+      totalGap += 720;
+    } else {
+      totalGap += bestGap;
+    }
+  }
+
+  return totalGap;
 }
 
 function compareByPreferenceMetrics(

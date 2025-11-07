@@ -450,7 +450,6 @@ export const testCourses: Course[] = [
       {
         sectionId: 'L4C',
         sectionType: 'Tutorial',
-        parentLecture: '004',
         classNumber: 10049,
         language: 'English',
         addConsent: false,
