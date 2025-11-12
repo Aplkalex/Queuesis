@@ -13,183 +13,200 @@ type CourseColorShades = {
   900: string;
 };
 
-const PRIMARY_COURSE_COLOR_SETS: Record<string, CourseColorShades> = {
-  taupe: {
-    DEFAULT: '#463f3a',
-    100: '#0e0d0c',
-    200: '#1c1917',
-    300: '#2a2623',
-    400: '#38322e',
-    500: '#463f3a',
-    600: '#6f645d',
-    700: '#978b82',
-    800: '#b9b1ac',
-    900: '#dcd8d5',
-  },
-  battleship_gray: {
-    DEFAULT: '#8a817c',
-    100: '#1c1a18',
-    200: '#373331',
-    300: '#534d49',
-    400: '#6e6662',
-    500: '#8a817c',
-    600: '#a19995',
-    700: '#b9b3b0',
-    800: '#d0ccca',
-    900: '#e8e6e5',
-  },
-  melon: {
-    DEFAULT: '#e0afa0',
-    100: '#3a1c13',
-    200: '#743825',
-    300: '#ad5438',
-    400: '#cd7d65',
-    500: '#e0afa0',
-    600: '#e6beb2',
-    700: '#eccec5',
-    800: '#f3dfd8',
-    900: '#f9efec',
-  },
-  pistachio: {
-    DEFAULT: '#90be6d',
-    100: '#1d2a13',
-    200: '#395325',
-    300: '#567d38',
-    400: '#72a64b',
-    500: '#90be6d',
-    600: '#a7cb8c',
-    700: '#bdd8a8',
-    800: '#d3e5c5',
-    900: '#e9f2e2',
-  },
-  zomp: {
-    DEFAULT: '#43aa8b',
-    100: '#0d221b',
-    200: '#1b4337',
-    300: '#286552',
-    400: '#35866e',
-    500: '#43aa8b',
-    600: '#61c0a4',
-    700: '#89d0bb',
-    800: '#b0e0d1',
-    900: '#d8efe8',
-  },
-  paynes_gray: {
-    DEFAULT: '#577590',
-    100: '#11171d',
-    200: '#222f39',
-    300: '#344656',
-    400: '#455d73',
-    500: '#577590',
-    600: '#7391ab',
-    700: '#96acc0',
-    800: '#b9c8d5',
-    900: '#dce3ea',
-  },
-};
+type ColorFamily = CourseColorShades[];
 
-const SECONDARY_COURSE_COLOR_SETS: Record<string, CourseColorShades> = {
-  rose: {
-    DEFAULT: '#f72585',
-    100: '#37021a',
-    200: '#6e0434',
-    300: '#a5064e',
-    400: '#dc0868',
-    500: '#f72585',
-    600: '#f9529d',
-    700: '#fa7db5',
-    800: '#fca8ce',
-    900: '#fdd4e6',
-  },
-  fandango: {
-    DEFAULT: '#b5179e',
-    100: '#24051f',
-    200: '#48093f',
-    300: '#6c0e5e',
-    400: '#90137e',
-    500: '#b5179e',
-    600: '#e326c7',
-    700: '#ea5dd5',
-    800: '#f193e3',
-    900: '#f8c9f1',
-  },
-  grape: {
-    DEFAULT: '#7209b7',
-    100: '#170225',
-    200: '#2e034a',
-    300: '#45056f',
-    400: '#5c0794',
-    500: '#7209b7',
-    600: '#980df4',
-    700: '#b14af6',
-    800: '#cb86f9',
-    900: '#e5c3fc',
-  },
-  chrysler_blue: {
-    DEFAULT: '#a65656',
-    100: '#220d0d',
-    200: '#441a1a',
-    300: '#662828',
-    400: '#874545',
-    500: '#a65656',
-    600: '#c17c7c',
-    700: '#d6a3a3',
-    800: '#e9c8c8',
-    900: '#f7e6e6',
-  },
-  zaffre: {
-    DEFAULT: '#3a0ca3',
-    100: '#0b0220',
-    200: '#170541',
-    300: '#220761',
-    400: '#2e0a81',
-    500: '#3a0ca3',
-    600: '#4f11e0',
-    700: '#7743f1',
-    800: '#a582f6',
-    900: '#d2c0fa',
-  },
-  palatinate_blue: {
-    DEFAULT: '#3f37c9',
-    100: '#0c0b28',
-    200: '#191650',
-    300: '#252178',
-    400: '#322ca0',
-    500: '#3f37c9',
-    600: '#655fd3',
-    700: '#8b87de',
-    800: '#b2afe9',
-    900: '#d8d7f4',
-  },
-  neon_blue: {
-    DEFAULT: '#4361ee',
-    100: '#050f38',
-    200: '#0a1d70',
-    300: '#102ca8',
-    400: '#153ae0',
-    500: '#4361ee',
-    600: '#6a83f1',
-    700: '#8fa2f5',
-    800: '#b4c1f8',
-    900: '#dae0fc',
-  },
-  vivid_sky_blue: {
-    DEFAULT: '#4cc9f0',
-    100: '#052e3a',
-    200: '#095c75',
-    300: '#0e8aaf',
-    400: '#13b8ea',
-    500: '#4cc9f0',
-    600: '#70d5f3',
-    700: '#93dff6',
-    800: '#b7eaf9',
-    900: '#dbf4fc',
-  },
-};
+const COLOR_FAMILIES: ColorFamily[] = [
+  [
+    {
+      DEFAULT: '#cdb4db',
+      100: '#2b1a36',
+      200: '#57346b',
+      300: '#824ea1',
+      400: '#a87ec1',
+      500: '#cdb4db',
+      600: '#d6c2e2',
+      700: '#e0d2e9',
+      800: '#ebe1f0',
+      900: '#f5f0f8',
+    },
+    {
+      DEFAULT: '#ffc8dd',
+      100: '#5b0023',
+      200: '#b60046',
+      300: '#ff116c',
+      400: '#ff6ca4',
+      500: '#ffc8dd',
+      600: '#ffd2e3',
+      700: '#ffddea',
+      800: '#ffe9f1',
+      900: '#fff4f8',
+    },
+    {
+      DEFAULT: '#ffafcc',
+      100: '#56001f',
+      200: '#ab003f',
+      300: '#ff025f',
+      400: '#ff5895',
+      500: '#ffafcc',
+      600: '#ffbed6',
+      700: '#ffcee0',
+      800: '#ffdeea',
+      900: '#ffeff5',
+    },
+    {
+      DEFAULT: '#bde0fe',
+      100: '#012f57',
+      200: '#035eaf',
+      300: '#0f8dfb',
+      400: '#66b6fd',
+      500: '#bde0fe',
+      600: '#cbe6fe',
+      700: '#d8ecfe',
+      800: '#e5f3ff',
+      900: '#f2f9ff',
+    },
+    {
+      DEFAULT: '#a2d2ff',
+      100: '#002b54',
+      200: '#0056a7',
+      300: '#0082fb',
+      400: '#50aaff',
+      500: '#a2d2ff',
+      600: '#b6dcff',
+      700: '#c8e4ff',
+      800: '#daedff',
+      900: '#edf6ff',
+    },
+  ],
+  [
+    {
+      DEFAULT: '#ff595e',
+      100: '#440002',
+      200: '#890005',
+      300: '#cd0007',
+      400: '#ff121a',
+      500: '#ff595e',
+      600: '#ff787d',
+      700: '#ff9a9d',
+      800: '#ffbcbe',
+      900: '#ffddde',
+    },
+    {
+      DEFAULT: '#ffca3a',
+      100: '#3e2e00',
+      200: '#7c5b00',
+      300: '#bb8900',
+      400: '#f9b700',
+      500: '#ffca3a',
+      600: '#ffd560',
+      700: '#ffdf88',
+      800: '#ffeaaf',
+      900: '#fff4d7',
+    },
+    {
+      DEFAULT: '#8ac926',
+      100: '#1c2808',
+      200: '#38510f',
+      300: '#537917',
+      400: '#6fa11f',
+      500: '#8ac926',
+      600: '#a4dc49',
+      700: '#bbe577',
+      800: '#d2eea4',
+      900: '#e8f6d2',
+    },
+    {
+      DEFAULT: '#1982c4',
+      100: '#051a27',
+      200: '#0a344e',
+      300: '#0f4e74',
+      400: '#14679b',
+      500: '#1982c4',
+      600: '#31a0e4',
+      700: '#65b7eb',
+      800: '#98cff2',
+      900: '#cce7f8',
+    },
+    {
+      DEFAULT: '#6a4c93',
+      100: '#150f1e',
+      200: '#2a1f3b',
+      300: '#402e59',
+      400: '#553d76',
+      500: '#6a4c93',
+      600: '#8768b1',
+      700: '#a58ec5',
+      800: '#c3b4d8',
+      900: '#e1d9ec',
+    },
+  ],
+  [
+    {
+      DEFAULT: '#22223b',
+      100: '#07070c',
+      200: '#0d0d17',
+      300: '#141423',
+      400: '#1b1b2f',
+      500: '#22223b',
+      600: '#40406f',
+      700: '#6060a3',
+      800: '#9595c2',
+      900: '#cacae0',
+    },
+    {
+      DEFAULT: '#4a4e69',
+      100: '#0f1015',
+      200: '#1e1f2a',
+      300: '#2c2f3f',
+      400: '#3b3e54',
+      500: '#4a4e69',
+      600: '#666b8f',
+      700: '#8b8fac',
+      800: '#b1b4c8',
+      900: '#d8dae3',
+    },
+    {
+      DEFAULT: '#9a8c98',
+      100: '#1f1c1f',
+      200: '#3f383e',
+      300: '#5e535c',
+      400: '#7d6f7b',
+      500: '#9a8c98',
+      600: '#aea4ad',
+      700: '#c3bbc1',
+      800: '#d7d2d6',
+      900: '#ebe8ea',
+    },
+    {
+      DEFAULT: '#c9ada7',
+      100: '#2e1f1c',
+      200: '#5b3e38',
+      300: '#895d54',
+      400: '#ad8279',
+      500: '#c9ada7',
+      600: '#d4bdb8',
+      700: '#dececa',
+      800: '#e9dedc',
+      900: '#f4efed',
+    },
+    {
+      DEFAULT: '#f2e9e4',
+      100: '#3f2a1e',
+      200: '#7f543d',
+      300: '#b58165',
+      400: '#d3b5a4',
+      500: '#f2e9e4',
+      600: '#f4ede9',
+      700: '#f7f1ee',
+      800: '#faf6f4',
+      900: '#fcfaf9',
+    },
+  ],
+];
 
-const PRIMARY_COURSE_COLORS = Object.values(PRIMARY_COURSE_COLOR_SETS).map((shades) => shades.DEFAULT);
-const SECONDARY_COURSE_COLORS = Object.values(SECONDARY_COURSE_COLOR_SETS).map((shades) => shades.DEFAULT);
-export const COURSE_COLOR_POOL = [...PRIMARY_COURSE_COLORS, ...SECONDARY_COURSE_COLORS];
+export const COURSE_COLOR_POOL = COLOR_FAMILIES.flatMap((family) =>
+  family.map((palette) => palette.DEFAULT)
+);
 
 /**
  * Convert time string (HH:MM) to minutes since midnight
@@ -316,11 +333,21 @@ export function formatTime(time: string): string {
  * Uses courseCode hash to ensure consistent unique colors
  */
 export function generateCourseColor(courseCode: string, usedColors: string[]): string {
-  const availableColors = COURSE_COLOR_POOL.filter((color) => !usedColors.includes(color));
+  const familyOptions = COLOR_FAMILIES
+    .map((family) => family.map((palette) => palette.DEFAULT).filter((color) => !usedColors.includes(color)))
+    .filter((available) => available.length > 0);
 
-  if (availableColors.length > 0) {
-    const randomIndex = Math.floor(Math.random() * availableColors.length);
-    return availableColors[randomIndex];
+  if (familyOptions.length > 0) {
+    const familyIndex = Math.floor(Math.random() * familyOptions.length);
+    const family = familyOptions[familyIndex];
+    const colorIndex = Math.floor(Math.random() * family.length);
+    return family[colorIndex];
+  }
+
+  const remainingColors = COURSE_COLOR_POOL.filter((color) => !usedColors.includes(color));
+  if (remainingColors.length > 0) {
+    const randomIndex = Math.floor(Math.random() * remainingColors.length);
+    return remainingColors[randomIndex];
   }
 
   // If all colors used, generate hash-based color

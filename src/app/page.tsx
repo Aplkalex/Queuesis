@@ -15,7 +15,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { generateCourseColor, calculateTotalCredits, detectConflicts, hasAvailableSeats, detectNewCourseConflicts, countUniqueCourses, removeDependentSectionsForLecture, removeLectureAndDependents } from '@/lib/schedule-utils';
 import { generateSchedules, type GeneratedSchedule } from '@/lib/schedule-generator';
 import { DISCLAIMER } from '@/lib/constants';
-import { Calendar, Book, AlertCircle, Trash2, X, Hand, Sparkles, ChevronDown, ChevronUp, ChevronRight, Clock, /* Coffee, Check, */ FlaskConical } from 'lucide-react';
+import { Calendar, Book, AlertCircle, AlertTriangle, Info, Trash2, X, Hand, Sparkles, ChevronDown, ChevronUp, ChevronRight, Clock, /* Coffee, Check, */ FlaskConical } from 'lucide-react';
 import ConflictToast from '@/components/ConflictToast';
 import FullSectionWarningToast, { type FullSectionWarningData } from '@/components/FullSectionWarningToast';
 
@@ -34,6 +34,12 @@ type UndoEntry = SnapshotUndoEntry | LegacyUndoEntry;
 
 const isSnapshotUndoEntry = (entry: UndoEntry): entry is SnapshotUndoEntry =>
   'previousCourses' in entry;
+
+type GenerationNotice = {
+  title: string;
+  message: string;
+  tone: 'info' | 'warning' | 'error';
+};
 
 const PREFERENCE_OPTIONS = [
   { id: 'shortBreaks', icon: '⚡', label: 'Short Breaks' },
@@ -66,6 +72,7 @@ export default function Home() {
   const [swapWarning, setSwapWarning] = useState<string | null>(null);
   const [isSwapWarningExiting, setIsSwapWarningExiting] = useState(false);
   const [swapWarningType, setSwapWarningType] = useState<'full' | 'conflict' | null>(null);
+  const [generationNotice, setGenerationNotice] = useState<GenerationNotice | null>(null);
   const swapWarningStyles = useMemo(() => {
     if (swapWarningType === 'conflict') {
       return {
@@ -260,6 +267,14 @@ export default function Home() {
 
   const dismissFullSectionWarning = useCallback((id: number) => {
     setFullSectionWarnings(prev => prev.filter(warning => warning.id !== id));
+  }, []);
+
+  const showGenerationNotice = useCallback((notice: GenerationNotice) => {
+    setGenerationNotice(notice);
+  }, []);
+
+  const dismissGenerationNotice = useCallback(() => {
+    setGenerationNotice(null);
   }, []);
 
   useEffect(() => {
@@ -727,7 +742,11 @@ export default function Home() {
 
     // Prevent generation if no courses are selected
     if (coursesToGenerate.length === 0) {
-      alert('Please select at least one course before generating schedules.');
+      showGenerationNotice({
+        title: 'Add Courses to Begin',
+        message: 'Select at least one course before generating schedules.',
+        tone: 'info',
+      });
       return;
     }
 
@@ -751,7 +770,11 @@ export default function Home() {
         updateConflicts(schedulesWithColors);
         setConflictToast([]);
       } else {
-        alert('No valid schedules found! Try selecting different courses or changing your preference.');
+        showGenerationNotice({
+          title: 'No Valid Schedules Found',
+          message: 'Try selecting different courses, adjusting preferences, or allowing full sections.',
+          tone: 'warning',
+        });
         updateConflicts([]);
         setConflictToast([]);
       }
@@ -759,7 +782,11 @@ export default function Home() {
       console.log(`✨ Generated ${schedules.length} valid schedules`);
     } catch (error) {
       console.error('Error generating schedules:', error);
-      alert('Error generating schedules. Please try again.');
+      showGenerationNotice({
+        title: 'Error Generating Schedules',
+        message: 'Something went wrong while building schedules. Please try again.',
+        tone: 'error',
+      });
     } finally {
       setIsGenerating(false);
     }
@@ -1438,6 +1465,78 @@ export default function Home() {
 
       {/* Building Reference floating button */}
       <BuildingReference onBuildingClick={setSelectedLocation} />
+
+      {/* Generation Notice Modal */}
+      {generationNotice && (() => {
+        const tone = generationNotice.tone;
+        const toneStyles = {
+          info: {
+            iconWrapper: 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-200',
+            title: 'text-blue-900 dark:text-blue-100',
+            button: 'bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-400',
+            accent: 'from-blue-500/30 via-blue-400/10 to-transparent',
+          },
+          warning: {
+            iconWrapper: 'bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-200',
+            title: 'text-amber-900 dark:text-amber-100',
+            button: 'bg-amber-600 dark:bg-amber-500 hover:bg-amber-700 dark:hover:bg-amber-400',
+            accent: 'from-amber-500/30 via-amber-400/10 to-transparent',
+          },
+          error: {
+            iconWrapper: 'bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-200',
+            title: 'text-rose-900 dark:text-rose-100',
+            button: 'bg-rose-600 dark:bg-rose-500 hover:bg-rose-700 dark:hover:bg-rose-400',
+            accent: 'from-rose-500/30 via-rose-400/10 to-transparent',
+          },
+        } as const;
+        const styles = toneStyles[tone];
+        const Icon = tone === 'info' ? Info : tone === 'warning' ? AlertTriangle : AlertCircle;
+        return (
+          <div
+            className="fixed inset-0 z-[9999] bg-black/50 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn"
+            onClick={dismissGenerationNotice}
+          >
+            <div
+              className="relative w-full max-w-md bg-white/95 dark:bg-[#131313]/95 rounded-2xl shadow-2xl border border-white/30 dark:border-white/10 overflow-hidden animate-slideIn"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${styles.accent}`} />
+              <div className="p-6 space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className={`p-3 rounded-full shadow ${styles.iconWrapper}`}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className={`text-lg font-semibold ${styles.title}`}>
+                      {generationNotice.title}
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                      {generationNotice.message}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={dismissGenerationNotice}
+                    className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition p-1"
+                    aria-label="Dismiss message"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={dismissGenerationNotice}
+                    className={`${styles.button} text-white font-semibold px-4 py-2 rounded-xl shadow-lg shadow-black/10 dark:shadow-black/40 transition-transform hover:scale-[1.01]`}
+                  >
+                    Got it
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Clear All Confirmation Modal */}
       {showClearConfirm && (
