@@ -200,24 +200,22 @@ function DroppableDayColumn({
 
   // Show drop shadow if dragging and this is a valid drop zone
   const showDropShadow = isOver && draggedData !== null;
-  
-  // Check if the dragged section has multiple time slots
-  const hasMultipleSlots = draggedData?.timeSlots && draggedData.timeSlots.length > 1;
+  const canDrop = Boolean(draggedData);
 
   return (
     <div
       ref={setNodeRef}
       className={cn(
         'relative bg-white/40 dark:bg-[#1e1e1e]/40 backdrop-blur-sm rounded-lg border transition-all duration-300',
-        isOver && hasMultipleSlots
+        isOver && canDrop
           ? 'border-4 shadow-2xl ring-2 ring-offset-2' 
           : 'border border-gray-200/40 dark:border-gray-700/40',
         'overflow-hidden'
       )}
       style={{ 
   height: `${slotHeight * hours.length}px`,
-  borderColor: isOver && hasMultipleSlots && draggedData ? draggedData.color : undefined,
-  backgroundColor: isOver && hasMultipleSlots && draggedData ? `${draggedData.color ?? DEFAULT_COURSE_COLOR}15` : undefined,
+  borderColor: isOver && canDrop && draggedData ? draggedData.color : undefined,
+  backgroundColor: isOver && canDrop && draggedData ? `${draggedData.color ?? DEFAULT_COURSE_COLOR}15` : undefined,
       }}
     >
       {/* Hour grid lines */}
@@ -230,7 +228,7 @@ function DroppableDayColumn({
       ))}
 
       {/* Drop shadow preview when dragging over */}
-      {showDropShadow && hasMultipleSlots && draggedData && (
+      {showDropShadow && draggedData && (
         <DropShadowPreview
           timeSlots={draggedData.timeSlots}
           color={draggedData.color ?? DEFAULT_COURSE_COLOR}
@@ -325,11 +323,7 @@ export function TimetableGridDraggable(props: TimetableGridDraggableProps) {
 
     if (dropData?.day) {
       const newDay = dropData.day;
-      
-      // Only proceed if the section has multiple time slots (draggable)
-      if (draggedData.timeSlots && draggedData.timeSlots.length > 1) {
-        onDragEnd(draggedData.courseCode, draggedData.sectionId, newDay);
-      }
+      onDragEnd(draggedData.courseCode, draggedData.sectionId, newDay);
     }
 
     setDraggedData(null);

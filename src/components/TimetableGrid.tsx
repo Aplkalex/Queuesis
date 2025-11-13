@@ -128,6 +128,63 @@ const buildGlassPalette = (hexColor?: string) => {
   };
 };
 
+const OVERLAP_GAP_PX = 8;
+
+type SlotLayoutInput = {
+  key: string;
+  selectedCourse: SelectedCourse;
+  slot: TimeSlot;
+  start: number;
+  end: number;
+};
+
+type SlotLayoutOutput = SlotLayoutInput & {
+  lane: number;
+  overlapCount: number;
+};
+
+const layoutDaySlots = (blocks: SlotLayoutInput[]): SlotLayoutOutput[] => {
+  const sorted = [...blocks].sort((a, b) => {
+    if (a.start === b.start) {
+      return a.end - b.end;
+    }
+    return a.start - b.start;
+  });
+
+  const active: SlotLayoutOutput[] = [];
+  const result: SlotLayoutOutput[] = [];
+
+  for (const block of sorted) {
+    for (let i = active.length - 1; i >= 0; i -= 1) {
+      if (active[i].end <= block.start) {
+        active.splice(i, 1);
+      }
+    }
+
+    const usedLanes = new Set(active.map((entry) => entry.lane));
+    let lane = 0;
+    while (usedLanes.has(lane)) {
+      lane += 1;
+    }
+
+    const layoutBlock: SlotLayoutOutput = {
+      ...block,
+      lane,
+      overlapCount: Math.max(1, active.length + 1),
+    };
+
+    active.push(layoutBlock);
+    result.push(layoutBlock);
+
+    const currentOverlap = active.length;
+    active.forEach((entry) => {
+      entry.overlapCount = Math.max(entry.overlapCount, currentOverlap);
+    });
+  }
+
+  return result;
+};
+
 export function TimetableGrid({ 
   selectedCourses, 
   /* onCourseClick, */
@@ -178,7 +235,7 @@ export function TimetableGrid({
     : 'border-gray-200/35 dark:border-white/[0.08]';
 
   const courseBlockBaseClass = cn(
-    'absolute left-1 right-1 rounded-lg cursor-pointer group flex flex-col px-2 py-1.5 overflow-visible border transition-all duration-200 ease-out',
+    'absolute rounded-lg cursor-pointer group flex flex-col px-2 py-1.5 overflow-visible border transition-transform duration-200 ease-out',
     isFrosted
       ? 'backdrop-blur-xl shadow-sm hover:shadow-md'
       : 'backdrop-blur-none shadow-[0_20px_36px_-28px_rgba(15,23,42,0.62)] hover:shadow-[0_24px_40px_-28px_rgba(15,23,42,0.72)]'
@@ -222,6 +279,8 @@ export function TimetableGrid({
     };
 
     style['--course-glow'] = palette.glow;
+    style.left = style.left ?? `${OVERLAP_GAP_PX / 2}px`;
+    style.width = style.width ?? `calc(100% - ${OVERLAP_GAP_PX}px)`;
 
     return style;
   };
@@ -596,8 +655,8 @@ export function TimetableGrid({
           // Always use smooth transitions for position changes
           transition: isDragging
             ? 'none'
-            : 'top 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), height 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), left 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.35s ease, transform 0.2s ease-out, box-shadow 0.2s ease-out, opacity 0.2s ease-out',
-          willChange: 'top, height, left',
+            : 'transform 0.18s ease, box-shadow 0.18s ease, top 0.28s ease, height 0.28s ease, left 0.28s ease, opacity 0.2s ease',
+          willChange: 'transform, box-shadow, top, height, left',
         }}
         onMouseEnter={() => setIsLocalHovered(true)}
         onMouseLeave={() => setIsLocalHovered(false)}
@@ -754,24 +813,38 @@ export function TimetableGrid({
                 ))}
 
                 {/* Course blocks */}
-                {selectedCourses.map((selectedCourse, courseIdx) =>
-                  selectedCourse.selectedSection.timeSlots
-                    .filter((slot) => slot.day === day)
-                    .map((slot, slotIdx) => {
-                      const style = getCourseStyle(slot.startTime, slot.endTime, selectedCourse.color);
-                      const blockId = `${courseIdx}-${slotIdx}-${day}`;
+                {(() => {
+                  const slotEntries: SlotLayoutInput[] = selectedCourses.flatMap((selectedCourse, courseIdx) =>
+                    selectedCourse.selectedSection.timeSlots
+                      .map((slot, slotIdx) => ({
+                        key: `${courseIdx}-${slotIdx}-${day}`,
+                        selectedCourse,
+                        slot,
+                        start: timeToMinutes(slot.startTime),
+                        end: timeToMinutes(slot.endTime),
+                      }))
+                      .filter((entry) => entry.slot.day === day)
+                  );
 
-                      return (
-                        <DraggableCourseBlock
-                          key={blockId}
-                          selectedCourse={selectedCourse}
-                          blockId={blockId}
-                          style={style}
-                          slot={slot}
-                        />
-                      );
-                    })
-                )}
+                  const laidOut = layoutDaySlots(slotEntries);
+
+                  return laidOut.map((entry) => {
+                    const style = getCourseStyle(entry.slot.startTime, entry.slot.endTime, entry.selectedCourse.color);
+                    const widthPercent = 100 / entry.overlapCount;
+                    style.width = `calc(${widthPercent}% - ${OVERLAP_GAP_PX}px)`;
+                    style.left = `calc(${widthPercent * entry.lane}% + ${OVERLAP_GAP_PX / 2}px)`;
+
+                    return (
+                      <DraggableCourseBlock
+                        key={entry.key}
+                        selectedCourse={entry.selectedCourse}
+                        blockId={entry.key}
+                        style={style}
+                        slot={entry.slot}
+                      />
+                    );
+                  });
+                })()}
 
                 {/* Ghost blocks for alternative sections when dragging */}
                 {draggedCourse && (() => {

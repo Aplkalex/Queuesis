@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef, type ChangeEvent } from 'react';
 import { Course, Section, SelectedCourse, TermType, SchedulePreferences, DayOfWeek } from '@/types';
 import TimetableGrid from '@/components/TimetableGrid';
 import { CourseList } from '@/components/CourseList';
@@ -13,7 +13,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { generateCourseColor, calculateTotalCredits, detectConflicts, hasAvailableSeats, detectNewCourseConflicts, countUniqueCourses, removeDependentSectionsForLecture, removeLectureAndDependents } from '@/lib/schedule-utils';
 import { generateSchedules, type GeneratedSchedule } from '@/lib/schedule-generator';
 import { DISCLAIMER } from '@/lib/constants';
-import { Calendar, Book, AlertCircle, AlertTriangle, Info, Trash2, X, Hand, Sparkles, ChevronDown, ChevronUp, ChevronRight, Clock, /* Coffee, Check, */ FlaskConical } from 'lucide-react';
+import { Calendar, Book, AlertCircle, AlertTriangle, Info, Trash2, X, Hand, Sparkles, ChevronDown, ChevronUp, ChevronRight, Clock, Download, Upload, /* Coffee, Check, */ FlaskConical } from 'lucide-react';
 import ConflictToast from '@/components/ConflictToast';
 import FullSectionWarningToast, { type FullSectionWarningData } from '@/components/FullSectionWarningToast';
 
@@ -37,6 +37,24 @@ type GenerationNotice = {
   title: string;
   message: string;
   tone: 'info' | 'warning' | 'error';
+};
+
+type ScheduleExportEntry = {
+  courseCode: string;
+  sectionId: string;
+  sectionType: Section['sectionType'];
+  classNumber?: number;
+  color?: string;
+  course?: Course;
+  selectedSection?: Section;
+};
+
+type ScheduleExportFile = {
+  version?: number;
+  generatedAt?: string;
+  term?: string;
+  scheduleMode?: string;
+  courses: ScheduleExportEntry[];
 };
 
 const PREFERENCE_OPTIONS = [
@@ -81,6 +99,7 @@ export default function Home() {
   const [courseFetchVersion, setCourseFetchVersion] = useState(0);
   const coursesAbortControllerRef = useRef<AbortController | null>(null);
   const fullSectionWarningIdRef = useRef(0);
+  const importInputRef = useRef<HTMLInputElement | null>(null);
   const [selectedTerm, setSelectedTerm] = useState<TermType>('2025-26-T1');
   const [swapWarning, setSwapWarning] = useState<string | null>(null);
   const [isSwapWarningExiting, setIsSwapWarningExiting] = useState(false);
@@ -779,6 +798,165 @@ export default function Home() {
     }
   };
 
+  const handleExportSchedule = useCallback(() => {
+    if (selectedCourses.length === 0) {
+      showGenerationNotice({
+        title: 'Nothing to export',
+        message: 'Add courses to your schedule before exporting.',
+        tone: 'warning',
+      });
+      return;
+    }
+
+    const payload: ScheduleExportFile = {
+      version: 1,
+      generatedAt: new Date().toISOString(),
+      term: selectedTerm,
+      scheduleMode,
+      courses: selectedCourses.map((selected) => ({
+        courseCode: selected.course.courseCode,
+        sectionId: selected.selectedSection.sectionId,
+        sectionType: selected.selectedSection.sectionType,
+        classNumber: selected.selectedSection.classNumber,
+        color: selected.color,
+        course: selected.course,
+        selectedSection: selected.selectedSection,
+      })),
+    };
+
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const filename = `cuhk-schedule-${selectedTerm}-${new Date().toISOString().slice(0, 10)}.json`;
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    URL.revokeObjectURL(url);
+
+    showGenerationNotice({
+      title: 'Schedule exported',
+      message: 'Downloaded a JSON copy of your timetable.',
+      tone: 'info',
+    });
+  }, [selectedCourses, scheduleMode, selectedTerm, showGenerationNotice]);
+
+  const handleImportButtonClick = useCallback(() => {
+    importInputRef.current?.click();
+  }, []);
+
+  const handleImportSchedule = useCallback(
+    async (event: ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) {
+        return;
+      }
+
+      try {
+        const text = await file.text();
+        const parsed = JSON.parse(text) as ScheduleExportFile;
+        if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.courses)) {
+          throw new Error('Invalid file format. Expected an exported schedule.');
+        }
+
+        if (parsed.term && parsed.term !== selectedTerm) {
+          const matchingTerm = terms.find((term) => term.id === parsed.term);
+          if (matchingTerm) {
+            setSelectedTerm(matchingTerm.id);
+          }
+        }
+
+        const usedColors: string[] = [];
+        const missingCourses = new Set<string>();
+        const missingSections = new Set<string>();
+        const restored: SelectedCourse[] = [];
+
+        parsed.courses.forEach((entry) => {
+          if (!entry || typeof entry.courseCode !== 'string' || typeof entry.sectionId !== 'string') {
+            return;
+          }
+          const resolvedCourse =
+            courses.find((course) => course.courseCode === entry.courseCode) ?? entry.course;
+          if (!resolvedCourse) {
+            missingCourses.add(entry.courseCode);
+            return;
+          }
+
+          const resolvedSection =
+            resolvedCourse.sections.find((section) => {
+              const sameId = section.sectionId === entry.sectionId;
+              const sameType = section.sectionType === entry.sectionType;
+              const sameClass =
+                entry.classNumber == null ||
+                section.classNumber == null ||
+                section.classNumber === entry.classNumber;
+              return sameId && sameType && sameClass;
+            }) ?? entry.selectedSection;
+
+          if (!resolvedSection) {
+            missingSections.add(`${entry.courseCode} ${entry.sectionId}`);
+            return;
+          }
+
+          const color =
+            typeof entry.color === 'string'
+              ? entry.color
+              : generateCourseColor(resolvedCourse.courseCode, usedColors);
+
+          usedColors.push(color);
+          restored.push({
+            course: resolvedCourse,
+            selectedSection: resolvedSection,
+            color,
+          });
+        });
+
+        if (restored.length === 0) {
+          throw new Error('No matching courses were found in this file.');
+        }
+
+        setSelectedCourses(restored);
+        setGeneratedSchedules([]);
+        setSelectedScheduleIndex(0);
+        setUndoStack([]);
+        setFullSectionWarnings([]);
+        setConflictToast([]);
+        setConflictingCourses([]);
+        setExpandedScheduleCourse(null);
+        setSwapModalCourse(null);
+        setSelectedCourseDetails(null);
+        setSwapWarning(null);
+        setSwapWarningType(null);
+        setIsSwapWarningExiting(false);
+        handleDismissUndo();
+        updateConflicts(restored);
+
+        const uniqueImportedCourses = new Set(restored.map((sc) => sc.course.courseCode)).size;
+        const missingSummary =
+          missingCourses.size > 0 || missingSections.size > 0
+            ? ` Skipped ${missingCourses.size + missingSections.size} item(s) that are unavailable in the current dataset.`
+            : '';
+
+        showGenerationNotice({
+          title: 'Schedule imported',
+          message: `Loaded ${uniqueImportedCourses} course${uniqueImportedCourses !== 1 ? 's' : ''}.${missingSummary}`,
+          tone: missingSummary ? 'warning' : 'info',
+        });
+      } catch (error) {
+        console.error('Failed to import schedule', error);
+        showGenerationNotice({
+          title: 'Import failed',
+          message: error instanceof Error ? error.message : 'Unknown error occurred.',
+          tone: 'error',
+        });
+      } finally {
+        event.target.value = '';
+      }
+    },
+    [courses, handleDismissUndo, selectedTerm, showGenerationNotice, terms, updateConflicts]
+  );
+
   const cancelTermChange = () => {
     setShowTermChangeConfirm(false);
     setPendingTerm(null);
@@ -942,6 +1120,14 @@ export default function Home() {
 
   return (
     <div className="h-screen flex flex-col relative">
+      <input
+        type="file"
+        accept="application/json"
+        ref={importInputRef}
+        onChange={handleImportSchedule}
+        className="hidden"
+        aria-hidden="true"
+      />
       {/* Dark mode background overlay - ensures solid black */}
       <div className="fixed inset-0 bg-[#1e1e1e] -z-10 dark:block hidden" />
       
@@ -1112,14 +1298,16 @@ export default function Home() {
             {/* My Schedule - Collapsible */}
             <div className="bg-white/70 dark:bg-[#252526]/70 backdrop-blur-xl rounded-xl shadow-lg border border-gray-200/30 dark:border-gray-700/30 flex-shrink-0 flex flex-col overflow-hidden">
               <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
-                <div className="flex items-center justify-between gap-2 mb-2">
-                  <div className="flex items-center gap-3">
-                    <h2 className="text-base font-bold text-gray-900 dark:text-white">My Schedule</h2>
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <h2 className="text-base font-bold text-gray-900 dark:text-white whitespace-nowrap">
+                      My Schedule
+                    </h2>
                     {/* Term Selector Dropdown */}
                     <select
                       value={selectedTerm}
                       onChange={(e) => handleTermChange(e.target.value as TermType)}
-                      className="text-xs px-2 py-1 pr-6 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#2d2d30] text-gray-700 dark:text-gray-200 hover:border-purple-400 dark:hover:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all cursor-pointer appearance-none"
+                      className="text-xs px-2 py-1 pr-6 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#2d2d30] text-gray-700 dark:text-gray-200 hover:border-purple-400 dark:hover:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all cursor-pointer appearance-none whitespace-nowrap"
                       style={{
                         backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
                         backgroundPosition: 'right 0.25rem center',
@@ -1135,7 +1323,26 @@ export default function Home() {
                       ))}
                     </select>
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 flex-shrink-0 px-1 py-0.5 rounded-lg border border-gray-200/70 dark:border-gray-700/40 bg-white/70 dark:bg-[#1e1e1e]/60">
+                    <button
+                      onClick={handleImportButtonClick}
+                      className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded-md transition-colors"
+                      title="Import schedule"
+                    >
+                      <Upload className="w-3 h-3" />
+                    </button>
+                    <button
+                      onClick={handleExportSchedule}
+                      disabled={selectedCourses.length === 0}
+                      className={`flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md transition-colors ${
+                        selectedCourses.length === 0
+                          ? 'text-gray-400 dark:text-gray-600 cursor-not-allowed bg-transparent'
+                          : 'text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20'
+                      }`}
+                      title="Export schedule"
+                    >
+                      <Download className="w-3 h-3" />
+                    </button>
                     {selectedCourses.length > 0 && (
                       <button
                         onClick={handleClearSchedule}
