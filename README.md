@@ -1,13 +1,13 @@
 # 🎓 CUHK Course Scheduler
 
-An intelligent course planner for CUHK students to visualize, optimize, and manage their class schedules. Features both manual drag-and-drop scheduling and AI-powered automatic schedule generation with smart conflict detection.
+A CUHK-focused timetable builder that pairs drag-and-drop editing with a deterministic schedule generator. Course data is sourced from official CUSIS exports (converted to JSON via our tooling) and can be synced into MongoDB when needed.
 
 ## ✨ Features
 
 ### 🎯 Dual Scheduling Modes
 
-- **Manual Mode**: Drag and drop individual sections to build your perfect schedule
-- **Auto-Generate Mode**: AI-powered schedule generation with preference optimization
+- **Manual mode** – Drag sections to lay out the timetable manually.
+- **Auto mode** – Algorithmic generator (no AI) that enumerates valid section combinations and scores them against your preferences.
 
 ### 📅 Visual Timetable
 
@@ -23,15 +23,20 @@ An intelligent course planner for CUHK students to visualize, optimize, and mana
 - Department-based browsing
 - Instant results as you type
 
-### ⚡ Intelligent Schedule Generation
+### ⚙️ Backend Snapshot
 
-Six optimization preferences to match your lifestyle:
-- **⚡ Short Breaks**: Minimize gaps between classes - finish quickly and go home
-- **☕ Long Breaks**: Maximize breaks of 60+ minutes - time for lunch and studying
-- **🎯 Consistent**: Classes start at similar times each day - predictable routine
-- **🌅 Start Late**: Classes begin later in the morning - for night owls
-- **🌆 End Early**: Classes finish earlier in the afternoon - free evenings
-- **🗓️ Days Off**: Packs classes into fewer days - get full free days
+- Next.js route handlers expose `/api/courses`, `/api/courses/[code]`, `/api/terms`, and `/api/health`.
+- MongoDB Atlas is supported but optional; APIs fall back to the converted JSON dataset and, lastly, the static mocks.
+- Data sync is currently manual (Excel → JSON → Mongo). Automated scraping is planned for a later phase.
+
+### ⚡ Preference-Aware Generation
+
+- **⚡ Short Breaks** – minimize downtime between classes.
+- **☕ Long Breaks** – maximize ≥60‑minute lunch/study gaps.
+- **🎯 Consistent** – keep start times aligned throughout the week.
+- **🌅 Start Late** – push classes later in the day.
+- **🌆 End Early** – finish as early as possible.
+- **🗓️ Days Off** – pack sections into fewer days.
 
 ### 🛡️ Conflict Detection
 
@@ -168,25 +173,51 @@ Each preference uses a specific scoring function:
 - **End Early**: Minimizes average end time
 - **Days Off**: Maximizes free weekdays
 
-## 📊 Data Source
+## 🔍 Course Data Sync
 
-Currently uses manually curated mock course data (see [Manual Data Entry](docs/manual-data-entry.md)). Future versions will integrate with:
-- CUHK's course catalog API
-- Real-time enrollment data
-- Course prerequisite information
+CUHK does not expose a public API, so we currently run a “manual sync” pipeline:
 
-⚠️ **Disclaimer**: Always verify course information on CUSIS before enrolling. This tool is for planning purposes only.
+1. Obtain the official CUSIS Excel dump.
+2. Convert it to our `Course[]` JSON schema:
+   ```bash
+   npm run convert:excel -- --input "CUHK CUSIS Course offering (Nov 12).xlsx" --term 2025-26-T2 --output data/courses-2025-26-T2.json
+   ```
+3. (Optional) Import into MongoDB:
+   ```bash
+   npm run import:courses -- data/courses-2025-26-T2.json
+   ```
+4. Restart the dev server. `/api/courses` will read from Mongo if available, otherwise it falls back to the generated JSON and finally to `mockCourses`.
 
-## 📝 Manual Data Entry
+Helpful extras:
+- For tiny fixtures, edit `src/data/mock-courses.ts` / `src/data/test-courses.ts`.
+- Set `GENERATED_COURSES_PATH` if your JSON lives elsewhere.
+- Full instructions live in [docs/manual-data-entry.md](docs/manual-data-entry.md).
+- ⚠️ **Disclaimer:** Data may lag behind CUSIS. Always confirm in CUSIS before enrolling.
 
-The former CUSIS scraper has been removed. To update the dataset:
-- Edit `src/data/mock-courses.ts` (or `src/data/test-courses.ts`) directly for lightweight local fixtures.
-- Convert the official Excel dump with `npm run convert:excel -- --input "<file.xlsx>" --term 2025-26-T2` to regenerate `data/courses-*.json` (used automatically by the API fallback).
-- Optionally run `npm run import:courses -- data/courses-*.json` to seed MongoDB when you want the API to read from the database.
+Future plans include reviving the scraper and/or letting contributors upload JSON/CSV, but the manual workflow keeps the project moving today.
 
-For detailed step-by-step instructions, check `docs/manual-data-entry.md`.
+## ⚙️ Backend & Deployment Plan
 
-## � Testing
+| Layer | Current status | Next step |
+| --- | --- | --- |
+| Frontend | Next.js 16 + Tailwind, runs locally (Vercel-ready). | Deploy to Vercel with envs + preview builds. |
+| API | Next.js route handlers in the same repo. | Graduate to dedicated Node/Express service if needed. |
+| Database | MongoDB Atlas (optional), Prisma client. | Harden schema, add migrations/seed routines. |
+| Data sync | Manual Excel → JSON → Mongo pipeline. | Reintroduce scraper or contributor upload portal. |
+| Automation | Manual CLI commands. | GitHub Actions cron to refresh datasets. |
+
+Recommended hosting combo: Vercel for the UI, Vercel/Render/Railway for APIs, MongoDB Atlas for data, and GitHub Actions for background jobs once automation lands.
+
+## 💡 Core Functions (MVP)
+
+- Search by course code, name, or instructor.
+- Add/remove courses and drag them around the timetable.
+- Detect conflicts instantly with clear visual cues.
+- Apply preference filters (short breaks, days off, start late, end early, etc.).
+- Refresh datasets through the Excel → JSON pipeline.
+- (Roadmap) export timetables (PNG/ICS) and save multiple personal plans.
+
+## ✅ Testing
 
 The project includes comprehensive unit tests for the core scheduling algorithm:
 - ✅ Schedule generation with multiple courses
@@ -198,15 +229,13 @@ Run `npm test` to see all 14 passing tests.
 
 ## 🚧 Roadmap
 
-- [ ] Integration with CUHK course catalog API
-- [ ] Schedule export (iCal, PDF, image)
-- [ ] Course prerequisite tracking
-- [ ] Multi-user support with saved schedules
-- [ ] Mobile app version
-- [ ] Email notifications for course changes
-- [ ] GPA calculator integration
+- [ ] Automated CUHK data sync (scraper or contributor uploads)
+- [ ] User accounts to save/shared schedules
+- [ ] Timetable export (PNG/ICS) + Google Calendar push
+- [ ] Mobile-first/Draggable UX polish
+- [ ] Crowdsourced course notes/ratings
 
-## �🤝 Contributing
+## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 

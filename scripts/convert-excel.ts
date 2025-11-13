@@ -266,6 +266,51 @@ const inferParentLecture = (course: InterimCourse | null, sectionId: string, typ
   return lecture ? lecture.sectionId : undefined;
 };
 
+const mergeCourses = (courses: Course[]): Course[] => {
+  const merged = new Map<string, Course>();
+  for (const course of courses) {
+    const existing = merged.get(course.courseCode);
+    if (!existing) {
+      merged.set(course.courseCode, {
+        ...course,
+        sections: [...course.sections],
+      });
+      continue;
+    }
+
+    existing.department ||= course.department;
+    existing.description ||= course.description;
+    existing.enrollmentRequirements ||= course.enrollmentRequirements;
+    if ((!existing.prerequisites || existing.prerequisites.length === 0) && course.prerequisites) {
+      existing.prerequisites = course.prerequisites;
+    }
+    existing.career ||= course.career;
+    existing.term ||= course.term;
+    if (
+      (!existing.lastUpdated && course.lastUpdated) ||
+      (existing.lastUpdated && course.lastUpdated && course.lastUpdated > existing.lastUpdated)
+    ) {
+      existing.lastUpdated = course.lastUpdated;
+    }
+
+    const sectionKeys = new Set(
+      existing.sections.map(
+        (section) =>
+          `${section.sectionType}|${section.sectionId}|${section.classNumber ?? ''}`
+      )
+    );
+
+    for (const section of course.sections) {
+      const key = `${section.sectionType}|${section.sectionId}|${section.classNumber ?? ''}`;
+      if (sectionKeys.has(key)) continue;
+      sectionKeys.add(key);
+      existing.sections.push(section);
+    }
+  }
+
+  return Array.from(merged.values());
+};
+
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   const workbook = xlsx.readFile(options.input, { cellDates: true });
@@ -429,13 +474,14 @@ async function main() {
 
   flush();
 
-  const sortedCourses = courses.sort((a, b) => a.courseCode.localeCompare(b.courseCode));
+  const mergedCourses = mergeCourses(courses);
+  mergedCourses.sort((a, b) => a.courseCode.localeCompare(b.courseCode));
   await fs.mkdir(path.dirname(options.output), { recursive: true });
-  await fs.writeFile(options.output, JSON.stringify(sortedCourses, null, 2), 'utf-8');
+  await fs.writeFile(options.output, JSON.stringify(mergedCourses, null, 2), 'utf-8');
 
-  const sectionCount = sortedCourses.reduce((sum, course) => sum + course.sections.length, 0);
+  const sectionCount = mergedCourses.reduce((sum, course) => sum + course.sections.length, 0);
   console.log(
-    `✅ Exported ${sortedCourses.length} courses (${sectionCount} sections) to ${options.output}`
+    `✅ Exported ${mergedCourses.length} courses (${sectionCount} sections) to ${options.output}`
   );
 }
 
