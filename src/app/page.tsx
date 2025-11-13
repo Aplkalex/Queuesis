@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo, useEffect, useRef, type ChangeEvent } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef, useTransition, useDeferredValue, type ChangeEvent } from 'react';
 import { Course, Section, SelectedCourse, TermType, SchedulePreferences, DayOfWeek } from '@/types';
 import TimetableGrid from '@/components/TimetableGrid';
 import { CourseList } from '@/components/CourseList';
@@ -68,11 +68,12 @@ const PREFERENCE_OPTIONS = [
 
 type PreferenceId = typeof PREFERENCE_OPTIONS[number]['id'];
 
+
 const formatTermLabel = (label: string) => {
   if (!label) return label;
-  return label.replace(/(\d{4})-(\d{2})/, (_, yearStart: string, yearEnd: string) => {
-    const shortStart = yearStart.slice(-2);
-    return `${shortStart}-${yearEnd}`;
+  return label.replace(/(\d{4})[\s-](\d{2})/, (_, fullYear: string, end: string) => {
+    const shortStart = fullYear.slice(-2);
+    return `${shortStart}-${end}`;
   });
 };
 
@@ -108,6 +109,7 @@ export default function Home() {
   const coursesAbortControllerRef = useRef<AbortController | null>(null);
   const fullSectionWarningIdRef = useRef(0);
   const importInputRef = useRef<HTMLInputElement | null>(null);
+  const [isSwitchingMode, startModeTransition] = useTransition();
   const [selectedTerm, setSelectedTerm] = useState<TermType>('2025-26-T1');
   const [swapWarning, setSwapWarning] = useState<string | null>(null);
   const [isSwapWarningExiting, setIsSwapWarningExiting] = useState(false);
@@ -184,6 +186,23 @@ export default function Home() {
   // Test mode state
   const [isTestMode, setIsTestMode] = useState(false);
 
+  const handleModeSwitch = useCallback(
+    (mode: 'manual' | 'auto-generate') => {
+      startModeTransition(() => {
+        setScheduleMode(mode);
+        setGeneratedSchedules([]);
+        setSelectedScheduleIndex(0);
+        if (mode === 'auto-generate') {
+          const courseCodes = Array.from(new Set(selectedCourses.map((sc) => sc.course.courseCode)));
+          setSelectedCourseCodes(courseCodes);
+        } else {
+          setSelectedCourseCodes([]);
+        }
+      });
+    },
+    [selectedCourses, startModeTransition]
+  );
+
   // Sync selectedCourseCodes with selectedCourses (for manual mode)
   // This keeps the preferences bar in sync when switching modes
   useEffect(() => {
@@ -192,6 +211,9 @@ export default function Home() {
     ));
     setSelectedCourseCodes(courseCodes);
   }, [selectedCourses]);
+
+  const deferredSearchQuery = useDeferredValue(searchQuery);
+  const deferredCourses = useDeferredValue(courses);
 
   // Term display names
   const termNames = useMemo(() => {
@@ -204,8 +226,8 @@ export default function Home() {
   // Choose courses based on test mode
   // Filter courses based on search, department, and selected term
   const filteredCourses = useMemo(() => {
-    const normalizedQuery = searchQuery.toLowerCase().trim();
-    return courses.filter((course) => {
+    const normalizedQuery = deferredSearchQuery.toLowerCase().trim();
+    return deferredCourses.filter((course) => {
       const matchesSearch = normalizedQuery.length === 0
         ? true
         : course.courseCode.toLowerCase().includes(normalizedQuery) ||
@@ -217,9 +239,12 @@ export default function Home() {
 
       return matchesSearch && matchesDepartment && matchesTerm;
     });
-  }, [courses, searchQuery, selectedDepartment, selectedTerm]);
+  }, [deferredCourses, deferredSearchQuery, selectedDepartment, selectedTerm]);
 
-  const departments = useMemo(() => Array.from(new Set(courses.map((course) => course.department))), [courses]);
+  const departments = useMemo(
+    () => Array.from(new Set(deferredCourses.map((course) => course.department))),
+    [deferredCourses]
+  );
 
   // Available courses for timetable interactions
   const availableCourses = courses;
@@ -308,7 +333,7 @@ export default function Home() {
         return response.json();
       })
       .then((data) => {
-        if (!isMounted) return;
+    if (!isMounted) return;
         if (!data?.data || !Array.isArray(data.data)) {
           throw new Error('Malformed term response');
         }
@@ -1266,30 +1291,20 @@ export default function Home() {
               <div className="bg-white/70 dark:bg-[#252526]/70 backdrop-blur-xl rounded-xl shadow-lg p-2 border border-gray-200/30 dark:border-gray-700/30 flex-shrink-0">
               <div className="flex gap-1 p-1 bg-gray-100 dark:bg-[#1e1e1e]/50 rounded-lg">
                 <button
-                  onClick={() => {
-                    setScheduleMode('auto-generate');
-                    setGeneratedSchedules([]);
-                    // Sync selectedCourseCodes from selectedCourses when switching to auto-generate
-                    const courseCodes = Array.from(new Set(
-                      selectedCourses.map(sc => sc.course.courseCode)
-                    ));
-                    setSelectedCourseCodes(courseCodes);
-                  }}
+                  onClick={() => handleModeSwitch('auto-generate')}
+                  disabled={isSwitchingMode}
                   className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-xs font-medium transition-all ${
                     scheduleMode === 'auto-generate'
                       ? 'bg-white dark:bg-[#2d2d30] text-purple-600 dark:text-purple-400 shadow-sm'
                       : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-                  }`}
+                  } ${isSwitchingMode ? 'opacity-60 cursor-not-allowed' : ''}`}
                 >
                   <Sparkles className="w-4 h-4" />
                   Auto-Generate
                 </button>
                 <button
-                  onClick={() => {
-                    setScheduleMode('manual');
-                    setGeneratedSchedules([]);
-                    setSelectedCourseCodes([]);
-                  }}
+                  onClick={() => handleModeSwitch('manual')}
+                  disabled={isSwitchingMode}
                   className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-xs font-medium transition-all ${
                     scheduleMode === 'manual'
                       ? 'bg-white dark:bg-[#2d2d30] text-purple-600 dark:text-purple-400 shadow-sm'
@@ -1325,7 +1340,7 @@ export default function Home() {
                     >
                       {terms.map((term) => (
                         <option key={term.id} value={term.id}>
-                          {term.name}
+                          {formatTermLabel(term.name)}
                         </option>
                       ))}
                     </select>
@@ -1958,7 +1973,7 @@ export default function Home() {
               <div>
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">Switch Term?</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {(termNames[selectedTerm] ?? selectedTerm)} → {(termNames[pendingTerm] ?? pendingTerm)}
+                  {formatTermLabel(termNames[selectedTerm] ?? selectedTerm)} → {formatTermLabel(termNames[pendingTerm] ?? pendingTerm)}
                 </p>
               </div>
             </div>
@@ -1967,7 +1982,7 @@ export default function Home() {
               Switching terms will clear your current schedule with <span className="font-semibold text-gray-900 dark:text-white">{uniqueCourseCount} course{uniqueCourseCount !== 1 ? 's' : ''}</span>.
             </p>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-              You can switch back to {termNames[selectedTerm] ?? selectedTerm} later to create a new schedule.
+              You can switch back to {formatTermLabel(termNames[selectedTerm] ?? selectedTerm)} later to create a new schedule.
             </p>
 
             <div className="flex gap-3">
