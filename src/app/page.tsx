@@ -13,7 +13,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { generateCourseColor, calculateTotalCredits, detectConflicts, hasAvailableSeats, detectNewCourseConflicts, countUniqueCourses, removeDependentSectionsForLecture, removeLectureAndDependents } from '@/lib/schedule-utils';
 import { generateSchedules, type GeneratedSchedule } from '@/lib/schedule-generator';
 import { DISCLAIMER } from '@/lib/constants';
-import { Calendar, Book, AlertCircle, AlertTriangle, Info, Trash2, X, Hand, Sparkles, ChevronDown, ChevronUp, ChevronRight, Clock, Download, Upload, /* Coffee, Check, */ FlaskConical } from 'lucide-react';
+import { Calendar, Book, AlertCircle, AlertTriangle, Info, Trash2, X, Hand, Sparkles, ChevronDown, ChevronUp, ChevronRight, Clock, Download, Upload, Menu, RotateCcw, MapPin, /* Coffee, Check, */ FlaskConical } from 'lucide-react';
 import ConflictToast from '@/components/ConflictToast';
 import FullSectionWarningToast, { type FullSectionWarningData } from '@/components/FullSectionWarningToast';
 
@@ -37,6 +37,21 @@ type GenerationNotice = {
   title: string;
   message: string;
   tone: 'info' | 'warning' | 'error';
+};
+
+const useIsMobile = (breakpoint = 1024) => {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mediaQuery = window.matchMedia(`(max-width: ${breakpoint - 1}px)`);
+    const update = () => setIsMobile(mediaQuery.matches);
+    update();
+    mediaQuery.addEventListener('change', update);
+    return () => mediaQuery.removeEventListener('change', update);
+  }, [breakpoint]);
+
+  return isMobile;
 };
 
 type ScheduleExportEntry = {
@@ -84,6 +99,7 @@ const DEFAULT_TERMS: Array<{ id: TermType; name: string }> = [
 ];
 
 export default function Home() {
+  const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCourses, setSelectedCourses] = useState<SelectedCourse[]>([]);
   const [showFilters, setShowFilters] = useState(false);
@@ -185,6 +201,7 @@ export default function Home() {
 
   // Test mode state
   const [isTestMode, setIsTestMode] = useState(false);
+  const [isMobileActionsOpen, setIsMobileActionsOpen] = useState(false);
 
   const handleModeSwitch = useCallback(
     (mode: 'manual' | 'auto-generate') => {
@@ -211,6 +228,12 @@ export default function Home() {
     ));
     setSelectedCourseCodes(courseCodes);
   }, [selectedCourses]);
+
+  useEffect(() => {
+    if (!isMobile) {
+      setIsMobileActionsOpen(false);
+    }
+  }, [isMobile]);
 
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const deferredCourses = useDeferredValue(courses);
@@ -797,6 +820,7 @@ export default function Home() {
     setSelectedLocation(location);
   }, []);
 
+
   // Clear all courses
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showTermChangeConfirm, setShowTermChangeConfirm] = useState(false);
@@ -1180,20 +1204,30 @@ export default function Home() {
       <header className="bg-white/80 dark:bg-[#252526]/70 backdrop-blur-xl shadow-sm border-b border-gray-200/50 dark:border-gray-700/30 sticky top-0 z-50 flex-shrink-0">
         <div className="w-full px-3 sm:px-4 lg:px-6 py-2">
           <div className="flex items-center justify-between max-w-[1600px] mx-auto">
-            <div className="flex items-center gap-2">
-              <div className="bg-purple-600 dark:bg-purple-500 text-white p-1.5 rounded-lg shadow-lg">
-                <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
-              </div>
-              <div>
-                <h1 className="text-sm sm:text-base lg:text-lg font-bold text-gray-900 dark:text-white">
-                  CUHK Course Scheduler
-                </h1>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <div className="relative p-1.5 sm:p-2 rounded-full bg-gradient-to-br from-purple-600 to-purple-400 text-white shadow-lg">
+                  <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 border-white/70 flex items-center justify-center">
+                    <span className="text-xs font-black">Q</span>
+                  </div>
+                  <div className="absolute -right-1.5 bottom-0 w-3 h-1 rounded-full bg-white/70 rotate-45 origin-left" />
+                </div>
+                <div className="flex flex-col leading-tight">
+                  <span className="text-base sm:text-lg font-black text-gray-900 dark:text-white tracking-tight">
+                    Queuesis
+                  </span>
+                  <span className="text-[10px] uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+                    CUHK Scheduler
+                  </span>
+                </div>
               </div>
             </div>
 
             {/* Stats and Theme Toggle - Compact */}
             <div className="flex items-center gap-2 sm:gap-3 lg:gap-4">
-              <ThemeToggle />
+              <div className="hidden lg:block">
+                <ThemeToggle />
+              </div>
               
               {/* Test Mode Toggle */}
               <button
@@ -1213,7 +1247,7 @@ export default function Home() {
                   setSelectedScheduleIndex(0);
                 }}
                 className={`
-                  flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium
+                  hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium
                   transition-all duration-200 shadow-sm
                   ${isTestMode 
                     ? 'bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600' 
@@ -1299,10 +1333,13 @@ export default function Home() {
           {/* Left sidebar - Fixed width with Course search and My Schedule */}
           <div className="w-full lg:w-[320px] lg:min-w-[320px] lg:max-w-[320px] flex flex-col min-h-0 flex-shrink-0">
             {/* Scrollable sidebar content */}
-            <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-3 pr-1 scrollbar-thin scrollbar-thumb-purple-400 dark:scrollbar-thumb-purple-600 scrollbar-track-transparent min-h-0">
-              {/* Mode Toggle */}
-              <div className="bg-white/70 dark:bg-[#252526]/70 backdrop-blur-xl rounded-xl shadow-lg p-2 border border-gray-200/30 dark:border-gray-700/30 flex-shrink-0">
-              <div className="flex gap-1 p-1 bg-gray-100 dark:bg-[#1e1e1e]/50 rounded-lg">
+            <div
+              className="flex-1 overflow-y-auto overflow-x-hidden space-y-3 pr-1 pb-32 lg:pb-0 scrollbar-thin scrollbar-thumb-purple-400 dark:scrollbar-thumb-purple-600 scrollbar-track-transparent min-h-0"
+              style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}
+            >
+              {/* Mode Toggle (desktop only) */}
+              <div className="hidden lg:block bg-white/70 dark:bg-[#252526]/70 backdrop-blur-xl rounded-xl shadow-lg p-2 border border-gray-200/30 dark:border-gray-700/30 flex-shrink-0">
+                <div className="flex gap-1 p-1 bg-gray-100 dark:bg-[#1e1e1e]/50 rounded-lg">
                 <button
                   onClick={() => handleModeSwitch('auto-generate')}
                   disabled={isSwitchingMode}
@@ -1866,7 +1903,145 @@ export default function Home() {
       </main>
 
       {/* Building Reference floating button */}
-      <BuildingReference onBuildingClick={setSelectedLocation} />
+      <div className="hidden lg:block">
+        <BuildingReference onBuildingClick={setSelectedLocation} />
+      </div>
+
+      {isMobile && (
+        <>
+          {!isMobileActionsOpen && (
+            <div className="fixed bottom-4 right-4 z-30 lg:hidden flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={undoLastRemoval}
+                className="w-12 h-12 rounded-full bg-white/95 dark:bg-[#1c1c1c]/95 border border-gray-200/60 dark:border-gray-700/60 shadow-xl text-gray-700 dark:text-gray-200 flex items-center justify-center active:scale-95 transition"
+                title="Undo remove"
+              >
+                <RotateCcw className="w-5 h-5" />
+              </button>
+              <button
+                type="button"
+                onClick={handleExportSchedule}
+                className="w-12 h-12 rounded-full bg-white/95 dark:bg-[#1c1c1c]/95 border border-gray-200/60 dark:border-gray-700/60 shadow-xl text-blue-600 dark:text-blue-300 flex items-center justify-center active:scale-95 transition"
+                title="Export schedule"
+              >
+                <Download className="w-5 h-5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsMobileActionsOpen(true)}
+                className="w-14 h-14 rounded-full bg-purple-600 text-white shadow-2xl flex items-center justify-center active:scale-95 transition"
+                title="Open quick actions"
+              >
+                <Menu className="w-6 h-6" />
+              </button>
+            </div>
+          )}
+
+          {isMobileActionsOpen && (
+            <div className="fixed inset-0 z-40 lg:hidden">
+              <div
+                className="absolute inset-0 bg-black/45"
+                onClick={() => setIsMobileActionsOpen(false)}
+              />
+              <div className="absolute bottom-0 inset-x-0 bg-white dark:bg-[#0f0f0f] rounded-t-3xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 p-5 space-y-4 max-h-[85vh] overflow-y-auto">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">Quick actions</h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Switch modes, tweak appearance, or open references.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsMobileActionsOpen(false)}
+                    className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-[0.2em]">Mode</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      disabled={isSwitchingMode}
+                      onClick={() => handleModeSwitch('auto-generate')}
+                      className={`px-3 py-2 rounded-xl text-sm font-semibold border ${scheduleMode === 'auto-generate' ? 'bg-purple-600 text-white border-purple-600' : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-[#1e1e1e]'}`}
+                    >
+                      Auto
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isSwitchingMode}
+                      onClick={() => handleModeSwitch('manual')}
+                      className={`px-3 py-2 rounded-xl text-sm font-semibold border ${scheduleMode === 'manual' ? 'bg-purple-600 text-white border-purple-600' : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-[#1e1e1e]'}`}
+                    >
+                      Manual
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-[0.2em]">Timetable style</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setTimetableAppearance('modern')}
+                      className={`px-3 py-2 rounded-xl text-sm font-semibold border ${timetableAppearance === 'modern' ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-[#1e1e1e]'}`}
+                    >
+                      Modern
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTimetableAppearance('frosted')}
+                      className={`px-3 py-2 rounded-xl text-sm font-semibold border ${timetableAppearance === 'frosted' ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-[#1e1e1e]'}`}
+                    >
+                      Frosted
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between border border-gray-200 dark:border-gray-700 rounded-2xl px-4 py-3">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">Theme</p>
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400">Light / Dark</p>
+                  </div>
+                  <ThemeToggle />
+                </div>
+
+                <BuildingReference
+                  onBuildingClick={(location) => {
+                    setSelectedLocation(location);
+                  }}
+                  renderTrigger={(open) => (
+                    <button
+                      type="button"
+                      onClick={open}
+                      className="w-full flex items-center gap-3 px-4 py-4 rounded-2xl border border-purple-200 dark:border-purple-700 bg-gradient-to-r from-[#12011f] to-[#200033] text-left shadow-lg"
+                    >
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-white">Building reference</p>
+                        <p className="text-[11px] text-purple-200">Find campus locations quickly</p>
+                      </div>
+                      <div className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center text-purple-200">
+                        <MapPin className="w-4 h-4" />
+                      </div>
+                    </button>
+                  )}
+                />
+
+                <button
+                  type="button"
+                  onClick={() => setIsMobileActionsOpen(false)}
+                  className="w-full py-3 rounded-2xl border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-700 dark:text-gray-200"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
 
       {/* Generation Notice Modal */}
       {generationNotice && (() => {

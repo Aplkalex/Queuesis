@@ -7,9 +7,11 @@ import { searchBuildings } from '@/lib/location-utils';
 
 interface BuildingReferenceProps {
   onBuildingClick?: (location: string) => void;
+  renderTrigger?: (open: () => void) => React.ReactNode;
+  className?: string;
 }
 
-export function BuildingReference({ onBuildingClick }: BuildingReferenceProps) {
+export function BuildingReference({ onBuildingClick, renderTrigger, className }: BuildingReferenceProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -24,16 +26,22 @@ export function BuildingReference({ onBuildingClick }: BuildingReferenceProps) {
     }
   };
 
+  const openModal = () => setIsOpen(true);
+
   return (
     <>
       {/* Trigger button */}
-      <button
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 bg-purple-600 dark:bg-purple-500 text-white p-4 rounded-full shadow-lg hover:bg-purple-700 dark:hover:bg-purple-600 transition-all hover:scale-110 z-40"
-        title="Building Reference"
-      >
-        <MapPin className="w-5 h-5" />
-      </button>
+      {renderTrigger ? (
+        <div className={className}>{renderTrigger(openModal)}</div>
+      ) : (
+        <button
+          onClick={openModal}
+          className={`fixed bottom-6 right-6 bg-purple-600 dark:bg-purple-500 text-white p-4 rounded-full shadow-lg hover:bg-purple-700 dark:hover:bg-purple-600 transition-all hover:scale-110 z-40 ${className ?? ''}`}
+          title="Building Reference"
+        >
+          <MapPin className="w-5 h-5" />
+        </button>
+      )}
 
       {/* Modal */}
       {isOpen && (

@@ -1,10 +1,10 @@
 'use client';
 
+import { memo, useEffect, useMemo, useState } from 'react';
 import { Course, Section, SelectedCourse } from '@/types';
 import { hasAvailableSeats, getActiveLectureId } from '@/lib/schedule-utils';
 import { cn } from '@/lib/utils';
 import { Plus, Trash2, ChevronDown, ChevronRight, Info, AlertCircle, Check, RefreshCw } from 'lucide-react';
-import { useState, useMemo, useEffect } from 'react';
 
 interface CourseListItemProps {
   course: Course;
@@ -85,7 +85,7 @@ function SectionButton({ section, /* course, isSectionSelected, onAddSection, on
   );
 }
 
-function CourseListItem({ 
+const CourseListItem = memo(function CourseListItem({ 
   course, 
   onAddSection, 
   onRemoveSection, 
@@ -97,9 +97,12 @@ function CourseListItem({
 }: CourseListItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [expandedLectures, setExpandedLectures] = useState<Set<string>>(new Set());
-  const courseSelections = selectedCourseMap?.get(course.courseCode) ?? selectedCourses.filter(
-    (sc) => sc.course.courseCode === course.courseCode
-  );
+  const courseSelections = useMemo(() => {
+    if (selectedCourseMap?.has(course.courseCode)) {
+      return selectedCourseMap.get(course.courseCode) ?? [];
+    }
+    return selectedCourses.filter((sc) => sc.course.courseCode === course.courseCode);
+  }, [selectedCourseMap, selectedCourses, course.courseCode]);
   
   // Check if a section is already selected
   const isSectionSelected = (section: Section) => {
@@ -637,7 +640,7 @@ function CourseListItem({
       )}
     </div>
   );
-}
+});
 
 interface CourseListProps {
   courses: Course[];
@@ -645,6 +648,7 @@ interface CourseListProps {
   onRemoveSection: (course: Course, section: Section) => void;
   selectedCourses: SelectedCourse[];
   selectedCourseMap?: Map<string, SelectedCourse[]>;
+  isMobile?: boolean;
   mode?: 'manual' | 'auto-generate';
   selectedCourseCodes?: string[];
   onToggleCourseSelection?: (courseCode: string) => void;
@@ -656,22 +660,23 @@ export function CourseList({
   onRemoveSection, 
   selectedCourses,
   selectedCourseMap,
+  isMobile = false,
   mode = 'manual',
   selectedCourseCodes = [],
   onToggleCourseSelection
 }: CourseListProps) {
-  const INITIAL_VISIBLE = 120;
-  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE);
+  const baseInitial = isMobile ? 80 : 120;
+  const [visibleCount, setVisibleCount] = useState(() => Math.min(baseInitial, courses.length));
 
   useEffect(() => {
-    setVisibleCount(INITIAL_VISIBLE);
-  }, [courses]);
+    setVisibleCount(Math.min(baseInitial, courses.length));
+  }, [courses, baseInitial]);
 
   const visibleCourses = useMemo(
     () => courses.slice(0, visibleCount),
     [courses, visibleCount]
   );
-  const hasMoreCourses = visibleCount < courses.length;
+  const hasMoreCourses = isMobile && visibleCount < courses.length;
 
   if (courses.length === 0) {
     return (
@@ -703,7 +708,7 @@ export function CourseList({
             type="button"
             onClick={() =>
               setVisibleCount((prev) =>
-                Math.min(prev + INITIAL_VISIBLE, courses.length)
+                Math.min(prev + baseInitial, courses.length)
               )
             }
             className="px-4 py-2 text-xs font-semibold rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"

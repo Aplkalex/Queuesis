@@ -201,6 +201,7 @@ export function TimetableGrid({
   const [draggedCourse, setDraggedCourse] = useState<SelectedCourse | null>(null);
   const [, startTransition] = useTransition();
   const { startHour, endHour, slotHeight } = TIMETABLE_CONFIG;
+  const isDragging = Boolean(draggedCourse);
   
   // Generate hours array (8 AM to 9 PM)
   const hours = Array.from({ length: endHour - startHour + 1 }, (_, i) => startHour + i);
@@ -761,8 +762,8 @@ export function TimetableGrid({
 
   const content = (
     <div
-      className={containerClassName}
-      style={pixelGlassStyle}
+      className={cn(containerClassName, isDragging && 'select-none')}
+      style={{ ...pixelGlassStyle, touchAction: isDragging ? 'none' : undefined }}
     >
       <div className="overflow-x-auto">
         <div className="min-w-[360px] sm:min-w-[700px] lg:min-w-0 px-3 py-3 sm:px-5 sm:py-5">

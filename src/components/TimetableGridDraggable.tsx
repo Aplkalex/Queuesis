@@ -334,7 +334,10 @@ export function TimetableGridDraggable(props: TimetableGridDraggableProps) {
       onDragStart={handleDragStart}
       onDragEnd={handleDragEndInternal}
     >
-      <div className="w-full bg-white/60 dark:bg-[#252526]/60 backdrop-blur-xl rounded-xl shadow-xl overflow-hidden border border-gray-200/40 dark:border-gray-700/40">
+      <div
+        className="w-full bg-white/60 dark:bg-[#252526]/60 backdrop-blur-xl rounded-xl shadow-xl overflow-hidden border border-gray-200/40 dark:border-gray-700/40"
+        style={{ touchAction: draggedData ? 'none' : undefined }}
+      >
         <div className="overflow-x-auto">
           <div className="min-w-[320px] sm:min-w-[600px] lg:min-w-0 w-full px-2 py-2 sm:px-3 sm:py-3 lg:px-4 lg:py-3">
             {/* Header with days */}
