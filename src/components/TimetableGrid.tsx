@@ -19,6 +19,8 @@ import {
   DragStartEvent,
   DragEndEvent,
 } from '@dnd-kit/core';
+import type { CollisionDetection } from '@dnd-kit/core';
+import { closestCenter } from '@dnd-kit/core';
 
 interface TimetableGridProps {
   selectedCourses: SelectedCourse[];
@@ -139,7 +141,8 @@ const formatCourseCode = (code: string): string => {
   return `${match[1].toUpperCase()} ${match[2]}`;
 };
 
-const OVERLAP_GAP_PX = 8;
+// Gap between overlapping blocks; smaller on mobile so all columns fit
+const DEFAULT_OVERLAP_GAP = 8;
 
 type SlotLayoutInput = {
   key: string;
@@ -211,7 +214,11 @@ export function TimetableGrid({
 }: TimetableGridProps) {
   const [draggedCourse, setDraggedCourse] = useState<SelectedCourse | null>(null);
   const [, startTransition] = useTransition();
-  const { startHour, endHour, slotHeight } = TIMETABLE_CONFIG;
+  const { startHour, endHour } = TIMETABLE_CONFIG;
+  // Compact mobile sizing: reduce per-hour height and time-column width
+  const isSmallScreen = typeof window !== 'undefined' ? window.matchMedia('(max-width: 640px)').matches : false;
+  const slotHeight = isSmallScreen ? 40 : TIMETABLE_CONFIG.slotHeight;
+  const OVERLAP_GAP = isSmallScreen ? 6 : DEFAULT_OVERLAP_GAP;
   const isDragging = Boolean(draggedCourse);
   const prevBodyStyleRef = useRef<{ overflow?: string; touchAction?: string; overscrollBehavior?: string } | null>(null);
   // Sensors must be created unconditionally to keep hook order stable
@@ -240,7 +247,7 @@ export function TimetableGrid({
 
   // Day header styles: reduce letter-spacing on small screens and allow truncation
   const dayHeaderClassName = cn(
-    'flex h-full items-center justify-center rounded-2xl px-2 sm:px-3 py-2 text-[10px] sm:text-xs font-semibold uppercase tracking-[0.08em] sm:tracking-[0.22em] transition-all duration-300 truncate',
+    'flex h-full items-center justify-center rounded-2xl px-1 sm:px-3 py-1 sm:py-2 text-[10px] sm:text-xs font-semibold uppercase tracking-[0.06em] sm:tracking-[0.22em] transition-all duration-300 truncate',
     isFrosted
       ? 'border border-white/60 bg-white/75 shadow-[0_22px_42px_-28px_rgba(59,130,246,0.35)] backdrop-blur-[28px] text-slate-600/90 dark:border-white/18 dark:bg-white/[0.08] dark:text-slate-100'
       : 'border border-transparent bg-transparent text-slate-500/90 dark:text-slate-100/85'
@@ -302,8 +309,8 @@ export function TimetableGrid({
     };
 
     style['--course-glow'] = palette.glow;
-    style.left = style.left ?? `${OVERLAP_GAP_PX / 2}px`;
-    style.width = style.width ?? `calc(100% - ${OVERLAP_GAP_PX}px)`;
+    style.left = style.left ?? `${OVERLAP_GAP / 2}px`;
+    style.width = style.width ?? `calc(100% - ${OVERLAP_GAP}px)`;
 
     return style;
   };
@@ -478,6 +485,8 @@ export function TimetableGrid({
         ? 'all 0.25s ease-out'
         : 'transform 0.2s ease-out, box-shadow 0.2s ease-out, opacity 0.2s ease-out',
       color: palette.text,
+      // Ensure ghost targets sit above real blocks so they remain droppable
+      zIndex: 300,
     };
 
     ghostStyle['--course-glow'] = palette.glow;
@@ -517,6 +526,8 @@ export function TimetableGrid({
     style: CourseStyle;
     slot: TimeSlot;
     onLocationClick?: (location: string) => void;
+    isCompactWidth?: boolean; // kept for backward compatibility
+    overlapCount?: number; // how many blocks share the time lane
   }
 
   const DraggableCourseBlock = memo(function DraggableCourseBlock({
@@ -525,6 +536,8 @@ export function TimetableGrid({
     style,
     slot,
     // onLocationClick,
+    isCompactWidth = false,
+    overlapCount = 1,
   }: DraggableCourseBlockProps) {
     const [isLocalHovered, setIsLocalHovered] = useState(false);
     const uniqueId = `${selectedCourse.course.courseCode}-${selectedCourse.selectedSection.sectionId}-${blockId}`;
@@ -588,8 +601,8 @@ export function TimetableGrid({
   // const canClickLocation = Boolean(locationLabel && onLocationClick);
 
     const isCompactBlock = durationMinutes <= 60;
-    // On compact (short) blocks, stack icons vertically in the corner to free horizontal space for text
-    const showVerticalIconStack = isCompactBlock;
+    // On mobile: if width is narrow due to overlaps OR block is short, stack icons vertically
+    const showVerticalIconStack = isCompactBlock || isCompactWidth || overlapCount >= 2;
 
     const conflictBadge = hasConflict ? (
       <span
@@ -626,12 +639,12 @@ export function TimetableGrid({
       : [Boolean(conflictBadge), Boolean(fullBadge), Boolean(isDraggable)].filter(Boolean).length;
 
     const contentPaddingClass = showVerticalIconStack
-      ? 'pr-7'
+      ? (isCompactWidth ? 'pr-6 sm:pr-7' : 'pr-4 sm:pr-6')
       : horizontalIconCount >= 2
-        ? 'pr-12'
+        ? 'pr-8 sm:pr-12'
         : horizontalIconCount === 1
-          ? 'pr-10'
-          : 'pr-6';
+          ? 'pr-7 sm:pr-10'
+          : 'pr-5 sm:pr-6';
 
     // const handleLocationClick = (event: MouseEvent<HTMLButtonElement>) => {
     //   event.stopPropagation();
@@ -756,14 +769,24 @@ export function TimetableGrid({
           {showVerticalIconStack ? (
             <>
               {(conflictBadge || fullBadge) && (
-                <div className="absolute top-1.5 right-1.5 flex flex-col items-end gap-1 pointer-events-none">
+                <div
+                  className={cn(
+                    'absolute flex flex-col items-end pointer-events-none',
+                    isCompactWidth ? 'top-0.5 right-0.5 gap-0.5' : 'bottom-1.5 right-1.5 gap-1'
+                  )}
+                >
                   {conflictBadge}
                   {fullBadge}
                 </div>
               )}
 
               {isDraggable && (
-                <div className="absolute bottom-1.5 right-1.5 pointer-events-none">
+                <div
+                  className={cn(
+                    'absolute pointer-events-none',
+                    isCompactWidth ? 'bottom-0.5 right-0.5' : 'bottom-1.5 right-1.5'
+                  )}
+                >
                   <RefreshCw
                     className="h-3.5 w-3.5 opacity-70 transition-transform group-hover:scale-110 group-hover:opacity-100"
                     aria-hidden
@@ -787,16 +810,39 @@ export function TimetableGrid({
           )}
 
           <div className={cn('flex flex-col gap-0.5 pr-2', contentPaddingClass)}>
-            {/* Mobile: two lines only (fit neatly) */}
+            {/* Mobile: left-aligned compact labels. If very narrow, hide course code and show section only. */}
             <div className="sm:hidden flex flex-col leading-tight min-w-0 text-left">
-              <span className="text-[9.5px] font-extrabold whitespace-nowrap overflow-hidden text-ellipsis tracking-[-0.01em]">
-                {formatCourseCode(selectedCourse.course.courseCode)}
-              </span>
-              <span className="text-[9px] font-semibold whitespace-nowrap overflow-hidden text-ellipsis tracking-[-0.01em]">
-                {(selectedCourse.selectedSection.sectionType === 'Lecture' ? 'LEC' :
-                 selectedCourse.selectedSection.sectionType === 'Tutorial' ? 'TUT' :
-                 selectedCourse.selectedSection.sectionType)} {selectedCourse.selectedSection.sectionId}
-              </span>
+              {isCompactWidth ? (
+                <span className="text-[8px] font-semibold whitespace-nowrap tracking-[-0.02em]">
+                  {(selectedCourse.selectedSection.sectionType === 'Lecture' ? 'LEC' :
+                    selectedCourse.selectedSection.sectionType === 'Tutorial' ? 'TUT' :
+                    selectedCourse.selectedSection.sectionType)} {selectedCourse.selectedSection.sectionId}
+                </span>
+              ) : (
+                <>
+                  {(() => {
+                    const pretty = formatCourseCode(selectedCourse.course.courseCode);
+                    // Smaller sizes so code fits a narrow column; avoid breaking within words
+                    let size = 8.5;
+                    if (pretty.length >= 12) size = 7.5;
+                    if (pretty.length >= 14) size = 6.5;
+                    return (
+                      <span
+                        className="font-extrabold whitespace-normal break-normal tracking-[-0.02em]"
+                        style={{ fontSize: `${size}px` }}
+                        title={pretty}
+                      >
+                        {pretty}
+                      </span>
+                    );
+                  })()}
+                  <span className="text-[8.5px] font-semibold whitespace-nowrap tracking-[-0.01em]">
+                    {(selectedCourse.selectedSection.sectionType === 'Lecture' ? 'LEC' :
+                      selectedCourse.selectedSection.sectionType === 'Tutorial' ? 'TUT' :
+                      selectedCourse.selectedSection.sectionType)} {selectedCourse.selectedSection.sectionId}
+                  </span>
+                </>
+              )}
             </div>
 
             {/* Desktop: richer three-line content */}
@@ -833,7 +879,8 @@ export function TimetableGrid({
     );
   });
 
-  const gridTemplateColumns = `70px repeat(${displayDays.length}, minmax(0, 1fr))`;
+  const timeColWidth = isSmallScreen ? 48 : 70;
+  const gridTemplateColumns = `${timeColWidth}px repeat(${displayDays.length}, minmax(0, 1fr))`;
   // Clean modern style without texture - just subtle shadows and borders
   const pixelGlassStyle: CSSProperties = {};
 
@@ -844,8 +891,8 @@ export function TimetableGrid({
       style={{ ...pixelGlassStyle, touchAction: isDragging ? 'none' : 'pan-y' }}
     >
       <div className="overflow-x-auto">
-        <div className="min-w-[640px] sm:min-w-[900px] lg:min-w-0 px-3 py-3 sm:px-5 sm:py-5">
-          <div className="grid items-center gap-2 sm:gap-2.5 mb-3 sm:mb-4" style={{ gridTemplateColumns }}>
+        <div className="min-w-0 sm:min-w-[900px] lg:min-w-0 px-2 py-2 sm:px-5 sm:py-5">
+          <div className="grid items-center gap-1 sm:gap-2.5 mb-2.5 sm:mb-4" style={{ gridTemplateColumns }}>
             <div className="flex items-center justify-end pr-2 text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-600/85 dark:text-slate-200/70">
               Time
             </div>
@@ -860,12 +907,12 @@ export function TimetableGrid({
             ))}
           </div>
 
-          <div className="relative grid gap-2 sm:gap-2.5" style={{ gridTemplateColumns }}>
+          <div className="relative grid gap-1 sm:gap-2.5" style={{ gridTemplateColumns }}>
             <div className="space-y-0.5">
               {hours.map((hour) => (
                 <div
                   key={hour}
-                  className="flex items-center justify-end pr-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-600/80 dark:text-slate-300/75"
+                  className="flex items-center justify-end pr-1.5 sm:pr-2 text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.18em] sm:tracking-[0.22em] text-slate-600/80 dark:text-slate-300/75"
                   style={{ height: `${slotHeight}px`, lineHeight: `${slotHeight}px` }}
                 >
                   {formatTime(`${hour}:00`)}
@@ -910,8 +957,8 @@ export function TimetableGrid({
                   return laidOut.map((entry) => {
                     const style = getCourseStyle(entry.slot.startTime, entry.slot.endTime, entry.selectedCourse.color);
                     const widthPercent = 100 / entry.overlapCount;
-                    style.width = `calc(${widthPercent}% - ${OVERLAP_GAP_PX}px)`;
-                    style.left = `calc(${widthPercent * entry.lane}% + ${OVERLAP_GAP_PX / 2}px)`;
+                    style.width = `calc(${widthPercent}% - ${OVERLAP_GAP}px)`;
+                    style.left = `calc(${widthPercent * entry.lane}% + ${OVERLAP_GAP / 2}px)`;
 
                     return (
                       <DraggableCourseBlock
@@ -920,6 +967,8 @@ export function TimetableGrid({
                         blockId={entry.key}
                         style={style}
                         slot={entry.slot}
+                        isCompactWidth={entry.overlapCount >= 2}
+                        overlapCount={entry.overlapCount}
                       />
                     );
                   });
@@ -980,10 +1029,22 @@ export function TimetableGrid({
 
   // Wrap with DndContext if drag & drop is enabled
   if (enableDragDrop) {
+    // Prefer ghost droppable targets when overlapping with real blocks
+    const preferGhosts: CollisionDetection = (args) => {
+      const collisions = closestCenter(args);
+      if (!collisions.length) return collisions;
+      const ghostIdx = collisions.findIndex((c) => String(c.id).startsWith('ghost-'));
+      if (ghostIdx > 0) {
+        const [ghost] = collisions.splice(ghostIdx, 1);
+        collisions.unshift(ghost);
+      }
+      return collisions;
+    };
     return (
       <>
         <DndContext
           sensors={sensors}
+          collisionDetection={preferGhosts}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
           onDragCancel={handleDragCancel}

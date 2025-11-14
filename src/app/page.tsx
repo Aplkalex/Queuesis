@@ -135,7 +135,7 @@ export default function Home() {
   const swapWarningStyles = useMemo(() => {
     if (swapWarningType === 'conflict') {
       return {
-        container: 'bg-rose-50/95 dark:bg-rose-900/95 backdrop-blur-xl border-2 border-rose-400 dark:border-rose-600',
+        container: 'bg-rose-50/95 dark:bg-rose-900/95 backdrop-blur-xl border border-rose-400 dark:border-rose-600 sm:border-2',
         icon: 'bg-rose-500 dark:bg-rose-600',
         title: 'text-rose-900 dark:text-rose-100',
         text: 'text-rose-800 dark:text-rose-200',
@@ -147,7 +147,7 @@ export default function Home() {
     }
 
     return {
-      container: 'bg-amber-50/95 dark:bg-amber-900/95 backdrop-blur-xl border-2 border-amber-400 dark:border-amber-600',
+      container: 'bg-amber-50/95 dark:bg-amber-900/95 backdrop-blur-xl border border-amber-400 dark:border-amber-600 sm:border-2',
       icon: 'bg-amber-500 dark:bg-amber-600',
       title: 'text-amber-900 dark:text-amber-100',
       text: 'text-amber-800 dark:text-amber-200',
@@ -2527,7 +2527,7 @@ export default function Home() {
 
       {/* Full Section Warning Toasts */}
       {fullSectionWarnings.length > 0 && (
-        <div className="fixed top-20 right-4 z-50 flex flex-col items-end gap-3">
+        <div className="fixed top-16 left-3 right-3 sm:top-20 sm:right-4 sm:left-auto z-50 flex flex-col items-stretch sm:items-end gap-2 sm:gap-3">
           {fullSectionWarnings.map((warning) => (
             <FullSectionWarningToast
               key={warning.id}
@@ -2541,18 +2541,18 @@ export default function Home() {
 
       {/* Swap Warning Toast */}
       {swapWarning && (
-        <div className={`fixed top-36 right-4 z-50 ${isSwapWarningExiting ? 'animate-slideOutToTop' : 'animate-slideInFromTop'}`}>
-          <div className={`${swapWarningStyles.container} rounded-xl shadow-2xl overflow-hidden max-w-md`}>
-            <div className="p-4">
+        <div className={`fixed top-24 left-3 right-3 sm:top-36 sm:right-4 sm:left-auto z-50 ${isSwapWarningExiting ? 'animate-slideOutToTop' : 'animate-slideInFromTop'}`}>
+          <div className={`${swapWarningStyles.container} rounded-lg sm:rounded-xl shadow-2xl overflow-hidden w-full max-w-md mx-auto sm:mx-0`}>
+            <div className="p-3 sm:p-4">
               <div className="flex items-start gap-3">
-                <div className={`${swapWarningStyles.icon} text-white p-2 rounded-full flex-shrink-0 shadow-lg`}>
-                  <AlertCircle className="w-5 h-5" />
+                <div className={`${swapWarningStyles.icon} text-white p-1.5 sm:p-2 rounded-full flex-shrink-0 shadow-lg`}>
+                  <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
                 <div className="flex-1">
-                  <h4 className={`font-bold ${swapWarningStyles.title} mb-1 text-base`}>
+                  <h4 className={`font-bold ${swapWarningStyles.title} mb-1 text-sm sm:text-base`}>
                     Section Swapped with Warning
                   </h4>
-                  <p className={`text-sm ${swapWarningStyles.text}`}>
+                  <p className={`text-xs sm:text-sm ${swapWarningStyles.text}`}>
                     {swapWarning}
                   </p>
                 </div>
@@ -2566,12 +2566,12 @@ export default function Home() {
                   }}
                   className={`${swapWarningStyles.button} rounded p-1 transition-all flex-shrink-0`}
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </button>
               </div>
             </div>
             {/* Progress bar */}
-            <div className={`h-1 ${swapWarningStyles.progressTrack}`}>
+            <div className={`h-0.5 sm:h-1 ${swapWarningStyles.progressTrack}`}>
               <div 
                 className={`h-full ${swapWarningStyles.progressBar} animate-shrink`}
                 style={{ animationDuration: '5000ms' }}
@@ -2588,7 +2588,7 @@ export default function Home() {
         const firstSlot = section.timeSlots[0];
         const timeRange = firstSlot ? `${firstSlot.day}, ${firstSlot.startTime} - ${firstSlot.endTime}` : null;
         return (
-          <div className="fixed bottom-6 right-6 z-50 w-full max-w-xs sm:max-w-sm">
+          <div className="fixed bottom-3 left-3 right-3 sm:bottom-6 sm:right-6 sm:left-auto z-50 w-full max-w-xs sm:max-w-sm">
             <div className="relative bg-white/90 dark:bg-[#1f1f24]/90 backdrop-blur-2xl border border-white/40 dark:border-white/10 rounded-2xl shadow-[0_28px_60px_-28px_rgba(88,28,135,0.45)] p-4 flex gap-3 items-start">
               <div className="flex-1">
                 <p className="text-sm font-semibold text-gray-900 dark:text-white">

@@ -37,22 +37,22 @@ export default function FullSectionWarningToast({
 
   return (
     <div className={`w-full max-w-md ${isExiting ? 'animate-slideOutToTop' : 'animate-slideInFromTop'}`}>
-      <div className="bg-amber-50/95 dark:bg-amber-900/95 backdrop-blur-xl border-2 border-amber-400 dark:border-amber-600 rounded-xl shadow-2xl overflow-hidden">
-        <div className="p-4">
+      <div className="bg-amber-50/95 dark:bg-amber-900/95 backdrop-blur-xl border border-amber-400 dark:border-amber-600 sm:border-2 rounded-lg sm:rounded-xl shadow-2xl overflow-hidden">
+        <div className="p-3 sm:p-4">
           <div className="flex items-start gap-3">
-            <div className="bg-amber-500 dark:bg-amber-600 text-white p-2 rounded-full flex-shrink-0 shadow-lg">
-              <AlertCircle className="w-5 h-5" />
+            <div className="bg-amber-500 dark:bg-amber-600 text-white p-1.5 sm:p-2 rounded-full flex-shrink-0 shadow-lg">
+              <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div className="flex-1">
-              <h4 className="font-bold text-amber-900 dark:text-amber-100 mb-1 text-base">
+              <h4 className="font-bold text-amber-900 dark:text-amber-100 mb-1 text-sm sm:text-base">
                 Section Full - Added to Schedule
               </h4>
-              <p className="text-sm text-amber-800 dark:text-amber-200 mb-2">
+              <p className="text-xs sm:text-sm text-amber-800 dark:text-amber-200 mb-1.5 sm:mb-2">
                 <span className="font-semibold">{warning.course.courseCode}</span>
                 {' - '}
                 {warning.section.sectionType} {warning.section.sectionId} has no available seats.
               </p>
-              <p className="text-xs text-amber-700 dark:text-amber-300">
+              <p className="text-[11px] sm:text-xs text-amber-700 dark:text-amber-300">
                 ⚠️ You may need to join a waitlist or obtain instructor consent to enroll.
               </p>
             </div>
@@ -60,11 +60,11 @@ export default function FullSectionWarningToast({
               onClick={handleClose}
               className="text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-200 hover:bg-amber-200/50 dark:hover:bg-amber-800/30 rounded p-1 transition-all flex-shrink-0"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
           </div>
         </div>
-        <div className="h-1 bg-amber-200/50 dark:bg-amber-950/50">
+        <div className="h-0.5 sm:h-1 bg-amber-200/50 dark:bg-amber-950/50">
           <div
             className="h-full bg-amber-500 dark:bg-amber-400 animate-shrink"
             style={{ animationDuration: `${duration}ms` }}

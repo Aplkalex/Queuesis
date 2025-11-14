@@ -31,20 +31,24 @@ export default function ConflictToast({ conflicts, onClose, duration = 5000 }: C
   if (conflicts.length === 0) return null;
 
   return (
-    <div className={`fixed bottom-6 right-6 z-[9999] ${isExiting ? 'animate-slideOut' : 'animate-slideIn'}`}>
-      <div className="bg-red-900/95 dark:bg-red-950/95 border-2 border-red-500 rounded-lg shadow-2xl backdrop-blur-md max-w-md">
-        <div className="p-4">
+    <div
+      className={`fixed bottom-3 left-3 right-3 sm:bottom-6 sm:left-auto sm:right-6 z-[9999] ${
+        isExiting ? 'animate-slideOut' : 'animate-slideIn'
+      }`}
+    >
+      <div className="bg-red-900/95 dark:bg-red-950/95 border border-red-500 sm:border-2 rounded-lg shadow-2xl backdrop-blur-md max-w-md mx-auto sm:mx-0">
+        <div className="p-3 sm:p-4">
           <div className="flex items-start gap-3">
             <div className="flex-shrink-0 mt-0.5">
-              <AlertTriangle className="w-5 h-5 text-red-300" />
+              <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-red-300" />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="text-sm font-semibold text-red-200 mb-2">
+              <h3 className="text-xs sm:text-sm font-semibold text-red-200 mb-1 sm:mb-2">
                 Schedule Conflicts Detected!
               </h3>
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 {conflicts.map((conflict, index) => (
-                  <p key={index} className="text-sm text-white">
+                  <p key={index} className="text-xs sm:text-sm text-white">
                     <span className="font-semibold">{conflict.course1}</span>
                     {' conflicts with '}
                     <span className="font-semibold">{conflict.course2}</span>
@@ -57,12 +61,12 @@ export default function ConflictToast({ conflicts, onClose, duration = 5000 }: C
               className="flex-shrink-0 p-1 rounded-md hover:bg-red-500/30 transition-colors"
               aria-label="Dismiss"
             >
-              <X className="w-4 h-4 text-red-200 hover:text-white" />
+              <X className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-200 hover:text-white" />
             </button>
           </div>
         </div>
         {/* Progress bar */}
-        <div className="h-1 bg-red-950/50 rounded-b-lg overflow-hidden">
+        <div className="h-0.5 sm:h-1 bg-red-950/50 rounded-b-lg overflow-hidden">
           <div 
             className="h-full bg-red-400 animate-shrink"
             style={{ animationDuration: `${duration}ms` }}
