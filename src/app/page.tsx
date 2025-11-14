@@ -246,6 +246,19 @@ export default function Home() {
     [deferredCourses]
   );
 
+  const selectedCourseMap = useMemo(() => {
+    const map = new Map<string, SelectedCourse[]>();
+    selectedCourses.forEach((sc) => {
+      const list = map.get(sc.course.courseCode);
+      if (list) {
+        list.push(sc);
+      } else {
+        map.set(sc.course.courseCode, [sc]);
+      }
+    });
+    return map;
+  }, [selectedCourses]);
+
   // Available courses for timetable interactions
   const availableCourses = courses;
 
@@ -1605,6 +1618,7 @@ export default function Home() {
                 onAddSection={handleAddSection}
                 onRemoveSection={handleRemoveSection}
                 selectedCourses={selectedCourses}
+                selectedCourseMap={selectedCourseMap}
                 mode={scheduleMode}
                 selectedCourseCodes={selectedCourseCodes}
                 onToggleCourseSelection={handleToggleCourseSelection}

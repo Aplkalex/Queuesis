@@ -4,13 +4,14 @@ import { Course, Section, SelectedCourse } from '@/types';
 import { hasAvailableSeats, getActiveLectureId } from '@/lib/schedule-utils';
 import { cn } from '@/lib/utils';
 import { Plus, Trash2, ChevronDown, ChevronRight, Info, AlertCircle, Check, RefreshCw } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 
 interface CourseListItemProps {
   course: Course;
   onAddSection: (course: Course, section: Section) => void;
   onRemoveSection: (course: Course, section: Section) => void;
   selectedCourses: SelectedCourse[];
+  selectedCourseMap?: Map<string, SelectedCourse[]>;
   mode?: 'manual' | 'auto-generate';
   isSelected?: boolean;
   onToggleSelection?: (courseCode: string) => void;
@@ -89,24 +90,28 @@ function CourseListItem({
   onAddSection, 
   onRemoveSection, 
   selectedCourses,
+  selectedCourseMap,
   mode = 'manual',
   isSelected = false,
   onToggleSelection
 }: CourseListItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [expandedLectures, setExpandedLectures] = useState<Set<string>>(new Set());
+  const courseSelections = selectedCourseMap?.get(course.courseCode) ?? selectedCourses.filter(
+    (sc) => sc.course.courseCode === course.courseCode
+  );
   
   // Check if a section is already selected
   const isSectionSelected = (section: Section) => {
-    return selectedCourses.some(
-      (sc) => sc.course.courseCode === course.courseCode && sc.selectedSection.sectionId === section.sectionId
+    return courseSelections.some(
+      (sc) => sc.selectedSection.sectionId === section.sectionId
     );
   };
 
   // Find which lecture is currently selected for this course (if any)
   const activeLectureId = useMemo(() => {
-    return getActiveLectureId(selectedCourses, course);
-  }, [selectedCourses, course]);
+    return getActiveLectureId(courseSelections, course);
+  }, [courseSelections, course]);
 
   // Group sections by lecture (for courses with LEC+TUT structure)
   const sectionGroups = useMemo(() => {
@@ -545,9 +550,9 @@ function CourseListItem({
               let selectedTutorialForThisCourse = null;
               
               if (section.sectionType === 'Tutorial' && hasBothLecAndTut) {
-                selectedTutorialForThisCourse = selectedCourses.find(sc => 
-                  sc.course.courseCode === course.courseCode && 
-                  sc.selectedSection.sectionType === 'Tutorial'
+                selectedTutorialForThisCourse = courseSelections.find(sc => 
+                  sc.selectedSection.sectionType === 'Tutorial' &&
+                  sc.selectedSection.parentLecture === section.parentLecture
                 )?.selectedSection;
                 isDisabled = !!(selectedTutorialForThisCourse && 
                                selectedTutorialForThisCourse.sectionId !== section.sectionId);
@@ -555,8 +560,7 @@ function CourseListItem({
               
               // For pure tutorial courses (no lectures), block other tutorials
               if (section.sectionType === 'Tutorial' && !hasLectures) {
-                selectedTutorialForThisCourse = selectedCourses.find(sc => 
-                  sc.course.courseCode === course.courseCode && 
+                selectedTutorialForThisCourse = courseSelections.find(sc => 
                   sc.selectedSection.sectionType === 'Tutorial'
                 )?.selectedSection;
                 isDisabled = !!(selectedTutorialForThisCourse && 
@@ -640,6 +644,7 @@ interface CourseListProps {
   onAddSection: (course: Course, section: Section) => void;
   onRemoveSection: (course: Course, section: Section) => void;
   selectedCourses: SelectedCourse[];
+  selectedCourseMap?: Map<string, SelectedCourse[]>;
   mode?: 'manual' | 'auto-generate';
   selectedCourseCodes?: string[];
   onToggleCourseSelection?: (courseCode: string) => void;
@@ -650,10 +655,24 @@ export function CourseList({
   onAddSection, 
   onRemoveSection, 
   selectedCourses,
+  selectedCourseMap,
   mode = 'manual',
   selectedCourseCodes = [],
   onToggleCourseSelection
 }: CourseListProps) {
+  const INITIAL_VISIBLE = 120;
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE);
+
+  useEffect(() => {
+    setVisibleCount(INITIAL_VISIBLE);
+  }, [courses]);
+
+  const visibleCourses = useMemo(
+    () => courses.slice(0, visibleCount),
+    [courses, visibleCount]
+  );
+  const hasMoreCourses = visibleCount < courses.length;
+
   if (courses.length === 0) {
     return (
       <div className="text-center py-12 text-gray-500 dark:text-gray-400">
@@ -665,18 +684,34 @@ export function CourseList({
 
   return (
     <div className="space-y-4">
-      {courses.map((course) => (
+      {visibleCourses.map((course) => (
         <CourseListItem
           key={course.courseCode}
           course={course}
           onAddSection={onAddSection}
           onRemoveSection={onRemoveSection}
           selectedCourses={selectedCourses}
+          selectedCourseMap={selectedCourseMap}
           mode={mode}
           isSelected={selectedCourseCodes.includes(course.courseCode)}
           onToggleSelection={onToggleCourseSelection}
         />
       ))}
+      {hasMoreCourses && (
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={() =>
+              setVisibleCount((prev) =>
+                Math.min(prev + INITIAL_VISIBLE, courses.length)
+              )
+            }
+            className="px-4 py-2 text-xs font-semibold rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          >
+            Show more courses ({courses.length - visibleCount} remaining)
+          </button>
+        </div>
+      )}
     </div>
   );
 }
