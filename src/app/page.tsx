@@ -1253,11 +1253,24 @@ export default function Home() {
       {/* Header - Ultra compact */}
       <header className="bg-white/80 dark:bg-[#252526]/70 backdrop-blur-xl shadow-sm border-b border-gray-200/50 dark:border-gray-700/30 sticky top-0 z-50 flex-shrink-0">
         <div className="w-full px-3 sm:px-4 lg:px-6 py-2">
-          <div className="flex items-center justify-between max-w-[1600px] mx-auto">
+            <div className="flex items-center justify-between max-w-[1600px] mx-auto">
             <div className="flex items-center gap-2">
               <div className="text-base sm:text-lg font-black text-gray-900 dark:text-white tracking-tight">
                 Queuesis
               </div>
+              {/* Mobile Quick Actions trigger near brand */}
+              <button
+                type="button"
+                onClick={() => setIsMobileActionsOpen(prev => !prev)}
+                className="lg:hidden inline-flex items-center justify-center w-9 h-9 rounded-xl border transition-all duration-200 ease-out shadow-sm active:scale-95 group
+                           bg-gray-100/80 border-gray-200 text-gray-700 hover:bg-gray-200/80 hover:border-gray-300
+                           dark:bg-white/5 dark:border-white/10 dark:text-white dark:hover:bg-white/10"
+                aria-label="Open quick actions"
+                title="Quick actions"
+                aria-expanded={isMobileActionsOpen}
+              >
+                <Menu className="w-4 h-4 transition-transform duration-200 ease-out group-hover:rotate-90 text-purple-600 dark:text-white" />
+              </button>
             </div>
 
             {/* Stats and Theme Toggle - Compact */}
@@ -2009,7 +2022,7 @@ export default function Home() {
 
       {/* Sticky Generate Bar (Mobile) - courses view only */}
       {showMobileGenerateBar && isMobile && mobileView === 'courses' && (
-        <div className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom,0)+52px)] z-40 px-3 pb-3 animate-fadeIn">
+        <div className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom,0)+8px)] z-40 px-3 pb-2 animate-fadeIn">
           <div
             className={`mx-auto max-w-md rounded-2xl ${sheetClassName} shadow-[0_16px_40px_-12px_rgba(88,28,135,0.35)]`}
             style={{ willChange: 'transform' }}
@@ -2161,31 +2174,32 @@ export default function Home() {
 
       {isMobile && (
         <>
-          {!isMobileActionsOpen && (
-            <div className={`fixed ${isMobile ? (mobileView === 'courses' ? 'bottom-[120px]' : 'bottom-[72px]') : 'bottom-4'} right-4 z-30 lg:hidden flex flex-col gap-3 transition-all`}>
+          {/* Bottom-right FAB removed on mobile in favor of header trigger */}
+
+          {/* Import/Export controls for mobile timetable view - bottom-left corner */}
+          {mobileView === 'timetable' && (
+            <div className="fixed left-4 bottom-[calc(env(safe-area-inset-bottom,0)+12px)] z-50 lg:hidden flex flex-col gap-3">
               <button
                 type="button"
-                onClick={undoLastRemoval}
+                onClick={handleImportButtonClick}
                 className="w-12 h-12 rounded-full bg-white/95 dark:bg-[#1c1c1c]/95 border border-gray-200/60 dark:border-gray-700/60 shadow-xl text-gray-700 dark:text-gray-200 flex items-center justify-center transition-transform duration-150 ease-out hover:-translate-y-0.5 hover:shadow-2xl active:scale-95"
-                title="Undo remove"
+                title="Import schedule"
               >
-                <RotateCcw className="w-5 h-5" />
+                <Upload className="w-5 h-5" />
               </button>
               <button
                 type="button"
                 onClick={handleExportSchedule}
-                className="w-12 h-12 rounded-full bg-white/95 dark:bg-[#1c1c1c]/95 border border-gray-200/60 dark:border-gray-700/60 shadow-xl text-blue-600 dark:text-blue-300 flex items-center justify-center transition-transform duration-150 ease-out hover:-translate-y-0.5 hover:shadow-2xl active:scale-95"
+                disabled={selectedCourses.length === 0}
+                className={`w-12 h-12 rounded-full border shadow-xl flex items-center justify-center transition-transform duration-150 ease-out hover:-translate-y-0.5 hover:shadow-2xl active:scale-95 ${
+                  selectedCourses.length === 0
+                    ? 'bg-white/70 dark:bg-[#1c1c1c]/70 border-gray-200/60 dark:border-gray-700/60 text-gray-400 dark:text-gray-600 cursor-not-allowed'
+                    : 'bg-white/95 dark:bg-[#1c1c1c]/95 border-gray-200/60 dark:border-gray-700/60 text-green-600 dark:text-green-300'
+                }`}
                 title="Export schedule"
+                aria-disabled={selectedCourses.length === 0}
               >
                 <Download className="w-5 h-5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsMobileActionsOpen(true)}
-                className="w-14 h-14 rounded-full bg-purple-600 text-white shadow-2xl flex items-center justify-center transition-transform duration-150 ease-out hover:-translate-y-0.5 active:scale-95"
-                title="Open quick actions"
-              >
-                <Menu className="w-6 h-6" />
               </button>
             </div>
           )}

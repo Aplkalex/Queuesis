@@ -602,7 +602,8 @@ export function TimetableGrid({
 
     const isCompactBlock = durationMinutes <= 60;
     // On mobile: if width is narrow due to overlaps OR block is short, stack icons vertically
-    const showVerticalIconStack = isCompactBlock || isCompactWidth || overlapCount >= 2;
+    // On small screens, always avoid center-right icon to prevent covering text
+    const showVerticalIconStack = isSmallScreen || isCompactBlock || isCompactWidth || overlapCount >= 2;
 
     const conflictBadge = hasConflict ? (
       <span
@@ -788,7 +789,7 @@ export function TimetableGrid({
                   )}
                 >
                   <RefreshCw
-                    className="h-3.5 w-3.5 opacity-70 transition-transform group-hover:scale-110 group-hover:opacity-100"
+                    className="h-3 w-3 sm:h-3.5 sm:w-3.5 opacity-70 transition-transform group-hover:scale-110 group-hover:opacity-100"
                     aria-hidden
                     focusable={false}
                   />
@@ -801,7 +802,7 @@ export function TimetableGrid({
               {fullBadge}
               {isDraggable && (
                 <RefreshCw
-                  className="h-3.5 w-3.5 opacity-80 transition-transform group-hover:scale-110 group-hover:opacity-100"
+                  className="h-3 w-3 sm:h-3.5 sm:w-3.5 opacity-80 transition-transform group-hover:scale-110 group-hover:opacity-100"
                   aria-hidden
                   focusable={false}
                 />
