@@ -764,7 +764,7 @@ export function TimetableGrid({
         )}
 
         {/* Content */}
-        <div className="flex h-full flex-col justify-start pt-0.5 pl-2">
+        <div className={cn('flex h-full flex-col pt-0.5 pl-2', isCompactBlock ? 'justify-center' : 'justify-start')}>
           {showVerticalIconStack ? (
             <>
               {(conflictBadge || fullBadge) && (
@@ -844,7 +844,7 @@ export function TimetableGrid({
               )}
             </div>
 
-            {/* Desktop: richer three-line content */}
+            {/* Desktop: richer content (compact blocks show only 1 line to avoid overflow) */}
             <div className="hidden sm:flex flex-col gap-0.5 min-w-0">
               {/* First row: course code + section */}
               <div className="min-w-0">
@@ -857,20 +857,24 @@ export function TimetableGrid({
                   selectedCourse.selectedSection.sectionType} {selectedCourse.selectedSection.sectionId}
                 </span>
               </div>
-              {/* Second row: Course name */}
-              <div className="text-[10px] opacity-90 leading-tight min-w-0">
-                <span className="truncate block" title={selectedCourse.course.courseName}>
-                  {selectedCourse.course.courseName}
-                </span>
-              </div>
-              {/* Third row: Class number + Location */}
-              <div className="text-[10px] opacity-85 leading-tight min-w-0">
-                <span className="truncate block">
-                  {selectedCourse.selectedSection.classNumber ? `#${selectedCourse.selectedSection.classNumber}` : null}
-                  {selectedCourse.selectedSection.classNumber && locationDisplay ? ' • ' : ''}
-                  {locationDisplay}
-                </span>
-              </div>
+              {!isCompactBlock && (
+                <>
+                  {/* Second row: Course name */}
+                  <div className="text-[10px] opacity-90 leading-tight min-w-0">
+                    <span className="truncate block" title={selectedCourse.course.courseName}>
+                      {selectedCourse.course.courseName}
+                    </span>
+                  </div>
+                  {/* Third row: Class number + Location */}
+                  <div className="text-[10px] opacity-85 leading-tight min-w-0">
+                    <span className="truncate block">
+                      {selectedCourse.selectedSection.classNumber ? `#${selectedCourse.selectedSection.classNumber}` : null}
+                      {selectedCourse.selectedSection.classNumber && locationDisplay ? ' • ' : ''}
+                      {locationDisplay}
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
