@@ -14,7 +14,7 @@ import { generateCourseColor, calculateTotalCredits, detectConflicts, hasAvailab
 import { TIMETABLE_CONFIG, WEEKDAY_SHORT } from '@/lib/constants';
 import { generateSchedules, type GeneratedSchedule } from '@/lib/schedule-generator';
 import { DISCLAIMER } from '@/lib/constants';
-import { Calendar, Book, AlertCircle, AlertTriangle, Info, Trash2, X, Hand, Sparkles, ChevronDown, ChevronUp, ChevronRight, Clock, Download, Upload, Menu, RotateCcw, MapPin, /* Coffee, Check, */ FlaskConical, Lock, Unlock } from 'lucide-react';
+import { Calendar, Book, AlertCircle, AlertTriangle, Info, Trash2, X, Hand, Sparkles, ChevronDown, ChevronUp, ChevronRight, Clock, Download, Upload, Menu, RotateCcw, MapPin, /* Coffee, Check, */ FlaskConical, Lock, Unlock, Github } from 'lucide-react';
 import ConflictToast from '@/components/ConflictToast';
 import FullSectionWarningToast, { type FullSectionWarningData } from '@/components/FullSectionWarningToast';
 
@@ -1404,6 +1404,19 @@ export default function Home() {
 
             {/* Stats and Theme Toggle - Compact */}
             <div className="flex items-center gap-2 sm:gap-3 lg:gap-4">
+              {/* GitHub link (desktop) */}
+              <a
+                href="https://github.com/Aplkalex/Queuesis"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hidden lg:inline-flex items-center justify-center w-9 h-9 rounded-xl border transition-all duration-200 ease-out shadow-sm hover:shadow-md active:scale-95
+                           bg-gray-100/80 border-gray-200 text-gray-700 hover:bg-gray-200/80 hover:border-gray-300
+                           dark:bg-white/5 dark:border-white/10 dark:text-white dark:hover:bg-white/10"
+                aria-label="Open GitHub repository"
+                title="GitHub"
+              >
+                <Github className="w-4.5 h-4.5" />
+              </a>
               <div className="hidden lg:block">
                 <ThemeToggle />
               </div>
@@ -2458,6 +2471,26 @@ export default function Home() {
                   </div>
                   <ThemeToggle />
                 </div>
+
+                {/* GitHub link (mobile quick actions) */}
+                <a
+                  href="https://github.com/Aplkalex/Queuesis"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between border border-gray-200 dark:border-gray-700 rounded-2xl px-4 py-3"
+                  aria-label="Open GitHub repository"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-white/10 flex items-center justify-center text-gray-700 dark:text-white">
+                      <Github className="w-4.5 h-4.5" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white">GitHub</p>
+                      <p className="text-[11px] text-gray-500 dark:text-gray-400">Aplkalex/Queuesis</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                </a>
 
                 <BuildingReference
                   onBuildingClick={(location) => {

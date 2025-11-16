@@ -68,23 +68,30 @@ function DraggableCourseBlock({
     <div
       ref={setNodeRef}
       className={cn(
-        'absolute left-1 right-1 rounded-lg cursor-grab active:cursor-grabbing group',
+        'absolute left-1 right-1 rounded-xl cursor-grab active:cursor-grabbing group overflow-hidden border',
         'timetable-block-enter',
-        'hover:shadow-xl hover:scale-[1.02]',
+        'hover:scale-[1.02]',
         'text-white flex flex-col',
         'px-1.5 py-1',
-        'overflow-visible',
-        isFull && 'border-2 border-red-500 dark:border-red-400 shadow-[0_0_0_1px_rgba(239,68,68,0.5)]',
-        hasConflict && 'conflict-pattern border-2 border-red-500',
+        isFull && 'border-2 border-red-500 dark:border-red-400',
+        hasConflict && 'conflict-pattern border-2 border-yellow-500 dark:border-yellow-400',
         (isDragging || isDraggedSection) && 'opacity-30 scale-95'
       )}
       style={{
         ...style,
-        transition: isDragging ? 'none' : 'all 0.3s ease',
+        // Slightly stronger subtle glow; keep inline to avoid utility reset
+        boxShadow: '0 16px 34px -22px rgba(99,102,241,0.40), 0 7px 16px -12px rgba(99,102,241,0.30)',
+        transition: isDragging ? 'none' : 'transform 0.25s ease, box-shadow 0.25s ease',
       }}
       {...attributes}
       {...listeners}
     >
+      {/* Soft highlight overlays inside rounded clip (~68%) */}
+      <div aria-hidden className="pointer-events-none absolute inset-0">
+        <div className="absolute inset-0 bg-[radial-gradient(120%_100%_at_0%_0%,rgba(255,255,255,0.18),transparent_60%)] opacity-[0.68]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.12),rgba(255,255,255,0.06)_14%,transparent_40%)] mix-blend-soft-light opacity-[0.68]" />
+      </div>
+
       {/* Delete button */}
       {onRemove && !selectedCourse.locked && (
         <button

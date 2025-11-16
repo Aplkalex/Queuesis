@@ -299,9 +299,10 @@ export function TimetableGrid({
       height: `${finalHeight}px`,
       backgroundColor: isFrosted ? palette.surface : palette.surfaceActive,
       borderColor: palette.border,
+      // Slightly stronger (average) ambient glow without hard edges
       boxShadow: isFrosted
-        ? `0 32px 56px -36px ${palette.glow}, inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 -1px 0 rgba(15, 23, 42, 0.12)`
-        : `0 26px 48px -36px ${palette.glow}`,
+        ? `0 24px 48px -33px ${palette.glow}, inset 0 1px 0 rgba(255, 255, 255, 0.30), inset 0 -1px 0 rgba(15, 23, 42, 0.11)`
+        : `0 16px 34px -22px ${palette.glow}, 0 7px 16px -13px ${palette.glow}`,
       backdropFilter: isFrosted ? 'blur(22px)' : 'none',
       WebkitBackdropFilter: isFrosted ? 'blur(22px)' : 'none',
       color: palette.text,
@@ -721,8 +722,6 @@ export function TimetableGrid({
               ? 'rgba(234, 179, 8, 0.95)'
               : palette.border),
           borderWidth: selectedCourse.locked ? 2 : undefined,
-          // Remove outer shadows entirely to avoid square-looking corners from background glow
-          boxShadow: 'none',
           // Z-index logic: shorter courses appear on top when conflicting
           // Base z-index: 1 (normal), 10+ (conflicts)
           // For conflicts: z-index = 100 - duration (so 50min class = z50, 180min class = z20)
@@ -749,6 +748,14 @@ export function TimetableGrid({
         onMouseEnter={() => setIsLocalHovered(true)}
         onMouseLeave={() => setIsLocalHovered(false)}
       >
+        {/* Soft highlight overlays (stay inside rounded clip) */}
+        <div aria-hidden className="pointer-events-none absolute inset-0">
+          {/* Top-left sheen (~68%) */}
+          <div className="absolute inset-0 bg-[radial-gradient(120%_100%_at_0%_0%,rgba(255,255,255,0.18),transparent_60%)] opacity-[0.68]" />
+          {/* Gentle vertical soft-light for depth (~68%) */}
+          <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.12),rgba(255,255,255,0.06)_14%,transparent_40%)] mix-blend-soft-light opacity-[0.68]" />
+        </div>
+
         {/* Drag handle - only show if draggable */}
         {isDraggable && (
           <div className="absolute -left-1 top-1/2 -translate-y-1/2 opacity-50 group-hover:opacity-100 transition-opacity pointer-events-none">
