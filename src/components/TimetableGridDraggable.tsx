@@ -86,7 +86,7 @@ function DraggableCourseBlock({
       {...listeners}
     >
       {/* Delete button */}
-      {onRemove && (
+      {onRemove && !selectedCourse.locked && (
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -104,6 +104,22 @@ function DraggableCourseBlock({
         >
           <X className="w-3.5 h-3.5" />
         </button>
+      )}
+      {onRemove && selectedCourse.locked && (
+        <div
+          className={cn(
+            'absolute -top-2 -right-2 w-6 h-6 rounded-lg',
+            'bg-gray-500/70 text-white',
+            'flex items-center justify-center shadow-lg',
+            'transition-all transform',
+            'opacity-0 group-hover:opacity-100 scale-0 group-hover:scale-100',
+            'z-[150]',
+            'pointer-events-none'
+          )}
+          title="Locked (unlock to remove)"
+        >
+          <AlertCircle className="w-3.5 h-3.5" />
+        </div>
       )}
 
       {/* Drag handle indicator */}

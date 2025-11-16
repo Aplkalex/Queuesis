@@ -87,6 +87,7 @@ export interface SelectedCourse {
   course: Course;
   selectedSection: Section;
   color?: string; // For visual differentiation on timetable
+  locked?: boolean; // When true: fixed section (no drag/drop; generator treats as constraint)
 }
 
 /**

@@ -14,7 +14,7 @@ import { generateCourseColor, calculateTotalCredits, detectConflicts, hasAvailab
 import { TIMETABLE_CONFIG, WEEKDAY_SHORT } from '@/lib/constants';
 import { generateSchedules, type GeneratedSchedule } from '@/lib/schedule-generator';
 import { DISCLAIMER } from '@/lib/constants';
-import { Calendar, Book, AlertCircle, AlertTriangle, Info, Trash2, X, Hand, Sparkles, ChevronDown, ChevronUp, ChevronRight, Clock, Download, Upload, Menu, RotateCcw, MapPin, /* Coffee, Check, */ FlaskConical } from 'lucide-react';
+import { Calendar, Book, AlertCircle, AlertTriangle, Info, Trash2, X, Hand, Sparkles, ChevronDown, ChevronUp, ChevronRight, Clock, Download, Upload, Menu, RotateCcw, MapPin, /* Coffee, Check, */ FlaskConical, Lock, Unlock } from 'lucide-react';
 import ConflictToast from '@/components/ConflictToast';
 import FullSectionWarningToast, { type FullSectionWarningData } from '@/components/FullSectionWarningToast';
 
@@ -208,6 +208,8 @@ export default function Home() {
   const [generatedSchedules, setGeneratedSchedules] = useState<GeneratedSchedule[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedScheduleIndex, setSelectedScheduleIndex] = useState<number>(0);
+  // Persist locked section keys (courseCode|sectionId) across schedule browsing
+  const [lockedSectionKeys, setLockedSectionKeys] = useState<string[]>([]);
 
   // Test mode state
   const [isTestMode, setIsTestMode] = useState(false);
@@ -258,7 +260,13 @@ export default function Home() {
         setGeneratedSchedules([]);
         setSelectedScheduleIndex(0);
         if (mode === 'auto-generate') {
-          const courseCodes = Array.from(new Set(selectedCourses.map((sc) => sc.course.courseCode)));
+          const courseCodes = Array.from(
+            new Set(
+              selectedCourses
+                .filter((sc): sc is SelectedCourse => Boolean(sc && sc.course))
+                .map((sc) => sc.course.courseCode)
+            )
+          );
           setSelectedCourseCodes(courseCodes);
           if (isMobile) setMobileView('courses');
         } else {
@@ -273,9 +281,13 @@ export default function Home() {
   // Sync selectedCourseCodes with selectedCourses (for manual mode)
   // This keeps the preferences bar in sync when switching modes
   useEffect(() => {
-    const courseCodes = Array.from(new Set(
-      selectedCourses.map(sc => sc.course.courseCode)
-    ));
+    const courseCodes = Array.from(
+      new Set(
+        selectedCourses
+          .filter((sc): sc is SelectedCourse => Boolean(sc && sc.course))
+          .map((sc) => sc.course.courseCode)
+      )
+    );
     setSelectedCourseCodes(courseCodes);
   }, [selectedCourses]);
 
@@ -712,6 +724,15 @@ export default function Home() {
       if (!courseToRemove) {
         return prev;
       }
+      // Respect lock: block removal if locked
+      if (courseToRemove.locked) {
+        showGenerationNotice({
+          title: 'Unlock To Remove',
+          message: `${courseToRemove.course.courseCode} is locked. Unlock it first to remove.`,
+          tone: 'warning',
+        });
+        return prev;
+      }
 
       const snapshot = prev.map(course => ({ ...course }));
       let next = prev.filter((_, i) => i !== index);
@@ -825,7 +846,18 @@ export default function Home() {
         return prev;
       }
 
-  const removedCourse = prev[index];
+      // Respect lock: block removal if locked
+      const target = prev[index];
+      if (target?.locked) {
+        showGenerationNotice({
+          title: 'Unlock To Remove',
+          message: `${course.courseCode} ${section.sectionId} is locked. Unlock it first to remove.`,
+          tone: 'warning',
+        });
+        return prev;
+      }
+
+      const removedCourse = prev[index];
       let next = prev.filter((_, i) => i !== index);
 
       if (section.sectionType === 'Lecture') {
@@ -1051,7 +1083,11 @@ export default function Home() {
         handleDismissUndo();
         updateConflicts(restored);
 
-        const uniqueImportedCourses = new Set(restored.map((sc) => sc.course.courseCode)).size;
+        const uniqueImportedCourses = new Set(
+          restored
+            .filter((sc): sc is SelectedCourse => Boolean(sc && sc.course))
+            .map((sc) => sc.course.courseCode)
+        ).size;
         const missingSummary =
           missingCourses.size > 0 || missingSections.size > 0
             ? ` Skipped ${missingCourses.size + missingSections.size} item(s) that are unavailable in the current dataset.`
@@ -1124,23 +1160,30 @@ export default function Home() {
 
   // Handle schedule generation
   // Helper function to assign colors to a schedule
-  const assignColorsToSchedule = (sections: SelectedCourse[]): SelectedCourse[] => {
+  const assignColorsToSchedule = (sections: SelectedCourse[], lockKeys: string[] = lockedSectionKeys): SelectedCourse[] => {
     const colorMap = new Map<string, string>();
     const usedColors: string[] = [];
-    
-    return sections.map(sc => {
+
+    const cleaned = sections.filter(
+      (sc): sc is SelectedCourse => Boolean(sc && sc.course && sc.selectedSection)
+    );
+
+    return cleaned.map(sc => {
       const courseCode = sc.course.courseCode;
-      
+
       // Get or generate color for this course
       if (!colorMap.has(courseCode)) {
         const color = generateCourseColor(courseCode, usedColors);
         colorMap.set(courseCode, color);
         usedColors.push(color);
       }
-      
+
+      const key = `${courseCode}|${sc.selectedSection.sectionId}`;
+      const locked = lockKeys.includes(key);
       return {
         ...sc,
-        color: colorMap.get(courseCode)!
+        color: colorMap.get(courseCode)!,
+        ...(locked ? { locked: true } : {}),
       };
     });
   };
@@ -1148,11 +1191,62 @@ export default function Home() {
   const handleGenerateSchedules = async () => {
     // In auto-generate mode, use selectedCourseCodes
     // In manual mode, use selectedCourses
-    const coursesToGenerate = scheduleMode === 'auto-generate'
-      ? courses.filter(c => selectedCourseCodes.includes(c.courseCode) && c.term === selectedTerm)
-      : Array.from(
-          new Map(selectedCourses.map(sc => [sc.course.courseCode, sc.course])).values()
+    // Defensive clean-up to avoid undefined entries
+    const cleanSelected = selectedCourses.filter(
+      (sc): sc is SelectedCourse => Boolean(sc && sc.course && sc.selectedSection)
+    );
+    if (cleanSelected.length !== selectedCourses.length) {
+      // Purge any invalid selections to avoid crashes
+      setSelectedCourses(cleanSelected);
+      showGenerationNotice({
+        title: 'Fixed Invalid Selections',
+        message: `Removed ${selectedCourses.length - cleanSelected.length} invalid item(s) from your schedule before generating.`,
+        tone: 'info',
+      });
+    }
+    let coursesToGenerate: Course[] = [];
+    let lockedKeys: string[] = [];
+    try {
+      // Determine locked selections (act as constraints)
+      const lockedSelections = cleanSelected.filter(sc => sc.locked);
+      const lockedCodes = new Set(lockedSelections.map(sc => sc.course.courseCode));
+      lockedKeys = lockedSelections.map(sc => `${sc.course.courseCode}|${sc.selectedSection.sectionId}`);
+      setLockedSectionKeys(lockedKeys);
+
+      // In auto mode, include any locked course codes even if not manually selected in chips
+      const selectedCodesSet = new Set(
+        (selectedCourseCodes.filter(Boolean) as string[]).map((s) => s.trim())
+      );
+      lockedCodes.forEach((code) => selectedCodesSet.add(code));
+
+      const baseCoursesToGenerate = scheduleMode === 'auto-generate'
+        ? courses.filter(c => selectedCodesSet.has(c.courseCode) && c.term === selectedTerm)
+        : Array.from(new Map(cleanSelected.map(sc => [sc.course.courseCode, sc.course])).values());
+
+      // Constrain locked courses to their locked sections only
+      coursesToGenerate = baseCoursesToGenerate.map((c) => {
+        if (!lockedCodes.has(c.courseCode)) return c;
+        const allowedIds = new Set(
+          lockedSelections
+            .filter(sc => sc.course.courseCode === c.courseCode)
+            .map(sc => sc.selectedSection.sectionId)
         );
+        const constrainedSections = c.sections.filter(s => allowedIds.has(s.sectionId));
+        return {
+          ...c,
+          sections: constrainedSections.length > 0 ? constrainedSections : c.sections,
+        };
+      });
+    } catch (e) {
+      console.error('Failed to prepare courses for generation', e, { selectedCourses, selectedCourseCodes });
+      showGenerationNotice({
+        title: 'Unable to Generate',
+        message: 'A data issue occurred while preparing your selected courses. Try clearing your schedule and re-selecting courses.',
+        tone: 'error',
+      });
+      setIsGenerating(false);
+      return;
+    }
 
     // Prevent generation if no courses are selected
     if (coursesToGenerate.length === 0) {
@@ -1179,7 +1273,7 @@ export default function Home() {
 
       // If we have schedules, load the first one with colors assigned
       if (schedules.length > 0) {
-        const schedulesWithColors = assignColorsToSchedule(schedules[0].sections);
+        const schedulesWithColors = assignColorsToSchedule(schedules[0].sections, lockedKeys);
         setSelectedCourses(schedulesWithColors);
         updateConflicts(schedulesWithColors);
         setConflictToast([]);
@@ -1585,11 +1679,28 @@ export default function Home() {
                               </div>
                             </button>
                             <button
-                              onClick={() => handleRemoveCourse(idx)}
-                              className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-all opacity-60 group-hover:opacity-100"
-                              title="Remove course"
+                              onClick={() => !sc.locked && handleRemoveCourse(idx)}
+                              disabled={sc.locked}
+                              className={`p-1 rounded transition-all opacity-60 group-hover:opacity-100 ${sc.locked ? 'text-gray-400 cursor-not-allowed' : 'text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20'}`}
+                              title={sc.locked ? 'Unlock to remove' : 'Remove course'}
                             >
                               <X className="w-3.5 h-3.5" />
+                            </button>
+                            {/* Lock/Unlock toggle */}
+                            <button
+                              onClick={() => {
+                                setSelectedCourses(prev => prev.map((item, i) => i === idx ? { ...item, locked: !item.locked } : item));
+                                setLockedSectionKeys(prev => {
+                                  const key = `${sc.course.courseCode}|${sc.selectedSection.sectionId}`;
+                                  const set = new Set(prev);
+                                  if (set.has(key)) set.delete(key); else set.add(key);
+                                  return Array.from(set);
+                                });
+                              }}
+                              className={`p-1 rounded transition-all opacity-60 group-hover:opacity-100 ${sc.locked ? 'text-amber-600 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/20' : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/60'}`}
+                              title={sc.locked ? 'Unlock (allow changes)' : 'Lock (fix this section)'}
+                            >
+                              {sc.locked ? <Unlock className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
                             </button>
                           </div>
 
@@ -1671,6 +1782,54 @@ export default function Home() {
                                     </span>
                                   </div>
                                 )}
+                              </div>
+
+                              {/* Quick actions: Lock all / Unlock all for this course */}
+                              <div className="pt-2 border-t border-gray-200/60 dark:border-gray-700/60 flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const code = sc.course.courseCode;
+                                    setSelectedCourses(prev => prev.map(item =>
+                                      item.course.courseCode === code ? { ...item, locked: true } : item
+                                    ));
+                                    setLockedSectionKeys(prev => {
+                                      const set = new Set(prev);
+                                      selectedCourses
+                                        .filter((item): item is SelectedCourse => Boolean(item && item.course && item.selectedSection))
+                                        .filter(item => item.course.courseCode === code)
+                                        .forEach(item => set.add(`${item.course.courseCode}|${item.selectedSection.sectionId}`));
+                                      return Array.from(set);
+                                    });
+                                  }}
+                                  className="px-2 py-1 text-[10px] font-semibold rounded-md bg-amber-600 hover:bg-amber-700 text-white"
+                                  title="Lock all sections of this course"
+                                >
+                                  <Lock className="w-3 h-3 inline-block mr-1" />
+                                  Lock All
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const code = sc.course.courseCode;
+                                    setSelectedCourses(prev => prev.map(item =>
+                                      item.course.courseCode === code ? { ...item, locked: false } : item
+                                    ));
+                                    setLockedSectionKeys(prev => {
+                                      const set = new Set(prev);
+                                      selectedCourses
+                                        .filter((item): item is SelectedCourse => Boolean(item && item.course && item.selectedSection))
+                                        .filter(item => item.course.courseCode === code)
+                                        .forEach(item => set.delete(`${item.course.courseCode}|${item.selectedSection.sectionId}`));
+                                      return Array.from(set);
+                                    });
+                                  }}
+                                  className="px-2 py-1 text-[10px] font-semibold rounded-md bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200"
+                                  title="Unlock all sections of this course"
+                                >
+                                  <Unlock className="w-3 h-3 inline-block mr-1" />
+                                  Unlock All
+                                </button>
                               </div>
                             </div>
                           )}
@@ -1919,15 +2078,15 @@ export default function Home() {
                     }`}>
                       {/* Previous button - Only show if more than 1 schedule */}
                       {generatedSchedules.length > 1 && (
-                        <button
-                          onClick={() => {
-                            const newIndex = selectedScheduleIndex > 0 ? selectedScheduleIndex - 1 : generatedSchedules.length - 1;
-                            setSelectedScheduleIndex(newIndex);
-                            const schedulesWithColors = assignColorsToSchedule(generatedSchedules[newIndex].sections);
-                            setSelectedCourses(schedulesWithColors);
-                            updateConflicts(schedulesWithColors);
-                            setConflictToast([]);
-                          }}
+                              <button
+                                onClick={() => {
+                                  const newIndex = selectedScheduleIndex > 0 ? selectedScheduleIndex - 1 : generatedSchedules.length - 1;
+                                  setSelectedScheduleIndex(newIndex);
+                                  const schedulesWithColors = assignColorsToSchedule(generatedSchedules[newIndex].sections);
+                                  setSelectedCourses(schedulesWithColors);
+                                  updateConflicts(schedulesWithColors);
+                                  setConflictToast([]);
+                                }}
                           className="p-2 bg-white dark:bg-[#1e1e1e] rounded-lg hover:bg-green-100 dark:hover:bg-green-900/30 transition-all shadow-sm hover:shadow-md"
                           title="Previous schedule"
                         >
@@ -1947,15 +2106,15 @@ export default function Home() {
 
                       {/* Next button - Only show if more than 1 schedule */}
                       {generatedSchedules.length > 1 && (
-                        <button
-                          onClick={() => {
-                            const newIndex = selectedScheduleIndex < generatedSchedules.length - 1 ? selectedScheduleIndex + 1 : 0;
-                            setSelectedScheduleIndex(newIndex);
-                            const schedulesWithColors = assignColorsToSchedule(generatedSchedules[newIndex].sections);
-                            setSelectedCourses(schedulesWithColors);
-                            updateConflicts(schedulesWithColors);
-                            setConflictToast([]);
-                          }}
+                              <button
+                                onClick={() => {
+                                  const newIndex = selectedScheduleIndex < generatedSchedules.length - 1 ? selectedScheduleIndex + 1 : 0;
+                                  setSelectedScheduleIndex(newIndex);
+                                  const schedulesWithColors = assignColorsToSchedule(generatedSchedules[newIndex].sections);
+                                  setSelectedCourses(schedulesWithColors);
+                                  updateConflicts(schedulesWithColors);
+                                  setConflictToast([]);
+                                }}
                           className="p-2 bg-white dark:bg-[#1e1e1e] rounded-lg hover:bg-green-100 dark:hover:bg-green-900/30 transition-all shadow-sm hover:shadow-md"
                           title="Next schedule"
                         >
@@ -2342,19 +2501,19 @@ export default function Home() {
             iconWrapper: 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-200',
             title: 'text-blue-900 dark:text-blue-100',
             button: 'bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-400',
-            accent: 'from-blue-500/30 via-blue-400/10 to-transparent',
+            accent: 'bg-black',
           },
           warning: {
             iconWrapper: 'bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-200',
             title: 'text-amber-900 dark:text-amber-100',
             button: 'bg-amber-600 dark:bg-amber-500 hover:bg-amber-700 dark:hover:bg-amber-400',
-            accent: 'from-amber-500/30 via-amber-400/10 to-transparent',
+            accent: 'bg-black',
           },
           error: {
             iconWrapper: 'bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-200',
             title: 'text-rose-900 dark:text-rose-100',
             button: 'bg-rose-600 dark:bg-rose-500 hover:bg-rose-700 dark:hover:bg-rose-400',
-            accent: 'from-rose-500/30 via-rose-400/10 to-transparent',
+            accent: 'bg-black',
           },
         } as const;
         const styles = toneStyles[tone];
@@ -2368,7 +2527,7 @@ export default function Home() {
               className="relative w-full max-w-md bg-white/95 dark:bg-[#131313]/95 rounded-2xl shadow-2xl border border-white/30 dark:border-white/10 overflow-hidden animate-slideUp"
               onClick={(event) => event.stopPropagation()}
             >
-              <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${styles.accent}`} />
+              <div className={`absolute inset-x-0 top-0 h-1 ${styles.accent}`} />
               <div className="p-6 space-y-4">
                 <div className="flex items-start gap-3">
                   <div className={`p-3 rounded-full shadow ${styles.iconWrapper}`}>

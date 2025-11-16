@@ -6,7 +6,7 @@ import { SelectedCourse, DayOfWeek, Course, Section, TimeSlot } from '@/types';
 import { TIMETABLE_CONFIG, WEEKDAYS, WEEKDAY_SHORT } from '@/lib/constants';
 import { timeToMinutes, formatTime, hasAvailableSeats } from '@/lib/schedule-utils';
 import { cn } from '@/lib/utils';
-import { X, AlertCircle, RefreshCw, GripVertical } from 'lucide-react';
+import { X, AlertCircle, RefreshCw, GripVertical, Lock } from 'lucide-react';
 import {
   DndContext,
   DragOverlay,
@@ -581,7 +581,7 @@ export function TimetableGrid({
       }
     }
 
-    const isDraggable = enableDragDrop && hasAlternatives;
+    const isDraggable = enableDragDrop && hasAlternatives && !selectedCourse.locked;
 
     const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
       id: uniqueId,
@@ -592,7 +592,7 @@ export function TimetableGrid({
     const { setNodeRef: setDropRef, isOver } = useDroppable({
       id: `drop-${uniqueId}`,
       data: { course: selectedCourse },
-      disabled: !isDraggable,
+      disabled: !isDraggable || selectedCourse.locked === true,
     });
 
   const palette = buildGlassPalette(selectedCourse.color);
@@ -657,7 +657,7 @@ export function TimetableGrid({
     // };
 
     // Check if this is a valid drop target
-    const isValidDropTarget = isOver && draggedCourse && draggedCourse !== selectedCourse && (() => {
+    const isValidDropTarget = isOver && draggedCourse && draggedCourse !== selectedCourse && !selectedCourse.locked && (() => {
       const draggedSection = draggedCourse.selectedSection;
       const targetSection = selectedCourse.selectedSection;
 
@@ -713,7 +713,9 @@ export function TimetableGrid({
             : hasConflict
               ? 'rgba(234, 179, 8, 0.95)'
               : palette.border,
-          boxShadow: emphasizedBoxShadow,
+          boxShadow: selectedCourse.locked
+            ? `${typeof emphasizedBoxShadow === 'string' && emphasizedBoxShadow.length ? emphasizedBoxShadow + ', ' : ''}0 0 0 2px rgba(255,255,255,0.95)`
+            : emphasizedBoxShadow,
           // Z-index logic: shorter courses appear on top when conflicting
           // Base z-index: 1 (normal), 10+ (conflicts)
           // For conflicts: z-index = 100 - duration (so 50min class = z50, 180min class = z20)
@@ -728,7 +730,9 @@ export function TimetableGrid({
           // More transparency for conflicts so overlapping courses are clearly visible
           // Full opacity when hovered
           opacity: hasConflict ? (isLocalHovered ? 1 : 0.85) : 1,
-          filter: hasConflict ? 'saturate(1.22) brightness(0.98)' : 'saturate(1.05)',
+          filter: selectedCourse.locked
+            ? 'grayscale(0.2) saturate(0.65) brightness(0.98)'
+            : (hasConflict ? 'saturate(1.22) brightness(0.98)' : 'saturate(1.05)'),
           // Always use smooth transitions for position changes
           transition: isDragging
             ? 'none'
