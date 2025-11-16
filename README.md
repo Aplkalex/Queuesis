@@ -126,7 +126,7 @@ Choose from multiple optimization preferences:
 ### Backend & Data
 - **Runtime**: Node.js (Vercel)
 - **API**: Next.js Route Handlers
-- **Database**: MongoDB Atlas (optional)
+- **Database**: MongoDB Atlas
 - **ORM**: Prisma 6
 - **Data Processing**: xlsx
 - **Testing**: Jest 30.x
@@ -149,14 +149,14 @@ Choose from multiple optimization preferences:
 │  ┌─────────────────────┐    │
 │  │  React UI (Client)  │    │
 │  └──────────┬──────────┘    │
-│             │                │
+│             │               │
 │  ┌──────────▼──────────┐    │
 │  │  API Routes (Server)│    │
 │  │  - /api/health      │    │
 │  │  - /api/terms       │    │
 │  │  - /api/courses     │    │
 │  └──────────┬──────────┘    │
-└─────────────┼────────────────┘
+└─────────────┼───────────────┘
               │ Prisma
               ▼
      ┌────────────────┐
@@ -631,17 +631,9 @@ We welcome contributions! Here's how to get started:
 
 ---
 
-## 📜 Code of Conduct
-
-We are committed to providing a welcoming and inclusive environment. Please read our [Code of Conduct](CODE_OF_CONDUCT.md) before contributing.
-
-By participating in this project, you agree to abide by its terms.
-
----
-
 ## 👥 Team
 
-**Maintainer:** [Aplkalex](https://github.com/Aplkalex)
+**Lead/Maintainer:** [Aplkalex](https://github.com/Aplkalex)
 
 **Contributors:** Open to community contributions! See [Contributing](#-contributing) section.
 
