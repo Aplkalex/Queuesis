@@ -1984,8 +1984,8 @@ export default function Home() {
       </main>
 
       {/* Mobile Bottom Controls */}
-      {/* Tabs bar (Courses | Timetable) - always visible on mobile */}
-      {isMobile && (
+      {/* Tabs bar (Courses | Timetable) - show only when no other mobile bottom bar is visible */}
+      {isMobile && !((mobileView === 'courses' && showMobileGenerateBar) || (mobileView === 'timetable' && generatedSchedules.length > 0)) && (
         <div className="fixed inset-x-0 bottom-0 z-40 px-3 pb-[calc(env(safe-area-inset-bottom,0)+8px)]">
           <div className={`mx-auto max-w-md ${sheetClassName} rounded-full p-1 flex items-center justify-between`}>
             <button
