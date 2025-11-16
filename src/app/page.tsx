@@ -40,6 +40,9 @@ type GenerationNotice = {
   tone: 'info' | 'warning' | 'error';
 };
 
+// Feature flags (compile-time via Next.js env in client)
+const ENABLE_TEST_MODE = process.env.NEXT_PUBLIC_ENABLE_TEST_MODE === 'true';
+
 const useIsMobile = (breakpoint = 1024) => {
   const [isMobile, setIsMobile] = useState(false);
 
@@ -1310,36 +1313,38 @@ export default function Home() {
                 <ThemeToggle />
               </div>
               
-              {/* Test Mode Toggle */}
-              <button
-                onClick={() => {
-                  const newTestMode = !isTestMode;
-                  setIsTestMode(newTestMode);
-                  // Switch to T2 when entering test mode (test courses are in T2)
-                  if (newTestMode) {
-                    setSelectedTerm('2025-26-T2');
-                  } else {
-                    setSelectedTerm('2025-26-T1');
-                  }
-                  // Clear selections when switching modes
-                  setSelectedCourses([]);
-                  setSelectedCourseCodes([]);
-                  setGeneratedSchedules([]);
-                  setSelectedScheduleIndex(0);
-                }}
-                className={`
-                  hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium
-                  transition-all duration-200 shadow-sm
-                  ${isTestMode 
-                    ? 'bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600' 
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-                  }
-                `}
-                title={isTestMode ? 'Switch to Normal Mode' : 'Switch to Test Mode (Large Courses)'}
-              >
-                <FlaskConical className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Test</span>
-              </button>
+              {/* Test Mode Toggle (hidden unless explicitly enabled) */}
+              {ENABLE_TEST_MODE && (
+                <button
+                  onClick={() => {
+                    const newTestMode = !isTestMode;
+                    setIsTestMode(newTestMode);
+                    // Switch to T2 when entering test mode (test courses are in T2)
+                    if (newTestMode) {
+                      setSelectedTerm('2025-26-T2');
+                    } else {
+                      setSelectedTerm('2025-26-T1');
+                    }
+                    // Clear selections when switching modes
+                    setSelectedCourses([]);
+                    setSelectedCourseCodes([]);
+                    setGeneratedSchedules([]);
+                    setSelectedScheduleIndex(0);
+                  }}
+                  className={`
+                    hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium
+                    transition-all duration-200 shadow-sm
+                    ${isTestMode 
+                      ? 'bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600' 
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                    }
+                  `}
+                  title={isTestMode ? 'Switch to Normal Mode' : 'Switch to Test Mode (Large Courses)'}
+                >
+                  <FlaskConical className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Test</span>
+                </button>
+              )}
 
               <div className="text-center">
                 <div className="text-base sm:text-lg lg:text-xl font-bold text-purple-600 dark:text-purple-400">{uniqueCourseCount}</div>
@@ -1363,8 +1368,8 @@ export default function Home() {
       <main className={`flex-1 w-full px-2 sm:px-4 lg:px-6 py-2 lg:py-3 bg-transparent flex flex-col ${isMobile ? 'overflow-y-auto' : 'overflow-hidden'}`}>
         {/* Warnings container - only takes space when needed */}
         <div className="max-w-[1600px] w-full mx-auto space-y-2 mb-2 flex-shrink-0">
-          {/* Test Mode Banner */}
-          {isTestMode && (
+          {/* Test Mode Banner (hidden unless explicitly enabled) */}
+          {ENABLE_TEST_MODE && isTestMode && (
             <div className="bg-emerald-50/70 dark:bg-emerald-900/10 backdrop-blur-md border border-emerald-200/50 dark:border-emerald-800/30 rounded-lg p-2 flex items-center gap-2 shadow-lg">
               <FlaskConical className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
               <p className="text-[11px] sm:text-xs text-emerald-800 dark:text-emerald-300 flex-1">

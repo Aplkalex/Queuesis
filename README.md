@@ -24,13 +24,13 @@
 <div align="center">
 
 ### Main Timetable Interface
-*Coming soon - add a screenshot of your main interface*
+*Coming*
 
 ### Schedule Generation
-*Coming soon - add a screenshot of the schedule generator*
+*Coming*
 
 ### Course Search
-*Coming soon - add a screenshot of the search interface*
+*Coming*
 
 </div>
 
@@ -61,6 +61,8 @@
 ## 🎯 Overview
 
 Queuesis is a CUHK-focused timetable planner that combines intuitive drag-and-drop editing with a powerful deterministic schedule generator. Course data is sourced from official CUSIS Excel exports and can optionally be synced to MongoDB Atlas via Prisma for enhanced performance.
+
+> 📅 Current Term Support: This version currently supports 2025-2026 Term 2 course data. Support for additional terms will be added in future updates.
 
 ### Why Queuesis?
 
@@ -292,6 +294,10 @@ ALLOW_FALLBACK_DATA=true
 
 # Custom JSON Data Path (optional)
 GENERATED_COURSES_PATH=data/courses-2025-26-T2.json
+
+# UI Feature Flags (safe to expose)
+# Show the "Test Mode" toggle/banner in the UI (useful for local dev/QA).
+NEXT_PUBLIC_ENABLE_TEST_MODE=false
 ```
 
 ### Environment Variable Details
@@ -301,6 +307,7 @@ GENERATED_COURSES_PATH=data/courses-2025-26-T2.json
 | `MONGODB_URI` | No | MongoDB Atlas connection string. If not provided, app uses JSON/mock data |
 | `ALLOW_FALLBACK_DATA` | No | Set to `false` to enforce database-only mode (default: `true`) |
 | `GENERATED_COURSES_PATH` | No | Path to custom course JSON file |
+| `NEXT_PUBLIC_ENABLE_TEST_MODE` | No | When `true`, shows the Test Mode toggle and banner in the UI |
 
 ---
 
@@ -659,10 +666,10 @@ By participating in this project, you agree to abide by its terms.
 This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 
 **What this means:**
-- ✅ You can use, modify, and distribute this software
-- ✅ You can use it commercially
-- ❌ If you modify and host it as a web service, you MUST share your source code
-- ❌ All derivative works must also be open source under AGPL-3.0
+-  You can use, modify, and distribute this software
+-  You can use it commercially
+-  If you modify and host it as a web service, you MUST share your source code
+-  All derivative works must also be open source under AGPL-3.0
 
 See the [LICENSE](LICENSE) file for full details.
 
