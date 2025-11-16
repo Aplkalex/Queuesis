@@ -4,8 +4,15 @@
 
 **A modern, intelligent timetable planner built for CUHK students**
 
+![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js%2016-000000?style=for-the-badge&logo=next.js&logoColor=white)
+![React](https://img.shields.io/badge/React%2019-61DAFB?style=for-the-badge&logo=react&logoColor=black)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS%204-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
+![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=for-the-badge&logo=prisma&logoColor=white)
+
 ![Release Date](https://img.shields.io/badge/Release%20Date-Nov%2015%202025-ebf2fa?style=for-the-badge)
-![License](https://img.shields.io/badge/License-MIT-427aa1?style=for-the-badge)
+![License](https://img.shields.io/badge/License-AGPL%20v3-427aa1?style=for-the-badge)
 ![Status](https://img.shields.io/badge/Status-Active-a5be00?style=for-the-badge)
 
 [Live Demo](https://queuesis.vercel.app) • [Report Bug](https://github.com/Aplkalex/cuhk-scheduler/issues) • [Request Feature](https://github.com/Aplkalex/cuhk-scheduler/issues)
@@ -397,7 +404,15 @@ We welcome contributions! Here's how to get started:
 
 ## 📄 License
 
-This project is open source and available under the [MIT License](LICENSE).
+This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
+
+**What this means:**
+- ✅ You can use, modify, and distribute this software
+- ✅ You can use it commercially
+- ❌ If you modify and host it as a web service, you MUST share your source code
+- ❌ All derivative works must also be open source under AGPL-3.0
+
+See the [LICENSE](LICENSE) file for full details.
 
 ---
 
