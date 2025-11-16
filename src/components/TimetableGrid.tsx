@@ -583,8 +583,6 @@ export function TimetableGrid({
       id: uniqueId,
       data: { course: selectedCourse },
       disabled: !isDraggable,
-      // Short press delay prevents scroll->drag accidents on touch
-      activationConstraint: { delay: 120, tolerance: 6 },
     });
 
     const { setNodeRef: setDropRef, isOver } = useDroppable({
