@@ -2,7 +2,11 @@
 
 <div align="center">
 
-**A modern, intelligent timetable planner built for CUHK students**
+**A modern course-queueing experience built to fix everything CUSIS didn’t.**
+
+![Release Date](https://img.shields.io/badge/Release%20Date-Nov%2015%202025-ebf2fa?style=for-the-badge)
+![License](https://img.shields.io/badge/License-AGPL%20v3-427aa1?style=for-the-badge)
+![Status](https://img.shields.io/badge/Status-Active-a5be00?style=for-the-badge)
 
 ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
 ![Next.js](https://img.shields.io/badge/Next.js%2016-000000?style=for-the-badge&logo=next.js&logoColor=white)
@@ -11,13 +15,46 @@
 ![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
 ![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=for-the-badge&logo=prisma&logoColor=white)
 
-![Release Date](https://img.shields.io/badge/Release%20Date-Nov%2015%202025-ebf2fa?style=for-the-badge)
-![License](https://img.shields.io/badge/License-AGPL%20v3-427aa1?style=for-the-badge)
-![Status](https://img.shields.io/badge/Status-Active-a5be00?style=for-the-badge)
-
 [Live Demo](https://queuesis.vercel.app) • [Report Bug](https://github.com/Aplkalex/cuhk-scheduler/issues) • [Request Feature](https://github.com/Aplkalex/cuhk-scheduler/issues)
 
 </div>
+
+## 📸 Screenshots
+
+<div align="center">
+
+### Main Timetable Interface
+*Coming soon - add a screenshot of your main interface*
+
+### Schedule Generation
+*Coming soon - add a screenshot of the schedule generator*
+
+### Course Search
+*Coming soon - add a screenshot of the search interface*
+
+</div>
+
+---
+
+## 📖 Table of Contents
+
+- [Overview](#-overview)
+- [Key Features](#-key-features)
+- [Technology Stack](#-technology-stack)
+- [Project Structure](#-project-structure)
+- [Getting Started](#-getting-started)
+- [Configuration](#️-configuration)
+- [Data Management](#-data-management)
+- [API Documentation](#-api-documentation)
+- [Testing](#-testing)
+- [Deployment](#-deployment)
+- [Troubleshooting](#️-troubleshooting)
+- [Roadmap](#️-roadmap)
+- [Contributing](#-contributing)
+- [Code of Conduct](#-code-of-conduct)
+- [Team](#-team)
+- [Acknowledgments](#-acknowledgments)
+- [License](#-license)
 
 ---
 
@@ -73,37 +110,128 @@ Choose from multiple optimization preferences:
 
 ## 🚀 Technology Stack
 
-| Category | Technologies |
-|----------|-------------|
-| **Framework** | Next.js 16 (App Router), React 19, TypeScript 5 |
-| **Styling** | Tailwind CSS 4, next-themes, Lucide React |
-| **Database** | Prisma 6, MongoDB Atlas (optional) |
-| **Interactions** | @dnd-kit (drag & drop) |
-| **Testing** | Jest 30.x, React Testing Library |
-| **Tooling** | xlsx, ts-node, ESLint 9.x |
+<table>
+<tr>
+<td valign="top" width="50%">
+
+### Frontend
+- **Framework**: Next.js 16 (App Router)
+- **UI Library**: React 19
+- **Language**: TypeScript 5
+- **Styling**: Tailwind CSS 4
+- **Theme**: next-themes
+- **Icons**: Lucide React
+- **Drag & Drop**: @dnd-kit
+- **Deployment**: Vercel
+
+</td>
+<td valign="top" width="50%">
+
+### Backend & Data
+- **Runtime**: Node.js (Vercel)
+- **API**: Next.js Route Handlers
+- **Database**: MongoDB Atlas (optional)
+- **ORM**: Prisma 6
+- **Data Processing**: xlsx
+- **Testing**: Jest 30.x
+- **Linting**: ESLint 9.x
+
+</td>
+</tr>
+</table>
+
+### Architecture Highlights
+
+```
+┌─────────────┐
+│   Browser   │
+└──────┬──────┘
+       │ HTTPS
+       ▼
+┌─────────────────────────────┐
+│  Next.js (Vercel)           │
+│  ┌─────────────────────┐    │
+│  │  React UI (Client)  │    │
+│  └──────────┬──────────┘    │
+│             │                │
+│  ┌──────────▼──────────┐    │
+│  │  API Routes (Server)│    │
+│  │  - /api/health      │    │
+│  │  - /api/terms       │    │
+│  │  - /api/courses     │    │
+│  └──────────┬──────────┘    │
+└─────────────┼────────────────┘
+              │ Prisma
+              ▼
+     ┌────────────────┐
+     │ MongoDB Atlas  │
+     │   (Optional)   │
+     └────────────────┘
+              │
+     Fallback: JSON/Mock
+```
 
 ---
 
 ## 📂 Project Structure
 
 ```
-queuesis/
-├── src/
-│   ├── app/
-│   │   ├── api/              # Next.js API routes
-│   │   ├── page.tsx          # Main timetable page
-│   │   ├── layout.tsx        # Root layout with theme
-│   │   └── globals.css       # Global styles
-│   ├── components/           # React UI components
-│   ├── lib/                  # Scheduling engine & utilities
-│   └── data/                 # Generated JSON & mock data
-├── prisma/
-│   └── schema.prisma         # MongoDB schema
-├── scripts/
-│   ├── convert-excel.ts      # Excel → JSON converter
-│   └── import-json.ts        # JSON → MongoDB importer
-├── docs/                     # API documentation
-└── __tests__/                # Test suites
+cuhk-scheduler/
+├── 📄 Core Files
+│   ├── README.md
+│   ├── LICENSE (AGPL v3)
+│   ├── package.json
+│   └── tsconfig.json
+│
+├── 📚 Documentation
+│   └── docs/
+│       ├── API.md                    # API endpoint documentation
+│       └── manual-data-entry.md      # Data management guide
+│
+├── 🗄️ Database
+│   └── prisma/
+│       ├── schema.prisma             # MongoDB models
+│       └── seed.ts                   # Database seeding script
+│
+├── 🛠️ Scripts
+│   └── scripts/
+│       ├── convert-excel.ts          # Excel → JSON converter
+│       └── import-json.ts            # JSON → MongoDB importer
+│
+├── 💾 Data
+│   └── data/
+│       └── courses-2025-26-T2.json   # Fallback course dataset
+│
+└── 💻 Source Code
+    └── src/
+        ├── app/                      # Next.js App Router
+        │   ├── page.tsx              # Main timetable page
+        │   ├── layout.tsx            # Root layout with theme
+        │   ├── globals.css           # Global styles
+        │   └── api/                  # API Routes
+        │       ├── health/           # Health check endpoint
+        │       ├── terms/            # Terms listing
+        │       └── courses/          # Course data endpoints
+        │
+        ├── components/               # React UI Components
+        │   ├── TimetableGrid.tsx     # Main timetable display
+        │   ├── CourseCard.tsx        # Course selection cards
+        │   ├── SearchBar.tsx         # Course search interface
+        │   ├── ConflictToast.tsx     # Conflict notifications
+        │   └── ThemeToggle.tsx       # Dark mode toggle
+        │
+        ├── lib/                      # Core Logic
+        │   ├── schedule-generator.ts # Algorithm engine
+        │   ├── schedule-utils.ts     # Conflict detection
+        │   ├── db.ts                 # Prisma client
+        │   └── __tests__/            # Unit tests
+        │
+        ├── data/                     # Static Data
+        │   ├── generated-courses.ts  # Generated JSON loader
+        │   └── mock-courses.ts       # Development mocks
+        │
+        └── types/                    # TypeScript Definitions
+            └── index.ts              # Shared type definitions
 ```
 
 ---
@@ -180,36 +308,73 @@ GENERATED_COURSES_PATH=data/courses-2025-26-T2.json
 
 ### Data Source Hierarchy
 
-The app follows this priority order:
+The app follows this priority order for retrieving course data:
 
-1. **MongoDB Atlas** (if `MONGODB_URI` is configured)
-2. **Generated JSON** (from `GENERATED_COURSES_PATH` or default path)
-3. **Static Mock Data** (fallback for development)
-
-### Converting Excel to JSON
-
-```bash
-npm run convert-excel -- --input path/to/cusis-export.xlsx --output data/courses-2025-26-T2.json
+```
+1️⃣ MongoDB Atlas (if MONGODB_URI configured)
+        ↓ (if unavailable)
+2️⃣ Generated JSON (from GENERATED_COURSES_PATH)
+        ↓ (if unavailable)
+3️⃣ Static Mock Data (development fallback)
 ```
 
-### Importing to MongoDB
+### Working with Course Data
+
+<details>
+<summary><b>📥 Converting Excel to JSON</b></summary>
+
+```bash
+npm run convert-excel -- \
+  --input "CUHK CUSIS Course offering (Nov 12).xlsx" \
+  --output data/courses-2025-26-T2.json
+```
+
+**Options:**
+- `--input` - Path to CUSIS Excel export
+- `--output` - Destination JSON file
+- `--sheet` - Specific worksheet name (if needed)
+
+</details>
+
+<details>
+<summary><b>📤 Importing to MongoDB</b></summary>
 
 ```bash
 npm run import-json -- --file data/courses-2025-26-T2.json
 ```
 
-### Data Model
+**Prerequisites:**
+- MongoDB Atlas cluster set up
+- `MONGODB_URI` configured in `.env.local`
+- Network access configured in Atlas
+
+</details>
+
+<details>
+<summary><b>🗂️ Data Model</b></summary>
 
 **Course Schema:**
-- `courseCode` (unique identifier)
-- `courseName`, `department`, `credits`
-- `description`, `prerequisites`
-- `sections` (array of class sections with timeslots)
-- `term`, `career`, `lastUpdated`
+```typescript
+{
+  courseCode: string        // Unique identifier (e.g., "CSCI1001")
+  courseName: string        // Full course name
+  department: string        // Department code
+  credits: number          // Credit hours
+  description?: string     // Course description
+  prerequisites?: string   // Prerequisite requirements
+  sections: Section[]      // Array of class sections
+  term: string            // Academic term
+  career: string          // Program level
+  lastUpdated: Date       // Last sync timestamp
+}
+```
 
 **Indexes:**
 - `courseCode` (unique)
-- `term`, `department` (indexed for fast filtering)
+- `term` (indexed for fast filtering)
+- `department` (indexed for department queries)
+
+</details>
 
 ---
 
@@ -243,24 +408,44 @@ For full API documentation, see [`docs/API.md`](docs/API.md).
 
 ## 🧪 Testing
 
-Run the test suite:
+### Running Tests
 
 ```bash
 # Run all tests
 npm test
 
-# Watch mode
+# Watch mode (re-run on file changes)
 npm run test:watch
 
-# Coverage report
+# Generate coverage report
 npm run test:coverage
 ```
 
-Test coverage includes:
-- ✅ Scheduling algorithm correctness
-- ✅ Conflict detection edge cases
-- ✅ Component behavior validation
-- ✅ API route functionality
+### Test Coverage
+
+Our test suite includes:
+
+| Category | Coverage | Details |
+|----------|----------|---------|
+| **Scheduling Algorithm** | ✅ Comprehensive | All preference modes, edge cases |
+| **Conflict Detection** | ✅ Comprehensive | Time overlaps, section conflicts |
+| **Course Selection** | ✅ Comprehensive | Adding/removing courses |
+| **Component Behavior** | ⚠️ Partial | Critical UI components |
+| **API Routes** | ⏳ Planned | Endpoint testing |
+
+### Test Files
+
+- `src/lib/__tests__/schedule-generator.test.ts` - Core algorithm
+- `src/lib/__tests__/course-selection.test.ts` - Selection logic
+- `src/lib/__tests__/competitor-parity.test.ts` - Feature parity
+
+### Adding Tests
+
+When contributing new features:
+1. Add unit tests for core logic in `src/lib/__tests__/`
+2. Add component tests for UI changes
+3. Ensure all existing tests pass
+4. Aim for >80% code coverage on new code
 
 ---
 
@@ -341,29 +526,61 @@ After deployment, verify:
 
 ## 🗺️ Roadmap
 
-### Data Automation
-- [ ] GitHub Actions for scheduled Excel → JSON → MongoDB imports
-- [ ] Contributor upload portal for course data
-- [ ] Automatic term detection and validation
+### 🎯 Short Term (Q1 2025)
 
-### Product Features
-- [ ] User accounts for saving/sharing schedules
-- [ ] Export to PNG/ICS/Google Calendar
-- [ ] Advanced search by instructor and room
-- [ ] Shopping cart for course selection
-- [ ] Email notifications for course changes
+- [ ] **Data Automation**
+  - GitHub Actions for scheduled data updates
+  - Automated Excel → JSON → MongoDB pipeline
+  - Term detection and validation
 
-### Performance
-- [ ] Database-backed text search with indexes
-- [ ] Server-side pagination
-- [ ] CDN caching for static course data
-- [ ] Optimistic UI updates
+- [ ] **Performance Improvements**
+  - Database-backed text search with indexes
+  - Server-side pagination for large course lists
+  - API response caching
 
-### User Experience
-- [ ] Mobile drag-and-drop improvements
-- [ ] ARIA/keyboard accessibility enhancements
-- [ ] Onboarding tutorial
-- [ ] Schedule comparison view
+- [ ] **User Experience**
+  - Mobile drag-and-drop enhancements
+  - Keyboard navigation and ARIA improvements
+  - Interactive onboarding tutorial
+
+### 🚀 Medium Term (Q2-Q3 2025)
+
+- [ ] **User Accounts & Persistence**
+  - Save schedules to user accounts
+  - Share schedules via unique URLs
+  - Schedule history and versioning
+
+- [ ] **Export Features**
+  - Export timetable as PNG/PDF
+  - Generate ICS calendar files
+  - Google Calendar integration
+
+- [ ] **Advanced Search**
+  - Filter by instructor
+  - Filter by building/room
+  - Filter by time preferences
+  - Course rating integration
+
+### 🌟 Long Term (Q4 2025+)
+
+- [ ] **Collaboration Features**
+  - Group schedule planning
+  - Friend course recommendations
+  - Popular course combinations
+
+- [ ] **Intelligence Features**
+  - ML-based schedule recommendations
+  - Predict course availability
+  - Optimal path planning for degree requirements
+
+- [ ] **Mobile App**
+  - Native iOS/Android apps
+  - Push notifications for course changes
+  - Offline mode support
+
+### 💡 Community Suggestions
+
+Have an idea? [Open an issue](https://github.com/Aplkalex/cuhk-scheduler/issues) with the `enhancement` label!
 
 ---
 
@@ -371,18 +588,53 @@ After deployment, verify:
 
 We welcome contributions! Here's how to get started:
 
+### Quick Start
+
 1. **Fork** the repository
-2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
-3. **Commit** your changes (`git commit -m 'Add amazing feature'`)
-4. **Push** to the branch (`git push origin feature/amazing-feature`)
-5. **Open** a Pull Request
+2. **Clone** your fork
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/cuhk-scheduler.git
+   cd cuhk-scheduler
+   ```
+3. **Create** a feature branch
+   ```bash
+   git checkout -b feature/amazing-feature
+   ```
+4. **Make** your changes and test thoroughly
+5. **Commit** your changes
+   ```bash
+   git commit -m 'Add amazing feature'
+   ```
+6. **Push** to your branch
+   ```bash
+   git push origin feature/amazing-feature
+   ```
+7. **Open** a Pull Request
 
 ### Development Guidelines
 
-- Follow existing code style and conventions
-- Write tests for new features
-- Update documentation as needed
-- Keep commits atomic and well-described
+- ✅ Follow existing code style and conventions
+- ✅ Write tests for new features
+- ✅ Update documentation as needed
+- ✅ Keep commits atomic and well-described
+- ✅ Ensure all tests pass before submitting PR
+
+### Areas We Need Help With
+
+- 🐛 Bug fixes and issue resolution
+- 📝 Documentation improvements
+- 🎨 UI/UX enhancements
+- ⚡ Performance optimizations
+- 🧪 Test coverage expansion
+- 🌐 Internationalization support
+
+---
+
+## 📜 Code of Conduct
+
+We are committed to providing a welcoming and inclusive environment. Please read our [Code of Conduct](CODE_OF_CONDUCT.md) before contributing.
+
+By participating in this project, you agree to abide by its terms.
 
 ---
 
