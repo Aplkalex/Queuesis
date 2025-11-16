@@ -24,21 +24,28 @@ const normalizeCourse = (course: PrismaCourse): SchedulerCourse => ({
   lastUpdated: course.lastUpdated ?? undefined,
 });
 
+// Next.js 16 typed routes may pass params as a Promise in the context.
+// Support both shapes to satisfy the RouteHandlerConfig type.
 export async function GET(
   request: NextRequest,
-  { params }: { params: { courseCode: string } }
+  context: { params: { courseCode: string } } | { params: Promise<{ courseCode: string }> }
 ) {
+  // Normalize params regardless of whether it's a Promise
+  const resolved = 'then' in context.params
+    ? await (context.params as Promise<{ courseCode: string }>)
+    : (context.params as { courseCode: string });
+  const { courseCode } = resolved;
   const useTestData = request.nextUrl.searchParams.get('testMode') === 'true';
 
   if (useTestData) {
-    const testCourse = testCourses.find((c) => c.courseCode === params.courseCode);
+    const testCourse = testCourses.find((c) => c.courseCode === courseCode);
     if (testCourse) {
       return NextResponse.json({ success: true, data: testCourse });
     }
   } else if (hasDatabase) {
     try {
       const dbCourse = await prisma.course.findUnique({
-        where: { courseCode: params.courseCode },
+        where: { courseCode },
       });
 
       if (dbCourse) {
@@ -52,7 +59,7 @@ export async function GET(
   if (allowFallback) {
     const source =
       generatedCourses.length > 0 ? generatedCourses : mockCourses;
-    const fallbackCourse = source.find((c) => c.courseCode === params.courseCode);
+    const fallbackCourse = source.find((c) => c.courseCode === courseCode);
 
     if (fallbackCourse) {
       return NextResponse.json({ success: true, data: fallbackCourse });
