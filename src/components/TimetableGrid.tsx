@@ -909,11 +909,11 @@ export function TimetableGrid({
           </div>
 
           <div className="relative grid gap-1 sm:gap-2.5" style={{ gridTemplateColumns }}>
-            <div className="space-y-0.5">
+            <div>
               {hours.map((hour) => (
                 <div
                   key={hour}
-                  className="flex items-center justify-end pr-1.5 sm:pr-2 text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.18em] sm:tracking-[0.22em] text-slate-600/80 dark:text-slate-300/75"
+                  className="flex items-center justify-end pr-1.5 sm:pr-2 text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.18em] sm:tracking-[0.22em] tabular-nums font-mono text-right text-slate-600/80 dark:text-slate-300/75"
                   style={{ height: `${slotHeight}px`, lineHeight: `${slotHeight}px` }}
                 >
                   {formatTime(`${hour}:00`)}

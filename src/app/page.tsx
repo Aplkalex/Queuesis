@@ -1271,6 +1271,37 @@ export default function Home() {
               >
                 <Menu className="w-4 h-4 transition-transform duration-200 ease-out group-hover:rotate-90 text-purple-600 dark:text-white" />
               </button>
+              {/* Mobile Import/Export near brand (timetable view) */}
+              {isMobile && mobileView === 'timetable' && (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleImportButtonClick}
+                    className="ml-1 inline-flex items-center justify-center w-8 h-8 rounded-lg border transition-all duration-200 ease-out shadow-sm active:scale-95
+                               bg-gray-100/80 border-gray-200 text-gray-700 hover:bg-gray-200/80 hover:border-gray-300
+                               dark:bg-white/5 dark:border-white/10 dark:text-white dark:hover:bg-white/10"
+                    title="Import schedule"
+                    aria-label="Import schedule"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleExportSchedule}
+                    disabled={selectedCourses.length === 0}
+                    className={`ml-1 inline-flex items-center justify-center w-8 h-8 rounded-lg border transition-all duration-200 ease-out shadow-sm active:scale-95 ${
+                      selectedCourses.length === 0
+                        ? 'bg-gray-100/60 text-gray-400 border-gray-200 cursor-not-allowed dark:bg-white/5 dark:text-gray-500 dark:border-white/10'
+                        : 'bg-gray-100/80 text-green-600 border-gray-200 hover:bg-gray-200/80 hover:border-gray-300 dark:bg-white/5 dark:text-green-400 dark:border-white/10 dark:hover:bg-white/10'
+                    }`}
+                    title="Export schedule"
+                    aria-label="Export schedule"
+                    aria-disabled={selectedCourses.length === 0}
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                  </button>
+                </>
+              )}
             </div>
 
             {/* Stats and Theme Toggle - Compact */}
@@ -2175,34 +2206,6 @@ export default function Home() {
       {isMobile && (
         <>
           {/* Bottom-right FAB removed on mobile in favor of header trigger */}
-
-          {/* Import/Export controls for mobile timetable view - bottom-left corner */}
-          {mobileView === 'timetable' && (
-            <div className="fixed left-4 bottom-[calc(env(safe-area-inset-bottom,0)+12px)] z-50 lg:hidden flex flex-col gap-3">
-              <button
-                type="button"
-                onClick={handleImportButtonClick}
-                className="w-12 h-12 rounded-full bg-white/95 dark:bg-[#1c1c1c]/95 border border-gray-200/60 dark:border-gray-700/60 shadow-xl text-gray-700 dark:text-gray-200 flex items-center justify-center transition-transform duration-150 ease-out hover:-translate-y-0.5 hover:shadow-2xl active:scale-95"
-                title="Import schedule"
-              >
-                <Upload className="w-5 h-5" />
-              </button>
-              <button
-                type="button"
-                onClick={handleExportSchedule}
-                disabled={selectedCourses.length === 0}
-                className={`w-12 h-12 rounded-full border shadow-xl flex items-center justify-center transition-transform duration-150 ease-out hover:-translate-y-0.5 hover:shadow-2xl active:scale-95 ${
-                  selectedCourses.length === 0
-                    ? 'bg-white/70 dark:bg-[#1c1c1c]/70 border-gray-200/60 dark:border-gray-700/60 text-gray-400 dark:text-gray-600 cursor-not-allowed'
-                    : 'bg-white/95 dark:bg-[#1c1c1c]/95 border-gray-200/60 dark:border-gray-700/60 text-green-600 dark:text-green-300'
-                }`}
-                title="Export schedule"
-                aria-disabled={selectedCourses.length === 0}
-              >
-                <Download className="w-5 h-5" />
-              </button>
-            </div>
-          )}
 
           {isMobileActionsOpen && (
             <div className="fixed inset-0 z-40 lg:hidden">
