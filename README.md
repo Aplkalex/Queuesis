@@ -8,7 +8,7 @@
 ![License](https://img.shields.io/badge/License-AGPL%20v3-427aa1?style=for-the-badge)
 ![Status](https://img.shields.io/badge/Status-Active-a5be00?style=for-the-badge)
 
-br/>
+<br/>
 
 <a href="https://queuesis.vercel.app">
   <img src="https://img.shields.io/badge/🚀_Launch_App-6B46C1?style=for-the-badge&logoColor=white" alt="Launch App" height="50"/>
