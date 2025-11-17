@@ -141,22 +141,41 @@ function DraggableCourseBlock({
         className="overflow-hidden flex flex-col justify-center h-full"
         onClick={() => onClick?.(selectedCourse)}
       >
-        <div className="flex items-center gap-1">
-          <div className="font-semibold text-xs leading-tight truncate flex-1">
-            {selectedCourse.course.courseCode}
-          </div>
-          {isFull && (
-            <div title="Section is full" className="flex-shrink-0">
-              <AlertCircle className="w-3 h-3 text-red-200" />
-            </div>
-          )}
-        </div>
-        <div className="text-[10px] leading-tight opacity-90 truncate inline-flex items-center gap-1">
-          {selectedCourse.selectedSection.sectionType === 'Lecture' ? 'LEC' : 'TUT'} {selectedCourse.selectedSection.sectionId}
-          {selectedCourse.locked && (
-            <Lock className="w-3 h-3 opacity-80 pointer-events-none" aria-label="Locked" />
-          )}
-        </div>
+        {(() => {
+          const time = selectedCourse.selectedSection.timeSlots[0];
+          const startMinutes = timeToMinutes(time.startTime);
+          const endMinutes = timeToMinutes(time.endTime);
+          const durationMinutes = endMinutes - startMinutes;
+          const blockHeightPx = (durationMinutes / 60) * TIMETABLE_CONFIG.slotHeight;
+          const isTiny = blockHeightPx < 44;
+          const isMicro = blockHeightPx < 34;
+          const firstFs = isMicro ? 9 : isTiny ? 10.5 : 12;
+          const secondFs = isMicro ? 7.5 : isTiny ? 9 : 10;
+          const abbr = selectedCourse.selectedSection.sectionType === 'Lecture'
+            ? 'LEC'
+            : (selectedCourse.selectedSection.sectionType === 'Tutorial' ? 'TUT' : selectedCourse.selectedSection.sectionType);
+          const first = `${selectedCourse.course.courseCode} | ${abbr} ${selectedCourse.selectedSection.sectionId}`;
+          const classLabel = selectedCourse.selectedSection.classNumber ? `#${selectedCourse.selectedSection.classNumber}` : '';
+          const location = selectedCourse.selectedSection.timeSlots.find(s => s.location)?.location;
+          const second = classLabel && location ? `${classLabel} • ${location}` : (classLabel || location || 'TBA');
+          return (
+            <>
+              <div className="flex items-center gap-1">
+                <div className="font-semibold leading-tight truncate flex-1" style={{ fontSize: `${firstFs}px` }} title={first}>
+                  {selectedCourse.course.courseCode} <span className="opacity-90">|</span> {abbr} {selectedCourse.selectedSection.sectionId}
+                </div>
+                {isFull && (
+                  <div title="Section is full" className="flex-shrink-0">
+                    <AlertCircle className="w-3 h-3 text-red-200" />
+                  </div>
+                )}
+              </div>
+              <div className="leading-tight opacity-90 truncate" style={{ fontSize: `${secondFs}px` }}>
+                {second}
+              </div>
+            </>
+          );
+        })()}
       </div>
     </div>
   );

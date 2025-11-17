@@ -556,6 +556,11 @@ export function TimetableGrid({
     const startMinutes = timeToMinutes(slot.startTime);
     const endMinutes = timeToMinutes(slot.endTime);
     const durationMinutes = endMinutes - startMinutes;
+    const blockHeightPx = (durationMinutes / 60) * slotHeight;
+    const isTiny = blockHeightPx < 44;
+    const isMicro = blockHeightPx < 34;
+    const firstFs = isMicro ? 9 : isTiny ? 10.5 : 12; // px
+    const secondFs = isMicro ? 7.5 : isTiny ? 9 : 10; // px
 
     // Check if there are alternatives to swap to
     const courseData = availableCourses.find((c) => c.courseCode === selectedCourse.course.courseCode);
@@ -838,81 +843,63 @@ export function TimetableGrid({
           )}
 
           <div className={cn('flex flex-col gap-0.5 pr-2', contentPaddingClass)}>
-            {/* Mobile: left-aligned compact labels. If very narrow, hide course code and show section only. */}
+            {/* Compact, consistent info – always 2 lines:
+               Line 1: CourseCode | LEC/TUT/LAB ID
+               Line 2: #ClassNumber • Location */}
             <div className="sm:hidden flex flex-col leading-tight min-w-0 text-left">
-              {isCompactWidth ? (
-                <span className="text-[8px] font-semibold whitespace-nowrap tracking-[-0.02em] inline-flex items-center gap-1">
-                  {(selectedCourse.selectedSection.sectionType === 'Lecture' ? 'LEC' :
-                    selectedCourse.selectedSection.sectionType === 'Tutorial' ? 'TUT' :
-                    selectedCourse.selectedSection.sectionType)} {selectedCourse.selectedSection.sectionId}
-                  {selectedCourse.locked && (
-                    <Lock className="w-2.5 h-2.5 opacity-80 pointer-events-none" aria-label="Locked" />
-                  )}
-                </span>
-              ) : (
-                <>
-                  {(() => {
-                    const pretty = formatCourseCode(selectedCourse.course.courseCode);
-                    // Smaller sizes so code fits a narrow column; avoid breaking within words
-                    let size = 8.5;
-                    if (pretty.length >= 12) size = 7.5;
-                    if (pretty.length >= 14) size = 6.5;
-                    return (
-                      <span
-                        className="font-extrabold whitespace-normal break-normal tracking-[-0.02em]"
-                        style={{ fontSize: `${size}px` }}
-                        title={pretty}
-                      >
-                        {pretty}
-                      </span>
-                    );
-                  })()}
-                <span className="text-[8.5px] font-semibold whitespace-nowrap tracking-[-0.01em] inline-flex items-center gap-1">
-                  {(selectedCourse.selectedSection.sectionType === 'Lecture' ? 'LEC' :
-                    selectedCourse.selectedSection.sectionType === 'Tutorial' ? 'TUT' :
-                    selectedCourse.selectedSection.sectionType)} {selectedCourse.selectedSection.sectionId}
-                  {selectedCourse.locked && (
-                    <Lock className="w-2.5 h-2.5 opacity-80 pointer-events-none" aria-label="Locked" />
-                  )}
-                </span>
-                </>
-              )}
+              {(() => {
+                const abbr = selectedCourse.selectedSection.sectionType === 'Lecture'
+                  ? 'LEC'
+                  : selectedCourse.selectedSection.sectionType === 'Tutorial'
+                    ? 'TUT'
+                    : selectedCourse.selectedSection.sectionType;
+                const first = `${selectedCourse.course.courseCode} | ${abbr} ${selectedCourse.selectedSection.sectionId}`;
+                const classLabel = selectedCourse.selectedSection.classNumber ? `#${selectedCourse.selectedSection.classNumber}` : '';
+                const second = classLabel && locationDisplay ? `${classLabel} • ${locationDisplay}` : (classLabel || locationDisplay || 'TBA');
+                return (
+                  <>
+                    <span className="font-extrabold whitespace-nowrap tracking-[-0.01em] truncate" style={{ fontSize: `${firstFs}px`, lineHeight: 1.05 }} title={first}>
+                      {first}
+                      {selectedCourse.locked && <Lock className="inline-block ml-1 w-2.5 h-2.5 opacity-80 align-[-2px]" aria-label="Locked" />}
+                    </span>
+                    <span className="opacity-90 whitespace-nowrap tracking-[-0.01em] truncate" style={{ fontSize: `${secondFs}px`, lineHeight: 1.02 }} title={second}>
+                      {second}
+                    </span>
+                  </>
+                );
+              })()}
             </div>
 
-            {/* Desktop: richer content (compact blocks show only 1 line to avoid overflow) */}
+            {/* Desktop: always 2 lines; course name moved to title for consistency */}
             <div className="hidden sm:flex flex-col gap-0.5 min-w-0">
-              {/* First row: course code + section */}
-              <div className="min-w-0">
-                <span className="text-xs font-extrabold leading-tight whitespace-nowrap truncate">
-                  {selectedCourse.course.courseCode}
-                </span>
-                <span className="text-[11px] font-semibold opacity-95 ml-1 leading-tight whitespace-nowrap truncate inline-flex items-center gap-1">
-                  {selectedCourse.selectedSection.sectionType === 'Lecture' ? 'LEC' :
-                  selectedCourse.selectedSection.sectionType === 'Tutorial' ? 'TUT' :
-                  selectedCourse.selectedSection.sectionType} {selectedCourse.selectedSection.sectionId}
-                  {selectedCourse.locked && (
-                    <Lock className="w-3 h-3 opacity-80 pointer-events-none" aria-label="Locked" />
-                  )}
-                </span>
-              </div>
-              {!isCompactBlock && (
-                <>
-                  {/* Second row: Course name */}
-                  <div className="text-[10px] opacity-90 leading-tight min-w-0">
-                    <span className="truncate block" title={selectedCourse.course.courseName}>
-                      {selectedCourse.course.courseName}
-                    </span>
-                  </div>
-                  {/* Third row: Class number + Location */}
-                  <div className="text-[10px] opacity-85 leading-tight min-w-0">
-                    <span className="truncate block">
-                      {selectedCourse.selectedSection.classNumber ? `#${selectedCourse.selectedSection.classNumber}` : null}
-                      {selectedCourse.selectedSection.classNumber && locationDisplay ? ' • ' : ''}
-                      {locationDisplay}
-                    </span>
-                  </div>
-                </>
-              )}
+              {(() => {
+                const abbr = selectedCourse.selectedSection.sectionType === 'Lecture'
+                  ? 'LEC'
+                  : selectedCourse.selectedSection.sectionType === 'Tutorial'
+                    ? 'TUT'
+                    : selectedCourse.selectedSection.sectionType;
+                const first = `${selectedCourse.course.courseCode} | ${abbr} ${selectedCourse.selectedSection.sectionId}`;
+                const classLabel = selectedCourse.selectedSection.classNumber ? `#${selectedCourse.selectedSection.classNumber}` : '';
+                const second = classLabel && locationDisplay ? `${classLabel} • ${locationDisplay}` : (classLabel || locationDisplay || 'TBA');
+                return (
+                  <>
+                    <div className="min-w-0" title={selectedCourse.course.courseName}>
+                      <span className="font-extrabold leading-tight whitespace-nowrap truncate" style={{ fontSize: `${firstFs}px` }}>
+                        {selectedCourse.course.courseCode}
+                      </span>
+                      <span className="font-semibold opacity-95 ml-1 leading-tight whitespace-nowrap truncate inline-flex items-center gap-1" style={{ fontSize: `${Math.max(10, firstFs - 1)}px` }}>
+                        {abbr} {selectedCourse.selectedSection.sectionId}
+                        {selectedCourse.locked && <Lock className="w-3 h-3 opacity-80 pointer-events-none" aria-label="Locked" />}
+                      </span>
+                    </div>
+                    <div className="opacity-90 leading-tight min-w-0" style={{ fontSize: `${secondFs}px` }}>
+                      <span className="truncate block" title={second}>
+                        {second}
+                      </span>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           </div>
         </div>
