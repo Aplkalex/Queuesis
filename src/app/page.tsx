@@ -15,6 +15,7 @@ import { TIMETABLE_CONFIG, WEEKDAY_SHORT } from '@/lib/constants';
 import { generateSchedules, type GeneratedSchedule } from '@/lib/schedule-generator';
 import { DISCLAIMER } from '@/lib/constants';
 import { Calendar, Book, AlertCircle, AlertTriangle, Info, Trash2, X, Hand, Sparkles, ChevronDown, ChevronUp, ChevronRight, Clock, Download, Upload, Menu, RotateCcw, MapPin, /* Coffee, Check, */ FlaskConical, Lock, Unlock, Github } from 'lucide-react';
+import TermSelector from '@/components/TermSelector';
 import ConflictToast from '@/components/ConflictToast';
 import FullSectionWarningToast, { type FullSectionWarningData } from '@/components/FullSectionWarningToast';
 
@@ -131,7 +132,7 @@ export default function Home() {
   const fullSectionWarningIdRef = useRef(0);
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const [isSwitchingMode, startModeTransition] = useTransition();
-  const [selectedTerm, setSelectedTerm] = useState<TermType>('2025-26-T1');
+  const [selectedTerm, setSelectedTerm] = useState<TermType>('2025-26-T2');
   const [swapWarning, setSwapWarning] = useState<string | null>(null);
   const [isSwapWarningExiting, setIsSwapWarningExiting] = useState(false);
   const [swapWarningType, setSwapWarningType] = useState<'full' | 'conflict' | null>(null);
@@ -214,7 +215,9 @@ export default function Home() {
   // Test mode state
   const [isTestMode, setIsTestMode] = useState(false);
   const [isMobileActionsOpen, setIsMobileActionsOpen] = useState(false);
+  const [isMobileActionsClosing, setIsMobileActionsClosing] = useState(false);
   const [isPreferencePickerOpen, setIsPreferencePickerOpen] = useState(false);
+  const [isPreferencePickerClosing, setIsPreferencePickerClosing] = useState(false);
   const [isPrefPending, startPrefTransition] = useTransition();
   const [mobileView, setMobileView] = useState<'courses' | 'timetable'>('courses');
   const showMobileGenerateBar =
@@ -294,8 +297,36 @@ export default function Home() {
   useEffect(() => {
     if (!isMobile) {
       setIsMobileActionsOpen(false);
+      setIsMobileActionsClosing(false);
     }
   }, [isMobile]);
+  
+  // Helpers to open/close the mobile quick actions with smooth exit animation
+  const openMobileActions = useCallback(() => {
+    setIsMobileActionsClosing(false);
+    setIsMobileActionsOpen(true);
+  }, []);
+  const closeMobileActions = useCallback(() => {
+    // Trigger exit animation then unmount
+    setIsMobileActionsClosing(true);
+    window.setTimeout(() => {
+      setIsMobileActionsOpen(false);
+      setIsMobileActionsClosing(false);
+    }, 220); // must match CSS animate duration (see animate-slideDown / animate-fadeOut)
+  }, []);
+
+  // Preference picker open/close with smooth exit animation
+  const openPreferencePicker = useCallback(() => {
+    setIsPreferencePickerClosing(false);
+    setIsPreferencePickerOpen(true);
+  }, []);
+  const closePreferencePicker = useCallback(() => {
+    setIsPreferencePickerClosing(true);
+    window.setTimeout(() => {
+      setIsPreferencePickerOpen(false);
+      setIsPreferencePickerClosing(false);
+    }, 220);
+  }, []);
 
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const deferredCourses = useDeferredValue(courses);
@@ -1413,7 +1444,7 @@ export default function Home() {
               {/* Mobile Quick Actions trigger near brand */}
               <button
                 type="button"
-                onClick={() => setIsMobileActionsOpen(prev => !prev)}
+                onClick={() => (isMobileActionsOpen ? closeMobileActions() : openMobileActions())}
                 className="lg:hidden inline-flex items-center justify-center w-9 h-9 rounded-xl border transition-all duration-200 ease-out shadow-sm active:scale-95 group
                            bg-gray-100/80 border-gray-200 text-gray-700 hover:bg-gray-200/80 hover:border-gray-300
                            dark:bg-white/5 dark:border-white/10 dark:text-white dark:hover:bg-white/10"
@@ -1423,6 +1454,19 @@ export default function Home() {
               >
                 <Menu className="w-4 h-4 transition-transform duration-200 ease-out group-hover:rotate-90 text-purple-600 dark:text-white" />
               </button>
+              {/* Mobile GitHub link next to menu */}
+              <a
+                href="https://github.com/Aplkalex/Queuesis"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="lg:hidden inline-flex items-center justify-center w-9 h-9 rounded-xl border transition-all duration-200 ease-out shadow-sm active:scale-95
+                           bg-gray-100/80 border-gray-200 text-gray-700 hover:bg-gray-200/80 hover:border-gray-300
+                           dark:bg-white/5 dark:border-white/10 dark:text-white dark:hover:bg-white/10"
+                aria-label="Open GitHub repository"
+                title="GitHub"
+              >
+                <Github className="w-4 h-4" />
+              </a>
               {/* Mobile Import/Export near brand (timetable view) */}
               {isMobile && mobileView === 'timetable' && (
                 <>
@@ -1484,8 +1528,6 @@ export default function Home() {
                     // Switch to T2 when entering test mode (test courses are in T2)
                     if (newTestMode) {
                       setSelectedTerm('2025-26-T2');
-                    } else {
-                      setSelectedTerm('2025-26-T1');
                     }
                     // Clear selections when switching modes
                     setSelectedCourses([]);
@@ -1639,25 +1681,13 @@ export default function Home() {
                     <h2 className="text-base font-bold text-gray-900 dark:text-white whitespace-nowrap">
                       My Schedule
                     </h2>
-                    {/* Term Selector Dropdown */}
-                    <select
-                      value={selectedTerm}
-                      onChange={(e) => handleTermChange(e.target.value as TermType)}
-                      className="text-xs px-2 py-1 pr-6 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#2d2d30] text-gray-700 dark:text-gray-200 hover:border-purple-400 dark:hover:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all cursor-pointer appearance-none whitespace-nowrap"
-                      style={{
-                        backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
-                        backgroundPosition: 'right 0.25rem center',
-                        backgroundRepeat: 'no-repeat',
-                        backgroundSize: '1em 1em'
-                      }}
-                      disabled={isTermsLoading}
-                    >
-                      {terms.map((term) => (
-                        <option key={term.id} value={term.id}>
-                          {formatTermLabel(term.name)}
-                        </option>
-                      ))}
-                    </select>
+                    <TermSelector
+                      terms={terms}
+                      selectedTerm={selectedTerm}
+                      onChange={handleTermChange}
+                      isLoading={isTermsLoading}
+                      supportedTermId={'2025-26-T2'}
+                    />
                   </div>
                   <div className="flex items-center gap-1 flex-shrink-0 px-1 py-0.5 rounded-lg border border-gray-200/70 dark:border-gray-700/40 bg-white/70 dark:bg-[#1e1e1e]/60">
                     <button
@@ -2318,7 +2348,7 @@ export default function Home() {
 
               <button
                 type="button"
-                onClick={() => setIsPreferencePickerOpen(true)}
+                onClick={() => openPreferencePicker()}
                 className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white/70 dark:bg-[#1e1e1e]/70 text-xs font-semibold text-gray-700 dark:text-gray-200 active:scale-[0.98] transition"
                 title="Break preference"
               >
@@ -2457,13 +2487,13 @@ export default function Home() {
         <>
           {/* Bottom-right FAB removed on mobile in favor of header trigger */}
 
-          {isMobileActionsOpen && (
+          {(isMobileActionsOpen || isMobileActionsClosing) && (
             <div className="fixed inset-0 z-40 lg:hidden">
               <div
-                className="absolute inset-0 bg-black/45 animate-fadeIn"
-                onClick={() => setIsMobileActionsOpen(false)}
+                className={`absolute inset-0 bg-black/45 ${isMobileActionsClosing ? 'animate-fadeOut' : 'animate-fadeIn'}`}
+                onClick={() => closeMobileActions()}
               />
-          <div className={`absolute bottom-0 inset-x-0 rounded-t-3xl ${sheetClassName} p-5 space-y-4 max-h-[85vh] overflow-y-auto animate-slideUp transform-gpu`} style={{willChange:'transform'}}>
+          <div className={`absolute bottom-0 inset-x-0 rounded-t-3xl ${sheetClassName} p-5 space-y-4 max-h-[85vh] overflow-y-auto ${isMobileActionsClosing ? 'animate-slideDown' : 'animate-slideUp'} transform-gpu`} style={{willChange:'transform'}}>
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">Quick actions</h3>
@@ -2471,7 +2501,7 @@ export default function Home() {
               </div>
                   <button
                     type="button"
-                    onClick={() => setIsMobileActionsOpen(false)}
+                    onClick={() => closeMobileActions()}
                     className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
                   >
                     <X className="w-4 h-4" />
@@ -2528,25 +2558,7 @@ export default function Home() {
                   <ThemeToggle />
                 </div>
 
-                {/* GitHub link (mobile quick actions) */}
-                <a
-                  href="https://github.com/Aplkalex/Queuesis"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between border border-gray-200 dark:border-gray-700 rounded-2xl px-4 py-3"
-                  aria-label="Open GitHub repository"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-white/10 flex items-center justify-center text-gray-700 dark:text-white">
-                      <Github className="w-4.5 h-4.5" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900 dark:text-white">GitHub</p>
-                      <p className="text-[11px] text-gray-500 dark:text-gray-400">Aplkalex/Queuesis</p>
-                    </div>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-gray-400 dark:text-gray-500" />
-                </a>
+                
 
                 <BuildingReference
                   onBuildingClick={(location) => {
@@ -2556,13 +2568,17 @@ export default function Home() {
                     <button
                       type="button"
                       onClick={open}
-                      className="w-full flex items-center gap-3 px-4 py-4 rounded-2xl border border-purple-200 dark:border-purple-700 bg-gradient-to-r from-[#12011f] to-[#200033] text-left shadow-lg"
+                      className="w-full flex items-center justify-between px-4 py-3 rounded-2xl border text-left transition-colors
+                                 border-gray-200 bg-white/80 hover:bg-white
+                                 dark:border-purple-700 dark:bg-gradient-to-r dark:from-[#12011f] dark:to-[#200033]"
                     >
-                      <div className="flex-1">
-                        <p className="text-sm font-semibold text-white">Building reference</p>
-                        <p className="text-[11px] text-purple-200">Find campus locations quickly</p>
+                      <div className="flex-1 pr-3">
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white">Building reference</p>
+                        <p className="text-[11px] text-gray-600 dark:text-purple-200">Find campus locations quickly</p>
                       </div>
-                      <div className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center text-purple-200">
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center
+                                      bg-gray-100 text-purple-600
+                                      dark:bg-white/15 dark:text-purple-200">
                         <MapPin className="w-4 h-4" />
                       </div>
                     </button>
@@ -2571,7 +2587,7 @@ export default function Home() {
 
                 <button
                   type="button"
-                  onClick={() => setIsMobileActionsOpen(false)}
+                  onClick={() => closeMobileActions()}
                   className="w-full py-3 rounded-2xl border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-700 dark:text-gray-200"
                 >
                   Close
@@ -2692,13 +2708,13 @@ export default function Home() {
 
       {/* Preference Picker (mobile bottom sheet with native wheel select)
          - Uses OS spinner for excellent performance and accessibility on phones */}
-      {isPreferencePickerOpen && (
+      {(isPreferencePickerOpen || isPreferencePickerClosing) && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div
-            className="absolute inset-0 bg-black/45 animate-fadeIn"
-            onClick={() => setIsPreferencePickerOpen(false)}
+            className={`absolute inset-0 bg-black/45 ${isPreferencePickerClosing ? 'animate-fadeOut' : 'animate-fadeIn'}`}
+            onClick={() => closePreferencePicker()}
           />
-          <div className={`absolute bottom-0 inset-x-0 rounded-t-3xl ${sheetClassName} p-5 space-y-4 max-h-[70vh] animate-slideUp transform-gpu`} style={{willChange:'transform'}}>
+          <div className={`absolute bottom-0 inset-x-0 rounded-t-3xl ${sheetClassName} p-5 space-y-4 max-h-[70vh] ${isPreferencePickerClosing ? 'animate-slideDown' : 'animate-slideUp'} transform-gpu`} style={{willChange:'transform'}}>
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">Break Preference</h3>
@@ -2706,7 +2722,7 @@ export default function Home() {
               </div>
               <button
                 type="button"
-                onClick={() => setIsPreferencePickerOpen(false)}
+                onClick={() => closePreferencePicker()}
                 className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
                 aria-label="Close"
               >
@@ -2762,7 +2778,7 @@ export default function Home() {
 
             <button
               type="button"
-              onClick={() => setIsPreferencePickerOpen(false)}
+              onClick={() => closePreferencePicker()}
               className="w-full py-3 rounded-2xl bg-purple-600 text-white font-semibold shadow-lg shadow-purple-500/25 active:scale-[0.99] transition"
             >
               Done
