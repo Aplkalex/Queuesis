@@ -23,8 +23,11 @@
 
 <div align="center">
 
-### Main Timetable Interface
-<img width="3006" height="1696" alt="SCR-20251115-tozs-modified" src="https://github.com/user-attachments/assets/d444ab74-03f1-48a3-9e5b-5bf4461671b4" />
+### Main Timetable Interface (Dark mode)
+<img width="3020" height="1712" alt="SCR-20251117-cvrt-modified (1)" src="https://github.com/user-attachments/assets/fd5a2e18-1637-42a4-a5ce-e3ebab5d3996" />
+
+### Main Timetable Interface (Light mode)
+<img width="3024" height="1714" alt="SCR-20251117-cwbe-modified" src="https://github.com/user-attachments/assets/d81da19c-f2b2-4ee7-ab44-a1e334e97f21" />
 
 </div>
 
