@@ -821,7 +821,8 @@ export function TimetableGrid({
               : hasConflict
                 ? Math.max(10, 100 - Math.floor(durationMinutes / 10))
                 : 1,
-          opacity: hasConflict ? (isLocalHovered ? 1 : 0.85) : 1,
+          opacity: isDragging ? 0 : hasConflict ? (isLocalHovered ? 1 : 0.85) : 1,
+          pointerEvents: isDragging ? 'none' : undefined,
           filter: selectedCourse.locked
             ? 'grayscale(0.2) saturate(0.65) brightness(0.98)'
             : hasConflict
@@ -837,7 +838,7 @@ export function TimetableGrid({
       >
         {isDragging && (
           <div
-            className="absolute inset-0 pointer-events-none rounded-[7px] border border-dashed"
+            className="absolute pointer-events-none rounded-[7px] border border-dashed"
             style={{
               ...style,
               borderColor: palette.borderSoft,

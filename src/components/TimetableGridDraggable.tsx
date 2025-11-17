@@ -1,13 +1,13 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, useDraggable, useDroppable } from '@dnd-kit/core';
 import { SelectedCourse, DayOfWeek, TimeSlot, Section } from '@/types';
 import { TIMETABLE_CONFIG, WEEKDAYS } from '@/lib/constants';
 import { timeToMinutes, formatTime, hasAvailableSeats } from '@/lib/schedule-utils';
 import { cn } from '@/lib/utils';
-import { X, AlertCircle, GripVertical, Lock } from 'lucide-react';
+import { X, AlertCircle, GripVertical } from 'lucide-react';
 
 interface TimetableGridDraggableProps {
   selectedCourses: SelectedCourse[];
@@ -31,26 +31,103 @@ interface DraggedSectionData {
   color?: string;
 }
 
+interface TextLayoutConfig {
+  layout: 'compact' | 'comfortable' | 'spacious';
+  fontSize: {
+    primary: number;
+    secondary: number;
+    tertiary: number;
+  };
+  abbreviatedCourse: boolean;
+  showLocation: boolean;
+  badgeSize: 'tiny' | 'small' | 'normal';
+}
+
+const calculateTextLayout = (
+  blockWidth: number,
+  blockHeight: number,
+  isSmallScreen: boolean
+): TextLayoutConfig | null => {
+  if (!isSmallScreen) return null;
+  const paddingX = 10;
+  const paddingY = 6;
+  const availableWidth = Math.max(60, blockWidth - paddingX * 2);
+  const availableHeight = Math.max(28, blockHeight - paddingY * 2);
+
+  let layout: TextLayoutConfig['layout'] = 'spacious';
+  if (availableHeight < 38) layout = 'compact';
+  else if (availableHeight < 64) layout = 'comfortable';
+
+  const basePrimary = layout === 'compact' ? 8.6 : layout === 'comfortable' ? 10.4 : 12.2;
+  const baseSecondary = layout === 'compact' ? 7.6 : layout === 'comfortable' ? 9.1 : 10.4;
+  const baseTertiary = layout === 'compact' ? 7.1 : layout === 'comfortable' ? 8.4 : 9.6;
+
+  const widthFactor = Math.min(1.15, Math.max(0.5, availableWidth / 130));
+  const heightFactor = Math.min(1.2, Math.max(0.45, availableHeight / 70));
+  const scale = Math.min(widthFactor, heightFactor);
+
+  const fontSize = {
+    primary: Math.max(7, Math.min(12.5, basePrimary * scale)),
+    secondary: Math.max(6.4, Math.min(10.5, baseSecondary * scale)),
+    tertiary: Math.max(6, Math.min(9.8, baseTertiary * scale)),
+  };
+
+  const abbreviatedCourse = availableWidth < 100;
+  const showLocation = availableHeight > 38 && layout !== 'compact';
+  const badgeSize: TextLayoutConfig['badgeSize'] =
+    layout === 'compact' ? 'tiny' : layout === 'comfortable' ? 'small' : 'normal';
+
+  return { layout, fontSize, abbreviatedCourse, showLocation, badgeSize };
+};
+
 // Draggable Course Block Component
 interface DraggableCourseBlockProps {
   selectedCourse: SelectedCourse;
   blockId: string;
   style: CSSProperties;
+  slot: TimeSlot;
+  slotHeight: number;
+  overlapCount: number;
   onRemove?: (course: SelectedCourse) => void;
   onClick?: (course: SelectedCourse) => void;
   conflictingCourses?: string[];
   isDraggedSection: boolean;
+  isSmallScreen: boolean;
 }
 
 function DraggableCourseBlock({
   selectedCourse,
   blockId,
   style,
+  slot,
+  slotHeight,
+  overlapCount,
   onRemove,
   onClick,
   conflictingCourses = [],
   isDraggedSection,
+  isSmallScreen,
 }: DraggableCourseBlockProps) {
+  const blockWidth = typeof style.width === 'number'
+    ? Number(style.width)
+    : typeof style.width === 'string' && style.width.endsWith('px')
+      ? Number.parseFloat(style.width)
+      : undefined;
+  const blockHeight = typeof style.height === 'number'
+    ? Number(style.height)
+    : typeof style.height === 'string' && style.height.endsWith('px')
+      ? Number.parseFloat(style.height)
+      : undefined;
+  const startMinutes = timeToMinutes(slot.startTime);
+  const endMinutes = timeToMinutes(slot.endTime);
+  const durationMinutes = endMinutes - startMinutes;
+  const blockHeightPx = (durationMinutes / 60) * slotHeight;
+
+  const textConfig = useMemo(
+    () => calculateTextLayout(blockWidth ?? 0, blockHeight ?? blockHeightPx, isSmallScreen),
+    [blockWidth, blockHeight, blockHeightPx, isSmallScreen]
+  );
+
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: blockId,
     data: {
@@ -73,7 +150,7 @@ function DraggableCourseBlock({
         'timetable-block-enter',
         'hover:scale-[1.02]',
         'text-white flex flex-col',
-        'px-1 py-[5px] sm:px-1.5 sm:py-1',
+        'px-[5px] py-[4px] sm:px-1.5 sm:py-1',
         hasConflict && 'conflict-pattern',
         (isDragging || isDraggedSection) && 'opacity-30 scale-95'
       )}
@@ -139,56 +216,177 @@ function DraggableCourseBlock({
       </div>
 
       {/* Content */}
-      <div 
-        className="overflow-hidden flex flex-col justify-center h-full gap-[2px]"
+      <div
+      className={cn(
+        'overflow-hidden flex flex-col justify-start h-full',
+        isSmallScreen && blockHeightPx < 40 ? 'gap-[1px]' : 'gap-[3px]'
+      )}
         onClick={() => onClick?.(selectedCourse)}
       >
         {(() => {
-          const time = selectedCourse.selectedSection.timeSlots[0];
-          const startMinutes = timeToMinutes(time.startTime);
-          const endMinutes = timeToMinutes(time.endTime);
-          const durationMinutes = endMinutes - startMinutes;
-          const blockHeightPx = (durationMinutes / 60) * TIMETABLE_CONFIG.slotHeight;
           const isTiny = blockHeightPx < 48;
           const isMicro = blockHeightPx < 36;
           const firstFs = isMicro ? 8.5 : isTiny ? 10 : 11.5;
-          const secondFs = isMicro ? 7 : isTiny ? 8.5 : 9.5;
-          const inlineBadges = isTiny || isMicro;
+          const secondFs = isMicro ? 7.5 : isTiny ? 9 : 10;
+          const thirdFs = isMicro ? 7 : isTiny ? 8 : 9;
+          const inlineBadges = (isTiny || isMicro) && !isSmallScreen;
           const abbr = selectedCourse.selectedSection.sectionType === 'Lecture'
             ? 'LEC'
             : (selectedCourse.selectedSection.sectionType === 'Tutorial' ? 'TUT' : selectedCourse.selectedSection.sectionType);
           const first = `${selectedCourse.course.courseCode} | ${abbr} ${selectedCourse.selectedSection.sectionId}`;
           const classLabel = selectedCourse.selectedSection.classNumber ? `#${selectedCourse.selectedSection.classNumber}` : '';
-          const location = selectedCourse.selectedSection.timeSlots.find(s => s.location)?.location;
-          const second = classLabel && location ? `${classLabel} • ${location}` : (classLabel || location || 'TBA');
+          const locationLabelRaw = slot.location || selectedCourse.selectedSection.timeSlots.find((s) => s.location)?.location || 'Location TBA';
+          const normalizedLocationLabel = locationLabelRaw.replace(/[_]+/g, ' ');
+          const second = classLabel && normalizedLocationLabel ? `${classLabel} • ${normalizedLocationLabel}` : (classLabel || normalizedLocationLabel || 'TBA');
+          const timeRange = `${formatTime(slot.startTime)} – ${formatTime(slot.endTime)}`;
+          const formattedCourseCode = selectedCourse.course.courseCode.replace(/([A-Za-z]+)(\d+)/, '$1 $2');
+          const mobileLineTwo = `${abbr} ${selectedCourse.selectedSection.sectionId}${classLabel ? ` • ${classLabel}` : ''}`;
+          const mobileLineThree = `${normalizedLocationLabel}${normalizedLocationLabel ? ' • ' : ''}${timeRange}`;
+
+          const badgePreset = textConfig?.badgeSize ?? 'normal';
+          const badgeClass =
+            badgePreset === 'tiny' ? 'h-3 w-3' : badgePreset === 'small' ? 'h-3.5 w-3.5' : 'h-4 w-4';
+          const badgeIconClass =
+            badgePreset === 'tiny' ? 'h-2 w-2' : 'h-2.5 w-2.5';
+          const renderConflictBadge = () => (
+            <span className={cn('flex items-center justify-center rounded-full bg-yellow-300/90 text-slate-900', badgeClass)}>
+              <AlertCircle className={cn(badgeIconClass)} />
+            </span>
+          );
+
+          const renderFullBadge = () => (
+            <span className={cn('flex items-center justify-center rounded-full bg-rose-400/90 text-white', badgeClass)}>
+              <AlertCircle className={cn(badgeIconClass)} />
+            </span>
+          );
+
+          if (isSmallScreen && textConfig) {
+            const { layout, fontSize, abbreviatedCourse, showLocation } = textConfig;
+            const courseDisplay = abbreviatedCourse ? selectedCourse.course.courseCode.replace(/[0-9]/g, '') : formattedCourseCode;
+            if (layout === 'compact') {
+              return (
+                <>
+                  <div
+                    className="font-semibold whitespace-normal break-words"
+                    style={{ fontSize: `${fontSize.primary}px`, lineHeight: 1.05 }}
+                    title={formattedCourseCode}
+                  >
+                    {courseDisplay}
+                  </div>
+                  <div
+                    className="font-medium whitespace-normal break-words opacity-95"
+                    style={{ fontSize: `${fontSize.secondary}px`, lineHeight: 1.04 }}
+                    title={mobileLineTwo}
+                  >
+                    {mobileLineTwo}
+                  </div>
+                  {showLocation && (
+                    <div
+                      className="whitespace-normal break-words opacity-85"
+                      style={{ fontSize: `${fontSize.tertiary}px`, lineHeight: 1.06 }}
+                      title={mobileLineThree}
+                    >
+                      {mobileLineThree}
+                    </div>
+                  )}
+                </>
+              );
+            }
+            if (layout === 'comfortable') {
+              return (
+                <>
+                  <div
+                    className="font-semibold whitespace-normal break-words"
+                    style={{ fontSize: `${fontSize.primary}px`, lineHeight: 1.08 }}
+                    title={formattedCourseCode}
+                  >
+                    {courseDisplay}
+                  </div>
+                  <div
+                    className="font-medium whitespace-normal break-words opacity-95"
+                    style={{ fontSize: `${fontSize.secondary}px`, lineHeight: 1.06 }}
+                    title={mobileLineTwo}
+                  >
+                    {mobileLineTwo}
+                  </div>
+                  {showLocation && (
+                    <div
+                      className="whitespace-normal break-words opacity-90"
+                      style={{ fontSize: `${fontSize.tertiary}px`, lineHeight: 1.08 }}
+                      title={mobileLineThree}
+                    >
+                      {mobileLineThree}
+                    </div>
+                  )}
+                </>
+              );
+            }
+            return (
+              <>
+                <div
+                  className="font-semibold whitespace-normal break-words"
+                  style={{ fontSize: `${fontSize.primary}px`, lineHeight: 1.1 }}
+                  title={formattedCourseCode}
+                >
+                  {formattedCourseCode}
+                </div>
+                <div
+                  className="font-medium whitespace-normal break-words opacity-95"
+                  style={{ fontSize: `${fontSize.secondary}px`, lineHeight: 1.1 }}
+                  title={mobileLineTwo}
+                >
+                  {mobileLineTwo}
+                </div>
+                <div
+                  className="whitespace-normal break-words opacity-90"
+                  style={{ fontSize: `${fontSize.tertiary}px`, lineHeight: 1.12 }}
+                  title={mobileLineThree}
+                >
+                  {mobileLineThree}
+                </div>
+              </>
+            );
+          }
+
           return (
             <>
-              <div className="flex items-start gap-1 leading-[1.05]">
-                <div className="font-semibold truncate flex-1" style={{ fontSize: `${firstFs}px` }} title={first}>
+              <div
+                className="flex items-start gap-1 leading-[1.05]"
+              >
+                <div
+                  className={cn(
+                    'font-semibold flex-1',
+                    isSmallScreen ? 'whitespace-normal break-words' : 'truncate'
+                  )}
+                  style={{ fontSize: `${firstFs}px` }}
+                  title={first}
+                >
                   {selectedCourse.course.courseCode} <span className="opacity-90">|</span> {abbr} {selectedCourse.selectedSection.sectionId}
                 </div>
-                {!inlineBadges && isFull && (
-                  <div title="Section is full" className="flex-shrink-0">
-                    <AlertCircle className="w-3 h-3 text-red-200" />
-                  </div>
-                )}
-                {inlineBadges && (hasConflict || isFull) && (
+                {(inlineBadges || (hasConflict || isFull)) && !isSmallScreen && (
                   <div className="flex flex-col items-end gap-0.5">
-                    {hasConflict && (
-                      <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-yellow-300/90 text-slate-900">
-                        <AlertCircle className="h-2.5 w-2.5" />
-                      </span>
-                    )}
-                    {isFull && (
-                      <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-rose-400/90 text-white">
-                        <AlertCircle className="h-2.5 w-2.5" />
-                      </span>
-                    )}
+                    {hasConflict && renderConflictBadge()}
+                    {isFull && renderFullBadge()}
                   </div>
                 )}
               </div>
-              <div className="leading-[1.05] opacity-90 truncate" style={{ fontSize: `${secondFs}px` }}>
+              <div
+                className={cn(
+                  'leading-[1.05] opacity-90',
+                  isSmallScreen ? 'whitespace-normal break-words' : 'truncate'
+                )}
+                style={{ fontSize: `${secondFs}px` }}
+              >
                 {second}
+              </div>
+              <div
+                className={cn(
+                  'leading-[1.05] opacity-85 text-white/90',
+                  isSmallScreen ? 'break-words' : 'truncate'
+                )}
+                style={{ fontSize: `${thirdFs}px` }}
+              >
+                {timeRange}
               </div>
             </>
           );
@@ -228,11 +426,11 @@ interface DroppableDayColumnProps {
   day: DayOfWeek;
   hours: number[];
   slotHeight: number;
+  isSmallScreen: boolean;
   selectedCourses: SelectedCourse[];
   onRemoveCourse?: (course: SelectedCourse) => void;
   onCourseClick?: (course: SelectedCourse) => void;
   conflictingCourses?: string[];
-  getCourseStyle: (startTime: string, endTime: string, color?: string) => CSSProperties;
   draggedData: DraggedSectionData | null;
   draggedCourseCode?: string;
   draggedSectionId?: string;
@@ -242,11 +440,11 @@ function DroppableDayColumn({
   day,
   hours,
   slotHeight,
+  isSmallScreen,
   selectedCourses,
   onRemoveCourse,
   onCourseClick,
   conflictingCourses,
-  getCourseStyle,
   draggedData,
   draggedCourseCode,
   draggedSectionId,
@@ -346,13 +544,13 @@ function DroppableDayColumn({
       const widthPercent = 100 / e.overlapCount;
       const style: CSSProperties = {
         top: `${adjustedTop}px`,
-        height: `${height}px`,
-        left: `calc(${widthPercent * e.lane}% + ${OVERLAP_GAP / 2}px)`,
-        width: `calc(${widthPercent}% - ${OVERLAP_GAP}px)`,
-      };
-      return { ...e, style };
-    });
-    return withStyle;
+      height: `${height}px`,
+      left: `calc(${widthPercent * e.lane}% + ${OVERLAP_GAP / 2}px)`,
+      width: `calc(${widthPercent}% - ${OVERLAP_GAP}px)`,
+    };
+    return { ...e, style, overlapCount: e.overlapCount };
+  });
+  return withStyle;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCourses, draggedData, showDropShadow, day, slotHeight]);
 
@@ -408,10 +606,14 @@ function DroppableDayColumn({
             selectedCourse={sc}
             blockId={blockId}
             style={style}
+            slot={entry.slot!}
+            slotHeight={slotHeight}
+            overlapCount={entry.overlapCount}
             onRemove={onRemoveCourse}
             onClick={onCourseClick}
             conflictingCourses={conflictingCourses}
             isDraggedSection={isDraggedSection}
+            isSmallScreen={isSmallScreen}
           />
         );
       })}
@@ -427,35 +629,41 @@ export function TimetableGridDraggable(props: TimetableGridDraggableProps) {
     conflictingCourses = [],
     onDragEnd,
   } = props;
-  const { startHour, endHour, slotHeight } = TIMETABLE_CONFIG;
+  const { startHour, endHour } = TIMETABLE_CONFIG;
   const [draggedData, setDraggedData] = useState<DraggedSectionData | null>(null);
+  const [isSmallScreen, setIsSmallScreen] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(max-width: 640px)').matches;
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const media = window.matchMedia('(max-width: 640px)');
+    const handler = (event: MediaQueryListEvent) => setIsSmallScreen(event.matches);
+    if (typeof media.addEventListener === 'function') {
+      media.addEventListener('change', handler);
+    } else {
+      media.addListener(handler);
+    }
+    return () => {
+      if (typeof media.removeEventListener === 'function') {
+        media.removeEventListener('change', handler);
+      } else {
+        media.removeListener(handler);
+      }
+    };
+  }, []);
+
+  const baseSlotHeight = TIMETABLE_CONFIG.slotHeight;
+  const slotHeight = isSmallScreen ? baseSlotHeight * 1.35 : baseSlotHeight;
+  const timeColWidth = isSmallScreen ? 56 : 70;
   
   // Generate hours array (8 AM to 9 PM)
   const hours = Array.from({ length: endHour - startHour + 1 }, (_, i) => startHour + i);
   
   // Use only weekdays for now (Mon-Fri)
   const displayDays = WEEKDAYS.slice(0, 5) as DayOfWeek[];
-
-  // Calculate position and height for a course block
-  const getCourseStyle = (startTime: string, endTime: string, color?: string): CSSProperties => {
-    const startMinutes = timeToMinutes(startTime);
-    const endMinutes = timeToMinutes(endTime);
-    const startOfDay = startHour * 60;
-    
-    const top = ((startMinutes - startOfDay) / 60) * slotHeight;
-    const durationMinutes = endMinutes - startMinutes;
-    const calculatedHeight = (durationMinutes / 60) * slotHeight;
-    
-    const blockGap = 4;
-    const finalHeight = calculatedHeight - blockGap;
-    const adjustedTop = top + blockGap / 2;
-    
-    return {
-      top: `${adjustedTop}px`,
-      height: `${finalHeight}px`,
-      backgroundColor: color ?? DEFAULT_COURSE_COLOR,
-    };
-  };
+  const gridTemplateColumns = `${timeColWidth}px repeat(${displayDays.length}, minmax(0, 1fr))`;
 
   const handleDragStart = (event: DragStartEvent) => {
     const data = event.active.data.current as DraggedSectionData | undefined;
@@ -492,9 +700,9 @@ export function TimetableGridDraggable(props: TimetableGridDraggableProps) {
         style={{ touchAction: draggedData ? 'none' : undefined }}
       >
         <div className="overflow-x-auto">
-          <div className="min-w-[320px] sm:min-w-[600px] lg:min-w-0 w-full px-2 py-2 sm:px-3 sm:py-3 lg:px-4 lg:py-3">
+          <div className="min-w-0 sm:min-w-[600px] lg:min-w-0 w-full px-2 py-2 sm:px-3 sm:py-3 lg:px-4 lg:py-3">
             {/* Header with days */}
-            <div className="grid gap-1 sm:gap-1.5 lg:gap-2 mb-2" style={{ gridTemplateColumns: '70px repeat(5, 1fr)' }}>
+            <div className="grid gap-1 sm:gap-1.5 lg:gap-2 mb-2" style={{ gridTemplateColumns }}>
               <div /> {/* Empty corner */}
               {displayDays.map((day) => (
                 <div
@@ -507,7 +715,7 @@ export function TimetableGridDraggable(props: TimetableGridDraggableProps) {
             </div>
 
             {/* Timetable grid */}
-            <div className="relative grid gap-1 sm:gap-1.5 lg:gap-2" style={{ gridTemplateColumns: '70px repeat(5, 1fr)' }}>
+            <div className="relative grid gap-1 sm:gap-1.5 lg:gap-2" style={{ gridTemplateColumns }}>
               {/* Time labels */}
               <div className="space-y-0">
                 {hours.map((hour) => (
@@ -528,11 +736,11 @@ export function TimetableGridDraggable(props: TimetableGridDraggableProps) {
                   day={day}
                   hours={hours}
                   slotHeight={slotHeight}
+                  isSmallScreen={isSmallScreen}
                   selectedCourses={selectedCourses}
                   onRemoveCourse={onRemoveCourse}
                   onCourseClick={onCourseClick}
                   conflictingCourses={conflictingCourses}
-                  getCourseStyle={getCourseStyle}
                   draggedData={draggedData}
                   draggedCourseCode={draggedData?.courseCode}
                   draggedSectionId={draggedData?.sectionId}

@@ -34,7 +34,6 @@
 
 - [Overview](#-overview)
 - [Key Features](#-key-features)
-- [Handoff Summary](docs/HANDOFF.md)
 - [Technology Stack](#-technology-stack)
 - [Project Structure](#-project-structure)
 - [Getting Started](#-getting-started)
@@ -46,7 +45,6 @@
 - [Troubleshooting](#️-troubleshooting)
 - [Roadmap](#️-roadmap)
 - [Contributing](#-contributing)
-- [Code of Conduct](#-code-of-conduct)
 - [Team](#-team)
 - [Acknowledgments](#-acknowledgments)
 - [License](#-license)
