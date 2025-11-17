@@ -266,8 +266,9 @@ export function TimetableGrid({
     : 'border-gray-200/35 dark:border-white/[0.08]';
 
   const courseBlockBaseClass = cn(
-    'absolute rounded-[7px] cursor-pointer group flex flex-col px-1.5 sm:px-2 py-1 sm:py-1.5 overflow-hidden border transition-transform duration-200 ease-out bg-clip-padding',
-    isFrosted ? 'backdrop-blur-xl shadow-none hover:shadow-none' : 'backdrop-blur-none shadow-none hover:shadow-none'
+    'absolute rounded-[7px] cursor-pointer group flex flex-col border bg-clip-padding',
+    'transition-transform duration-200 ease-out shadow-none hover:shadow-none',
+    'px-[6px] py-[4px] sm:px-2 sm:py-[5px]'
   );
 
   const ghostBlockBaseClass = cn(
@@ -553,11 +554,21 @@ export function TimetableGrid({
     const endMinutes = timeToMinutes(slot.endTime);
     const durationMinutes = endMinutes - startMinutes;
     const blockHeightPx = (durationMinutes / 60) * slotHeight;
-    const isTiny = blockHeightPx < 48;
-    const isMicro = blockHeightPx < 36;
-    const useInlineBadges = isTiny || isMicro;
-    const firstFs = isMicro ? 9 : isTiny ? 10.5 : 12; // px
-    const secondFs = isMicro ? 7.5 : isTiny ? 9 : 10; // px
+    type DisplayMode = 'compact' | 'tight' | 'full';
+    const displayMode: DisplayMode = blockHeightPx < 50 ? 'compact' : blockHeightPx < 80 ? 'tight' : 'full';
+    const inlineBadges = displayMode === 'compact' || isCompactWidth || overlapCount >= 2;
+    const firstFs =
+      displayMode === 'full'
+        ? 11
+        : displayMode === 'tight'
+          ? 10.5
+          : 9.5;
+    const secondFs =
+      displayMode === 'full'
+        ? 9
+        : displayMode === 'tight'
+          ? 8.5
+          : 8;
 
     // Check if there are alternatives to swap to
     const courseData = availableCourses.find((c) => c.courseCode === selectedCourse.course.courseCode);
@@ -610,11 +621,6 @@ export function TimetableGrid({
   const locationDisplay = locationLabel ?? 'Location TBA';
   // const canClickLocation = Boolean(locationLabel && onLocationClick);
 
-    const isCompactBlock = durationMinutes <= 60;
-    // On mobile: if width is narrow due to overlaps OR block is short, stack icons vertically
-    // On small screens, always avoid center-right icon to prevent covering text
-    const showVerticalIconStack = isSmallScreen || isCompactBlock || isCompactWidth || overlapCount >= 2;
-
     const conflictBadge = hasConflict ? (
       <span
         title="Schedule conflict"
@@ -633,27 +639,36 @@ export function TimetableGrid({
       </span>
     ) : null;
 
-    const baseBoxShadow = typeof style.boxShadow === 'string' ? style.boxShadow : undefined;
-    const emphasizedBoxShadow = (() => {
-      if (!baseBoxShadow) return undefined;
-      if (isFull) {
-        return `${baseBoxShadow}, 0 0 0 2px rgba(244, 63, 94, 0.45)`;
-      }
-      if (hasConflict) {
-        return `${baseBoxShadow}, 0 0 0 1.5px rgba(250, 204, 21, 0.4)`;
-      }
-      return baseBoxShadow;
-    })();
+    const stackedBadges = (inlineBadges && (conflictBadge || fullBadge || isDraggable))
+      ? (
+        <div
+          className={cn(
+            'absolute pointer-events-none',
+            displayMode === 'compact'
+              ? 'right-1 top-0 flex items-center gap-1 h-[16px]'
+              : 'right-1 top-1 flex flex-col items-end gap-0.5'
+          )}
+        >
+          {conflictBadge}
+          {fullBadge}
+          {isDraggable && (
+            <RefreshCw className="h-3 w-3 opacity-80" aria-hidden focusable={false} />
+          )}
+        </div>
+      )
+      : null;
 
-    const horizontalIconCount = showVerticalIconStack
-      ? 0
-      : [Boolean(conflictBadge), Boolean(fullBadge), Boolean(isDraggable)].filter(Boolean).length;
-
-    const contentPaddingClass = cn(
-      'pr-2 sm:pr-3',
-      (showVerticalIconStack || useInlineBadges) && 'pr-4 sm:pr-5',
-      (!showVerticalIconStack && horizontalIconCount >= 1 && !useInlineBadges) && 'pr-7 sm:pr-9'
-    );
+    const trailingBadges = (!inlineBadges && (conflictBadge || fullBadge || isDraggable))
+      ? (
+        <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none">
+          {conflictBadge}
+          {fullBadge}
+          {isDraggable && (
+            <RefreshCw className="h-3 w-3 sm:h-3.5 sm:w-3.5 opacity-80 transition-transform group-hover:scale-110 group-hover:opacity-100" aria-hidden focusable={false} />
+          )}
+        </div>
+      )
+      : null;
 
     // const handleLocationClick = (event: MouseEvent<HTMLButtonElement>) => {
     //   event.stopPropagation();
@@ -783,158 +798,46 @@ export function TimetableGrid({
           </button>
         )}
 
-	        {/* Content */}
-	        <div className={cn('flex h-full flex-col pt-0.5 pl-2', isCompactBlock ? 'justify-center' : 'justify-start')}>
-          {(isTiny || isMicro) ? null : (showVerticalIconStack ? (
-            <>
-              {(conflictBadge || fullBadge) && (
-                <div
-                  className={cn(
-                    'absolute flex flex-col items-end pointer-events-none',
-                    isCompactWidth ? 'top-0.5 right-0.5 gap-0.5' : 'bottom-1.5 right-1.5 gap-1'
-                  )}
-                >
-                  {conflictBadge}
-                  {fullBadge}
-	        </div>
-
-              )}
-
-              {isDraggable && (
-                <div
-                  className={cn(
-                    'absolute pointer-events-none',
-                    isCompactWidth ? 'bottom-0.5 right-0.5' : 'bottom-1.5 right-1.5'
-                  )}
-                >
-                  <RefreshCw
-                    className="h-3 w-3 sm:h-3.5 sm:w-3.5 opacity-70 transition-transform group-hover:scale-110 group-hover:opacity-100"
-                    aria-hidden
-                    focusable={false}
-                  />
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5 pointer-events-none">
-              {conflictBadge}
-              {fullBadge}
-              {isDraggable && (
-                <RefreshCw
-                  className="h-3 w-3 sm:h-3.5 sm:w-3.5 opacity-80 transition-transform group-hover:scale-110 group-hover:opacity-100"
-                  aria-hidden
-                  focusable={false}
-                />
+        <div
+          className={cn(
+            'relative flex h-full pl-[4px] pr-[10px]',
+            displayMode === 'full' && 'flex-col justify-between gap-[3px] py-[2px]',
+            displayMode === 'tight' && 'flex-col justify-center gap-[2px] py-[4px]',
+            displayMode === 'compact' && 'flex-col justify-start gap-[1px] pt-0 pb-[0.2px]'
+          )}
+          style={{ minHeight: displayMode === 'full' ? '42px' : displayMode === 'tight' ? '36px' : '30px', overflow: 'visible' }}
+        >
+          {(() => {
+            const abbr = selectedCourse.selectedSection.sectionType === 'Lecture'
+              ? 'LEC'
+              : selectedCourse.selectedSection.sectionType === 'Tutorial'
+                ? 'TUT'
+                : selectedCourse.selectedSection.sectionType;
+            const first = `${selectedCourse.course.courseCode} | ${abbr} ${selectedCourse.selectedSection.sectionId}`;
+            const classLabel = selectedCourse.selectedSection.classNumber ? `#${selectedCourse.selectedSection.classNumber}` : '';
+            const second = classLabel && locationDisplay ? `${classLabel} • ${locationDisplay}` : (classLabel || locationDisplay || 'TBA');
+            return (
+              <>
+          <div className="flex items-start gap-[3px] leading-[1.05]">
+            <div
+              className="font-semibold truncate flex-1"
+              style={{ fontSize: `${firstFs}px` }}
+              title={first}
+            >
+              {selectedCourse.course.courseCode} <span className="opacity-90">|</span> {abbr} {selectedCourse.selectedSection.sectionId}
+              {selectedCourse.locked && (
+                <Lock className="inline-block ml-1 w-2.5 h-2.5 opacity-80 align-[-2px]" aria-label="Locked" />
               )}
             </div>
-          ))}
-
-          <div className={cn('flex flex-col gap-0.5 pr-2', contentPaddingClass)}>
-            {/* Compact, consistent info – always 2 lines:
-               Line 1: CourseCode | LEC/TUT/LAB ID
-               Line 2: #ClassNumber • Location */}
-            <div className="sm:hidden flex flex-col leading-snug min-w-0 text-left gap-0.5">
-              {(() => {
-                const abbr = selectedCourse.selectedSection.sectionType === 'Lecture'
-                  ? 'LEC'
-                  : selectedCourse.selectedSection.sectionType === 'Tutorial'
-                    ? 'TUT'
-                    : selectedCourse.selectedSection.sectionType;
-                const first = `${selectedCourse.course.courseCode} | ${abbr} ${selectedCourse.selectedSection.sectionId}`;
-                const classLabel = selectedCourse.selectedSection.classNumber ? `#${selectedCourse.selectedSection.classNumber}` : '';
-                const second = classLabel && locationDisplay ? `${classLabel} • ${locationDisplay}` : (classLabel || locationDisplay || 'TBA');
-                return (
-                  <>
-                    <div className="flex items-start gap-1">
-                      <span
-                        className="font-extrabold whitespace-nowrap tracking-tight overflow-hidden text-ellipsis"
-                        style={{ fontSize: `${Math.max(firstFs, 10)}px`, lineHeight: 1.05, minHeight: '14px' }}
-                        title={first}
-                      >
-                        {first}
-                        {selectedCourse.locked && <Lock className="inline-block ml-1 w-2 h-2 opacity-80 align-[-2px]" aria-label="Locked" />}
-                      </span>
-                      {useInlineBadges && (hasConflict || isFull || isDraggable) && (
-                        <div className="flex flex-col items-end gap-0.5 shrink-0">
-                          {hasConflict && (
-                            <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-yellow-300/90 text-slate-900">
-                              <AlertCircle className="h-2.5 w-2.5" />
-                            </span>
-                          )}
-                          {isFull && (
-                            <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-rose-400/90 text-white">
-                              <AlertCircle className="h-2.5 w-2.5" />
-                            </span>
-                          )}
-                          {isDraggable && (
-                            <RefreshCw className="h-3.5 w-3.5 opacity-80" aria-hidden />
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    <span
-                      className="opacity-90 whitespace-nowrap tracking-tight overflow-hidden text-ellipsis"
-                      style={{ fontSize: `${secondFs}px`, lineHeight: 1.08, minHeight: '12px' }}
-                      title={second}
-                    >
-                      {second}
-                    </span>
-                  </>
-                );
-              })()}
-            </div>
-
-            {/* Desktop: always 2 lines; course name moved to title for consistency */}
-            <div className="hidden sm:flex flex-col gap-0.5 min-w-0">
-              {(() => {
-                const abbr = selectedCourse.selectedSection.sectionType === 'Lecture'
-                  ? 'LEC'
-                  : selectedCourse.selectedSection.sectionType === 'Tutorial'
-                    ? 'TUT'
-                    : selectedCourse.selectedSection.sectionType;
-                const first = `${selectedCourse.course.courseCode} | ${abbr} ${selectedCourse.selectedSection.sectionId}`;
-                const classLabel = selectedCourse.selectedSection.classNumber ? `#${selectedCourse.selectedSection.classNumber}` : '';
-                const second = classLabel && locationDisplay ? `${classLabel} • ${locationDisplay}` : (classLabel || locationDisplay || 'TBA');
-                return (
-                  <>
-                    <div className="flex items-start justify-between gap-1 min-w-0" title={selectedCourse.course.courseName}>
-                      <div className="min-w-0 flex-1">
-                        <span className="font-extrabold leading-tight whitespace-nowrap truncate" style={{ fontSize: `${firstFs}px` }}>
-                          {selectedCourse.course.courseCode}
-                        </span>
-                        <span className="font-semibold opacity-95 ml-1 leading-tight whitespace-nowrap truncate inline-flex items-center gap-1" style={{ fontSize: `${Math.max(10, firstFs - 1)}px` }}>
-                          {abbr} {selectedCourse.selectedSection.sectionId}
-                          {selectedCourse.locked && <Lock className="w-3 h-3 opacity-80 pointer-events-none" aria-label="Locked" />}
-                        </span>
-                      </div>
-                      {useInlineBadges && (hasConflict || isFull || isDraggable) && (
-                        <div className="flex flex-col items-end gap-0.5 -mt-0.5 shrink-0">
-                          {hasConflict && (
-                            <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-yellow-300/90 text-slate-900">
-                              <AlertCircle className="h-2.5 w-2.5" />
-                            </span>
-                          )}
-                          {isFull && (
-                            <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-rose-400/90 text-white">
-                              <AlertCircle className="h-2.5 w-2.5" />
-                            </span>
-                          )}
-                          {isDraggable && (
-                            <RefreshCw className="h-3.5 w-3.5 opacity-80" aria-hidden />
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    <div className="opacity-90 leading-tight min-w-0" style={{ fontSize: `${secondFs}px` }}>
-                      <span className="truncate block" title={second}>
-                        {second}
-                      </span>
-                    </div>
-                  </>
-                );
-              })()}
-            </div>
+            {!inlineBadges && trailingBadges}
           </div>
+          {inlineBadges && stackedBadges}
+          <div className="leading-[1.05] opacity-90 truncate" style={{ fontSize: `${secondFs}px` }} title={second}>
+            {second}
+          </div>
+          </>
+            );
+          })()}
         </div>
       </div>
     );

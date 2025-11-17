@@ -73,7 +73,7 @@ function DraggableCourseBlock({
         'timetable-block-enter',
         'hover:scale-[1.02]',
         'text-white flex flex-col',
-        'px-1.5 py-1',
+        'px-1 py-[5px] sm:px-1.5 sm:py-1',
         hasConflict && 'conflict-pattern',
         (isDragging || isDraggedSection) && 'opacity-30 scale-95'
       )}
@@ -90,6 +90,7 @@ function DraggableCourseBlock({
               : style.borderColor,
         boxShadow: 'none',
         transition: isDragging ? 'none' : 'transform 0.25s ease, box-shadow 0.25s ease',
+        minHeight: '32px',
       }}
       {...attributes}
       {...listeners}
@@ -139,7 +140,7 @@ function DraggableCourseBlock({
 
       {/* Content */}
       <div 
-        className="overflow-hidden flex flex-col justify-center h-full"
+        className="overflow-hidden flex flex-col justify-center h-full gap-[2px]"
         onClick={() => onClick?.(selectedCourse)}
       >
         {(() => {
@@ -150,8 +151,8 @@ function DraggableCourseBlock({
           const blockHeightPx = (durationMinutes / 60) * TIMETABLE_CONFIG.slotHeight;
           const isTiny = blockHeightPx < 48;
           const isMicro = blockHeightPx < 36;
-          const firstFs = isMicro ? 9 : isTiny ? 10.5 : 12;
-          const secondFs = isMicro ? 7.5 : isTiny ? 9 : 10;
+          const firstFs = isMicro ? 8.5 : isTiny ? 10 : 11.5;
+          const secondFs = isMicro ? 7 : isTiny ? 8.5 : 9.5;
           const inlineBadges = isTiny || isMicro;
           const abbr = selectedCourse.selectedSection.sectionType === 'Lecture'
             ? 'LEC'
@@ -162,8 +163,8 @@ function DraggableCourseBlock({
           const second = classLabel && location ? `${classLabel} • ${location}` : (classLabel || location || 'TBA');
           return (
             <>
-              <div className="flex items-start gap-1">
-                <div className="font-semibold leading-tight truncate flex-1" style={{ fontSize: `${firstFs}px` }} title={first}>
+              <div className="flex items-start gap-1 leading-[1.05]">
+                <div className="font-semibold truncate flex-1" style={{ fontSize: `${firstFs}px` }} title={first}>
                   {selectedCourse.course.courseCode} <span className="opacity-90">|</span> {abbr} {selectedCourse.selectedSection.sectionId}
                 </div>
                 {!inlineBadges && isFull && (
@@ -186,7 +187,7 @@ function DraggableCourseBlock({
                   </div>
                 )}
               </div>
-              <div className="leading-tight opacity-90 truncate" style={{ fontSize: `${secondFs}px` }}>
+              <div className="leading-[1.05] opacity-90 truncate" style={{ fontSize: `${secondFs}px` }}>
                 {second}
               </div>
             </>
