@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, useDraggable, useDroppable } from '@dnd-kit/core';
 import { SelectedCourse, DayOfWeek, TimeSlot, Section } from '@/types';
@@ -19,6 +19,7 @@ interface TimetableGridDraggableProps {
 }
 
 const DEFAULT_COURSE_COLOR = '#8B5CF6';
+const DEFAULT_OVERLAP_GAP = 8;
 
 type SectionType = Section['sectionType'];
 
@@ -163,29 +164,25 @@ function DraggableCourseBlock({
 
 // Drop Shadow Preview Component
 interface DropShadowPreviewProps {
-  timeSlots: TimeSlot[];
+  entries: Array<{ style: CSSProperties }>;
   color: string;
-  getCourseStyle: (startTime: string, endTime: string, color?: string) => CSSProperties;
 }
 
-function DropShadowPreview({ timeSlots, color, getCourseStyle }: DropShadowPreviewProps) {
+function DropShadowPreview({ entries, color }: DropShadowPreviewProps) {
   return (
     <>
-      {timeSlots.map((slot: TimeSlot, idx: number) => {
-        const style = getCourseStyle(slot.startTime, slot.endTime, color);
-        return (
-          <div
-            key={idx}
-            className="absolute left-1 right-1 rounded-lg border-2 border-dashed pointer-events-none animate-pulse"
-            style={{
-              ...style,
-              backgroundColor: `${color}30`,
-              borderColor: `${color}`,
-              opacity: 0.6,
-            }}
-          />
-        );
-      })}
+      {entries.map((entry, idx) => (
+        <div
+          key={idx}
+          className="absolute rounded-lg border-2 border-dashed pointer-events-none animate-pulse"
+          style={{
+            ...entry.style,
+            backgroundColor: `${color}30`,
+            borderColor: `${color}`,
+            opacity: 0.6,
+          }}
+        />
+      ))}
     </>
   );
 }
@@ -229,6 +226,105 @@ function DroppableDayColumn({
   const showDropShadow = isOver && draggedData !== null;
   const canDrop = Boolean(draggedData);
 
+  // Compute side-by-side lanes for this day (including preview entries when dragging over)
+  type SlotLayoutInput = {
+    key: string;
+    start: number;
+    end: number;
+    origin: 'course' | 'preview';
+    course?: SelectedCourse;
+    slot?: TimeSlot;
+  };
+  type SlotLayoutOutput = SlotLayoutInput & {
+    lane: number;
+    overlapCount: number;
+  };
+
+  const OVERLAP_GAP = DEFAULT_OVERLAP_GAP;
+
+  const layoutDaySlots = (blocks: SlotLayoutInput[]): SlotLayoutOutput[] => {
+    const sorted = [...blocks].sort((a, b) => {
+      if (a.start === b.start) return a.end - b.end;
+      return a.start - b.start;
+    });
+    const active: SlotLayoutOutput[] = [];
+    const result: SlotLayoutOutput[] = [];
+    for (const block of sorted) {
+      for (let i = active.length - 1; i >= 0; i -= 1) {
+        if (active[i].end <= block.start) {
+          active.splice(i, 1);
+        }
+      }
+      const usedLanes = new Set(active.map((e) => e.lane));
+      let lane = 0;
+      while (usedLanes.has(lane)) lane += 1;
+      const layoutBlock: SlotLayoutOutput = { ...block, lane, overlapCount: Math.max(1, active.length + 1) };
+      active.push(layoutBlock);
+      result.push(layoutBlock);
+      const currentOverlap = active.length;
+      active.forEach((e) => {
+        e.overlapCount = Math.max(e.overlapCount, currentOverlap);
+      });
+    }
+    return result;
+  };
+
+  const dayLayout = useMemo(() => {
+    const entries: SlotLayoutInput[] = [];
+    // Existing blocks for this day
+    for (const sc of selectedCourses) {
+      for (const slot of sc.selectedSection.timeSlots) {
+        // use real day filter
+        if (slot.day !== day) continue;
+        const start = timeToMinutes(slot.startTime);
+        const end = timeToMinutes(slot.endTime);
+        entries.push({
+          key: `course-${sc.course.courseCode}-${sc.selectedSection.sectionId}-${slot.startTime}-${slot.endTime}`,
+          start,
+          end,
+          origin: 'course',
+          course: sc,
+          slot,
+        });
+      }
+    }
+    // Preview entries: treat times as occurring on this day (ignore original day)
+    if (showDropShadow && draggedData) {
+      draggedData.timeSlots.forEach((slot, idx) => {
+        const start = timeToMinutes(slot.startTime);
+        const end = timeToMinutes(slot.endTime);
+        entries.push({
+          key: `preview-${idx}-${slot.startTime}-${slot.endTime}`,
+          start,
+          end,
+          origin: 'preview',
+        });
+      });
+    }
+    const laidOut = layoutDaySlots(entries);
+    // Convert to computed styles
+    const withStyle = laidOut.map((e) => {
+      const top = ((e.start - TIMETABLE_CONFIG.startHour * 60) / 60) * slotHeight;
+      const height = ((e.end - e.start) / 60) * slotHeight - 4;
+      const adjustedTop = top + 2;
+      const widthPercent = 100 / e.overlapCount;
+      const style: CSSProperties = {
+        top: `${adjustedTop}px`,
+        height: `${height}px`,
+        left: `calc(${widthPercent * e.lane}% + ${OVERLAP_GAP / 2}px)`,
+        width: `calc(${widthPercent}% - ${OVERLAP_GAP}px)`,
+      };
+      return { ...e, style };
+    });
+    return withStyle;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCourses, draggedData, showDropShadow, day, slotHeight]);
+
+  const previewEntries = useMemo(
+    () => dayLayout.filter((e) => e.origin === 'preview').map((e) => ({ style: e.style })),
+    [dayLayout]
+  );
+
   return (
     <div
       ref={setNodeRef}
@@ -246,7 +342,7 @@ function DroppableDayColumn({
       }}
     >
       {/* Hour grid lines */}
-  {hours.slice(1).map((hour, idx) => (
+      {hours.slice(1).map((hour, idx) => (
         <div
           key={hour}
           className="absolute w-full border-t border-gray-100/50 dark:border-gray-800/50"
@@ -255,39 +351,33 @@ function DroppableDayColumn({
       ))}
 
       {/* Drop shadow preview when dragging over */}
-      {showDropShadow && draggedData && (
-        <DropShadowPreview
-          timeSlots={draggedData.timeSlots}
-          color={draggedData.color ?? DEFAULT_COURSE_COLOR}
-          getCourseStyle={getCourseStyle}
-        />
+      {showDropShadow && draggedData && previewEntries.length > 0 && (
+        <DropShadowPreview entries={previewEntries} color={draggedData.color ?? DEFAULT_COURSE_COLOR} />
       )}
 
       {/* Course blocks */}
-      {selectedCourses.map((selectedCourse) => {
-        const isDraggedSection = 
-          draggedCourseCode === selectedCourse.course.courseCode &&
-          draggedSectionId === selectedCourse.selectedSection.sectionId;
-
-        return selectedCourse.selectedSection.timeSlots
-          .filter((slot) => slot.day === day)
-          .map((slot, slotIdx) => {
-            const style = getCourseStyle(slot.startTime, slot.endTime, selectedCourse.color);
-            const blockId = `${selectedCourse.course.courseCode}-${selectedCourse.selectedSection.sectionId}-${day}-${slotIdx}`;
-            
-            return (
-              <DraggableCourseBlock
-                key={blockId}
-                selectedCourse={selectedCourse}
-                blockId={blockId}
-                style={style}
-                onRemove={onRemoveCourse}
-                onClick={onCourseClick}
-                conflictingCourses={conflictingCourses}
-                isDraggedSection={isDraggedSection}
-              />
-            );
-          });
+      {dayLayout.filter(e => e.origin === 'course').map((entry, idx) => {
+        const sc = entry.course!;
+        const isDraggedSection =
+          draggedCourseCode === sc.course.courseCode &&
+          draggedSectionId === sc.selectedSection.sectionId;
+        const blockId = `${sc.course.courseCode}-${sc.selectedSection.sectionId}-${day}-${idx}`;
+        const style: CSSProperties = {
+          ...entry.style,
+          backgroundColor: sc.color ?? DEFAULT_COURSE_COLOR,
+        };
+        return (
+          <DraggableCourseBlock
+            key={blockId}
+            selectedCourse={sc}
+            blockId={blockId}
+            style={style}
+            onRemove={onRemoveCourse}
+            onClick={onCourseClick}
+            conflictingCourses={conflictingCourses}
+            isDraggedSection={isDraggedSection}
+          />
+        );
       })}
     </div>
   );

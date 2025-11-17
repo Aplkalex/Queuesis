@@ -450,6 +450,8 @@ export function TimetableGrid({
     course: Course;
     color: string;
     getCourseStyle: (startTime: string, endTime: string, color?: string) => CourseStyle;
+    styleOverride?: Partial<CourseStyle>;
+    overlapCount?: number;
   }
 
   const GhostSectionBlock = memo(function GhostSectionBlock({
@@ -458,6 +460,8 @@ export function TimetableGrid({
     course,
     color,
     getCourseStyle,
+    styleOverride,
+    overlapCount = 1,
   }: GhostSectionBlockProps) {
     const ghostCourse: SelectedCourse = {
       course,
@@ -479,6 +483,7 @@ export function TimetableGrid({
 
     const ghostStyle: CourseStyle = {
       ...style,
+      ...(styleOverride ?? {}),
       borderStyle: 'dashed',
       borderColor: palette.borderSoft,
       backgroundColor: isOver ? palette.surfaceActive : palette.surfaceSubtle,
@@ -1061,20 +1066,64 @@ export function TimetableGrid({
                     );
                   }
 
-                  return alternativeSections.flatMap((section) =>
+                  // Lane layout for ghost alternatives (same-day only)
+                  type GhostInput = {
+                    key: string;
+                    section: Section;
+                    slot: TimeSlot;
+                    start: number;
+                    end: number;
+                  };
+                  const ghostEntries: GhostInput[] = [];
+                  alternativeSections.forEach((section) => {
                     section.timeSlots
                       .filter((ghostSlot) => ghostSlot.day === day)
-                      .map((ghostSlot, idx: number) => (
-                        <GhostSectionBlock
-                          key={`ghost-${section.sectionId}-${idx}-${day}`}
-                          section={section}
-                          slot={ghostSlot}
-                          course={courseData}
-                          color={draggedCourse.color ?? DEFAULT_COURSE_COLOR}
-                          getCourseStyle={getCourseStyle}
-                        />
-                      ))
+                      .forEach((ghostSlot, idx) => {
+                        ghostEntries.push({
+                          key: `ghost-${section.sectionId}-${idx}-${day}`,
+                          section,
+                          slot: ghostSlot,
+                          start: timeToMinutes(ghostSlot.startTime),
+                          end: timeToMinutes(ghostSlot.endTime),
+                        });
+                      });
+                  });
+                  if (ghostEntries.length === 0) return null;
+
+                  const laidOut = layoutDaySlots(
+                    ghostEntries.map((g) => ({
+                      key: g.key,
+                      selectedCourse: {
+                        course: courseData,
+                        selectedSection: g.section,
+                        color: draggedCourse.color ?? DEFAULT_COURSE_COLOR,
+                      } as SelectedCourse,
+                      slot: g.slot,
+                      start: g.start,
+                      end: g.end,
+                    }))
                   );
+
+                  return laidOut.map((entry) => {
+                    const baseStyle = getCourseStyle(entry.slot.startTime, entry.slot.endTime, draggedCourse.color ?? DEFAULT_COURSE_COLOR);
+                    const widthPercent = 100 / entry.overlapCount;
+                    const styleOverride: Partial<CourseStyle> = {
+                      width: `calc(${widthPercent}% - ${OVERLAP_GAP}px)`,
+                      left: `calc(${widthPercent * entry.lane}% + ${OVERLAP_GAP / 2}px)`,
+                    };
+                    return (
+                      <GhostSectionBlock
+                        key={entry.key}
+                        section={entry.selectedCourse.selectedSection}
+                        slot={entry.slot}
+                        course={courseData}
+                        color={draggedCourse.color ?? DEFAULT_COURSE_COLOR}
+                        getCourseStyle={getCourseStyle}
+                        styleOverride={styleOverride}
+                        overlapCount={entry.overlapCount}
+                      />
+                    );
+                  });
                 })()}
               </div>
             ))}
