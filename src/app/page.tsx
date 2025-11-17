@@ -331,6 +331,60 @@ export default function Home() {
     [deferredCourses]
   );
 
+  // Human-readable department label: remove generic prefixes like "Department of"
+  const formatDepartmentLabel = useCallback((dept: string) => {
+    if (!dept) return '';
+    const trimmed = dept.trim();
+    // Strip common prefixes; keep the meaningful part
+    // Covers: Department/Dept./Dept of/School/Sch./Faculty/Centre/Center/Institute/Division/Office/Program/Programme (+ optional "of"/"for")
+    const cleaned = trimmed
+      .replace(/^The\s+/i, '')
+      .replace(/^(Department|Dept\.?|School|Sch\.?|Faculty|Centre|Center|Institute|Division|Office|Program|Programme)(\s+(of|for))?\s+/i, '')
+      .replace(/^\s*of\s+/i, '') // guard: if a lone leading "of" remains
+      .replace(/\s*,\s*$/, '');
+    // If extremely long, lightly truncate for chip while preserving the full value in title
+    if (cleaned.length > 24) {
+      const noParen = cleaned.replace(/\s*\(.+\)$/, '');
+      const base = noParen.length > 24 ? noParen.slice(0, 22) + '…' : noParen;
+      return base;
+    }
+    return cleaned;
+  }, []);
+
+  // Build department options with a short code + formatted label, sorted alphabetically by label
+  const departmentOptions = useMemo(() => {
+    // Aggregate codes (from courseCode prefix) per department
+    const codeCounts = new Map<string, Map<string, number>>();
+    for (const course of deferredCourses) {
+      const dept = course.department;
+      const match = course.courseCode?.match(/^([A-Za-z]+)/);
+      const prefix = match ? match[1].toUpperCase() : undefined;
+      if (!dept || !prefix) continue;
+      if (!codeCounts.has(dept)) codeCounts.set(dept, new Map());
+      const map = codeCounts.get(dept)!;
+      map.set(prefix, (map.get(prefix) ?? 0) + 1);
+    }
+
+    const options = departments.map((dept) => {
+      const label = formatDepartmentLabel(dept);
+      const codes = codeCounts.get(dept);
+      // Pick most frequent prefix as "code"
+      let code: string | undefined;
+      if (codes && codes.size > 0) {
+        code = Array.from(codes.entries()).sort((a, b) => {
+          // sort desc by count, tie-breaker shorter code first, then alpha
+          if (b[1] !== a[1]) return b[1] - a[1];
+          if (a[0].length !== b[0].length) return a[0].length - b[0].length;
+          return a[0].localeCompare(b[0]);
+        })[0][0];
+      }
+      return { value: dept, label, code };
+    });
+
+    options.sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }));
+    return options;
+  }, [departments, deferredCourses, formatDepartmentLabel]);
+
   const selectedCourseMap = useMemo(() => {
     const map = new Map<string, SelectedCourse[]>();
     selectedCourses.forEach((sc) => {
@@ -1931,13 +1985,15 @@ export default function Home() {
                     >
                       All
                     </FilterButton>
-                    {departments.map((dept) => (
+                    {departmentOptions.map((opt) => (
                       <FilterButton
-                        key={dept}
-                        active={selectedDepartment === dept}
-                        onClick={() => setSelectedDepartment(dept)}
+                        key={opt.value}
+                        active={selectedDepartment === opt.value}
+                        onClick={() => setSelectedDepartment(opt.value)}
                       >
-                        {dept.split(' ')[0]}
+                        <span title={opt.value} className="whitespace-nowrap">
+                          {opt.code ? `${opt.code} — ${opt.label}` : opt.label}
+                        </span>
                       </FilterButton>
                     ))}
                   </div>

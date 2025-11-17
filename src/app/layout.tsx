@@ -14,8 +14,27 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CUHK Course Scheduler",
+  // Make sure shared links and previews show the correct brand
+  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL ?? "https://queuesis.vercel.app"),
+  title: {
+    default: "Queuesis — CUHK Timetable Planner",
+    template: "%s · Queuesis",
+  },
+  applicationName: "Queuesis",
   description: "Plan your perfect CUHK timetable",
+  openGraph: {
+    title: "Queuesis — CUHK Timetable Planner",
+    description: "Plan your perfect CUHK timetable",
+    url: "/",
+    siteName: "Queuesis",
+    type: "website",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary",
+    title: "Queuesis — CUHK Timetable Planner",
+    description: "Plan your perfect CUHK timetable",
+  },
 };
 
 export default function RootLayout({
