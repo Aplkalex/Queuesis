@@ -158,7 +158,7 @@ Choose from multiple optimization preferences:
 No installation needed!
 
 </td>
-<td align="center" width="50%">
+<td align="center" width="70%">
 
 ### 💻 Run Locally
 **Want to develop or customize?**
@@ -178,7 +178,7 @@ Follow our quick [setup guide](#-getting-started) below
 
 <table>
 <tr>
-<td valign="top" width="50%">
+<td align="center" valign="top" width="50%">
 
 ### Frontend
 - **Framework**: Next.js 16 (App Router)
