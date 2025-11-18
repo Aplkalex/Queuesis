@@ -10,7 +10,7 @@ import BuildingModal from '@/components/BuildingModal';
 import { CourseDetailsModal } from '@/components/CourseDetailsModal';
 import { SectionSwapModal } from '@/components/SectionSwapModal';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { generateCourseColor, calculateTotalCredits, detectConflicts, hasAvailableSeats, detectNewCourseConflicts, countUniqueCourses, removeDependentSectionsForLecture, removeLectureAndDependents, timeToMinutes } from '@/lib/schedule-utils';
+import { generateCourseColor, calculateTotalCredits, detectConflicts, hasAvailableSeats, detectNewCourseConflicts, countUniqueCourses, removeDependentSectionsForLecture, removeLectureAndDependents, timeToMinutes, adjustCourseColorForTheme } from '@/lib/schedule-utils';
 import { TIMETABLE_CONFIG, WEEKDAY_SHORT } from '@/lib/constants';
 import { generateSchedules, type GeneratedSchedule } from '@/lib/schedule-generator';
 import { DISCLAIMER } from '@/lib/constants';
@@ -225,6 +225,19 @@ export default function Home() {
   const showMobileGenerateBar =
     isMobile && scheduleMode === 'auto-generate' && selectedCourseCodes.length > 0;
   const timetableRef = useRef<HTMLDivElement | null>(null);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const root = document.documentElement;
+    const update = () => {
+      setIsDarkMode(root.classList.contains('dark'));
+    };
+    update();
+    const observer = new MutationObserver(update);
+    observer.observe(root, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
 
   // Build tiny preview data for mobile mini-card
   const previewData = useMemo(() => {
@@ -240,10 +253,12 @@ export default function Home() {
         const top = Math.max(0, timeToMinutes(slot.startTime) - startOfDay);
         const end = Math.min(endOfDay, timeToMinutes(slot.endTime));
         const height = Math.max(10, end - (timeToMinutes(slot.startTime))); // min height protection
+        const baseColor = sc.color ?? generateCourseColor(sc.course.courseCode, []);
+        const themeColor = adjustCourseColorForTheme(baseColor, isDarkMode ? 'dark' : 'light');
         byDay[slot.day].push({
           topPct: Math.min(100, (top / span) * 100),
           heightPct: Math.min(100, (height / span) * 100),
-          color: sc.color ?? generateCourseColor(sc.course.courseCode, []),
+          color: themeColor,
         });
       });
     });

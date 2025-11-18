@@ -4,7 +4,7 @@ import { useState, memo, useTransition, useRef, useEffect, useMemo } from 'react
 import type { CSSProperties, /* MouseEvent */ } from 'react';
 import { SelectedCourse, DayOfWeek, Course, Section, TimeSlot } from '@/types';
 import { TIMETABLE_CONFIG, WEEKDAYS, WEEKDAY_SHORT } from '@/lib/constants';
-import { timeToMinutes, formatTime, hasAvailableSeats } from '@/lib/schedule-utils';
+import { timeToMinutes, formatTime, hasAvailableSeats, adjustCourseColorForTheme } from '@/lib/schedule-utils';
 import { cn } from '@/lib/utils';
 import { X, AlertCircle, RefreshCw, GripVertical, Lock, MapPin } from 'lucide-react';
 import {
@@ -270,6 +270,19 @@ export function TimetableGrid({
   const isDragging = Boolean(draggedCourse);
   const blockSizeCacheRef = useRef<Map<string, { width: number; height: number }>>(new Map());
   const prevBodyStyleRef = useRef<{ overflow?: string; touchAction?: string; overscrollBehavior?: string } | null>(null);
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    if (typeof document === 'undefined') return true;
+    return document.documentElement.classList.contains('dark');
+  });
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const root = document.documentElement;
+    const updateTheme = () => setIsDarkMode(root.classList.contains('dark'));
+    updateTheme();
+    const observer = new MutationObserver(updateTheme);
+    observer.observe(root, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
   // Sensors must be created unconditionally to keep hook order stable
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -342,7 +355,8 @@ export function TimetableGrid({
     const finalHeight = calculatedHeight - blockGap;
     const adjustedTop = top + blockGap / 2;
 
-    const palette = buildGlassPalette(color);
+    const paletteColor = adjustCourseColorForTheme(color, isDarkMode ? 'dark' : 'light');
+    const palette = buildGlassPalette(paletteColor);
 
     const style: CourseStyle = {
       top: `${adjustedTop}px`,
@@ -781,7 +795,8 @@ export function TimetableGrid({
       disabled: !isDraggable || selectedCourse.locked === true,
     });
 
-    const palette = buildGlassPalette(selectedCourse.color);
+    const paletteColor = adjustCourseColorForTheme(selectedCourse.color, isDarkMode ? 'dark' : 'light');
+    const palette = buildGlassPalette(paletteColor);
     const textColor = palette.text;
     const isFull = !hasAvailableSeats(selectedCourse.selectedSection);
     const hasConflict = conflictingCourses.includes(selectedCourse.course.courseCode);
@@ -1318,7 +1333,9 @@ export function TimetableGrid({
             }}
           >
             {draggedCourse && (() => {
-              const palette = buildGlassPalette(draggedCourse.color);
+              const palette = buildGlassPalette(
+                adjustCourseColorForTheme(draggedCourse.color, isDarkMode ? 'dark' : 'light')
+              );
               return (
                 <div
                   className={cn('p-3 rounded-xl border shadow-2xl', isFrosted ? 'backdrop-blur-2xl' : 'backdrop-blur-none')}

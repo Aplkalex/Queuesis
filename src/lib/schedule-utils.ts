@@ -1,6 +1,6 @@
 import { TimeSlot, SelectedCourse, Conflict, DayOfWeek, Course, Section } from '@/types';
 
-type CourseColorShades = {
+export type CourseColorShades = {
   DEFAULT: string;
   100: string;
   200: string;
@@ -13,159 +13,133 @@ type CourseColorShades = {
   900: string;
 };
 
-type ColorFamily = CourseColorShades[];
+export type ColorFamily = CourseColorShades[];
 
 const COLOR_FAMILIES: ColorFamily[] = [
   [
     {
-      DEFAULT: '#2563EB',
-      100: '#DBEAFE',
-      200: '#BFDBFE',
-      300: '#93C5FD',
-      400: '#60A5FA',
-      500: '#3B82F6',
-      600: '#2563EB',
-      700: '#1D4ED8',
-      800: '#1E40AF',
-      900: '#1E3A8A',
-    },
-    {
-      DEFAULT: '#0EA5E9',
-      100: '#E0F2FE',
-      200: '#BAE6FD',
-      300: '#7DD3FC',
-      400: '#38BDF8',
-      500: '#0EA5E9',
-      600: '#0284C7',
-      700: '#0369A1',
-      800: '#075985',
-      900: '#0C4A6E',
-    },
-    {
-      DEFAULT: '#14B8A6',
-      100: '#CCFBF1',
-      200: '#99F6E4',
-      300: '#5EEAD4',
-      400: '#2DD4BF',
-      500: '#14B8A6',
-      600: '#0D9488',
-      700: '#0F766E',
-      800: '#115E59',
-      900: '#134E4A',
+      DEFAULT: '#ffadad',
+      100: '#560000',
+      200: '#ab0000',
+      300: '#ff0202',
+      400: '#ff5858',
+      500: '#ffadad',
+      600: '#ffbebe',
+      700: '#ffcece',
+      800: '#ffdede',
+      900: '#ffefef',
     },
   ],
   [
     {
-      DEFAULT: '#F97316',
-      100: '#FFF7ED',
-      200: '#FFEDD5',
-      300: '#FED7AA',
-      400: '#FDBA74',
-      500: '#FB923C',
-      600: '#F97316',
-      700: '#EA580C',
-      800: '#C2410C',
-      900: '#9A3412',
-    },
-    {
-      DEFAULT: '#F43F5E',
-      100: '#FFE4E6',
-      200: '#FECDD3',
-      300: '#FDA4AF',
-      400: '#FB7185',
-      500: '#F43F5E',
-      600: '#E11D48',
-      700: '#BE123C',
-      800: '#9F1239',
-      900: '#881337',
-    },
-    {
-      DEFAULT: '#F59E0B',
-      100: '#FFFBEB',
-      200: '#FEF3C7',
-      300: '#FDE68A',
-      400: '#FCD34D',
-      500: '#FBBF24',
-      600: '#F59E0B',
-      700: '#D97706',
-      800: '#B45309',
-      900: '#92400E',
+      DEFAULT: '#ffd6a5',
+      100: '#542e00',
+      200: '#a75c00',
+      300: '#fb8a00',
+      400: '#ffb050',
+      500: '#ffd6a5',
+      600: '#ffdeb6',
+      700: '#ffe6c8',
+      800: '#ffeeda',
+      900: '#fff7ed',
     },
   ],
   [
     {
-      DEFAULT: '#9333EA',
-      100: '#F3E8FF',
-      200: '#E9D5FF',
-      300: '#D8B4FE',
-      400: '#C084FC',
-      500: '#A855F7',
-      600: '#9333EA',
-      700: '#7E22CE',
-      800: '#6B21A8',
-      900: '#581C87',
-    },
-    {
-      DEFAULT: '#8B5CF6',
-      100: '#F5F3FF',
-      200: '#EDE9FE',
-      300: '#DDD6FE',
-      400: '#C4B5FD',
-      500: '#A78BFA',
-      600: '#8B5CF6',
-      700: '#7C3AED',
-      800: '#6D28D9',
-      900: '#5B21B6',
-    },
-    {
-      DEFAULT: '#EC4899',
-      100: '#FDF2F8',
-      200: '#FCE7F3',
-      300: '#FBCFE8',
-      400: '#F9A8D4',
-      500: '#F472B6',
-      600: '#EC4899',
-      700: '#DB2777',
-      800: '#BE185D',
-      900: '#9D174D',
+      DEFAULT: '#fdffb6',
+      100: '#555800',
+      200: '#aaaf00',
+      300: '#f7ff08',
+      400: '#faff60',
+      500: '#fdffb6',
+      600: '#fdffc6',
+      700: '#feffd4',
+      800: '#feffe2',
+      900: '#fffff1',
     },
   ],
   [
     {
-      DEFAULT: '#22C55E',
-      100: '#ECFDF5',
-      200: '#D1FAE5',
-      300: '#A7F3D0',
-      400: '#6EE7B7',
-      500: '#34D399',
-      600: '#22C55E',
-      700: '#16A34A',
-      800: '#15803D',
-      900: '#166534',
+      DEFAULT: '#caffbf',
+      100: '#0f5900',
+      200: '#1eb100',
+      300: '#34ff0b',
+      400: '#7eff64',
+      500: '#caffbf',
+      600: '#d3ffca',
+      700: '#deffd7',
+      800: '#e9ffe4',
+      900: '#f4fff2',
     },
+  ],
+  [
     {
-      DEFAULT: '#0891B2',
-      100: '#E0F2FE',
-      200: '#BAE6FD',
-      300: '#7DD3FC',
-      400: '#38BDF8',
-      500: '#0EA5E9',
-      600: '#0284C7',
-      700: '#0369A1',
-      800: '#0E7490',
-      900: '#164E63',
+      DEFAULT: '#9bf6ff',
+      100: '#004b52',
+      200: '#0096a3',
+      300: '#00e0f5',
+      400: '#47f0ff',
+      500: '#9bf6ff',
+      600: '#adf8ff',
+      700: '#c2faff',
+      800: '#d6fcff',
+      900: '#ebfdff',
     },
+  ],
+  [
     {
-      DEFAULT: '#475569',
-      100: '#F8FAFC',
-      200: '#F1F5F9',
-      300: '#E2E8F0',
-      400: '#CBD5F5',
-      500: '#94A3B8',
-      600: '#64748B',
-      700: '#475569',
-      800: '#334155',
-      900: '#1E293B',
+      DEFAULT: '#a0c4ff',
+      100: '#002053',
+      200: '#003fa5',
+      300: '#005ff8',
+      400: '#4b90ff',
+      500: '#a0c4ff',
+      600: '#b1cfff',
+      700: '#c5dbff',
+      800: '#d8e7ff',
+      900: '#ecf3ff',
+    },
+  ],
+  [
+    {
+      DEFAULT: '#bdb2ff',
+      100: '#0d0057',
+      200: '#1a00ad',
+      300: '#2b05ff',
+      400: '#745cff',
+      500: '#bdb2ff',
+      600: '#cbc2ff',
+      700: '#d8d1ff',
+      800: '#e5e0ff',
+      900: '#f2f0ff',
+    },
+  ],
+  [
+    {
+      DEFAULT: '#ffc6ff',
+      100: '#5b005b',
+      200: '#b600b6',
+      300: '#ff11ff',
+      400: '#ff6cff',
+      500: '#ffc6ff',
+      600: '#ffd2ff',
+      700: '#ffddff',
+      800: '#ffe9ff',
+      900: '#fff4ff',
+    },
+  ],
+  [
+    {
+      DEFAULT: '#fffffc',
+      100: '#656500',
+      200: '#caca00',
+      300: '#ffff30',
+      400: '#ffff95',
+      500: '#fffffc',
+      600: '#fffffb',
+      700: '#fffffc',
+      800: '#fffffd',
+      900: '#fffffe',
     },
   ],
 ];
@@ -173,6 +147,15 @@ const COLOR_FAMILIES: ColorFamily[] = [
 export const COURSE_COLOR_POOL = COLOR_FAMILIES.flatMap((family) =>
   family.map((palette) => palette.DEFAULT)
 );
+
+const DEFAULT_TO_PALETTE = (() => {
+  const map = new Map<string, CourseColorShades>();
+  COLOR_FAMILIES.flat().forEach((palette) => {
+    map.set(palette.DEFAULT.toLowerCase(), palette);
+    map.set(palette[100].toLowerCase(), palette);
+  });
+  return map;
+})();
 
 /**
  * Convert time string (HH:MM) to minutes since midnight
@@ -298,7 +281,7 @@ export function formatTime(time: string): string {
  * Generate a unique color for course visualization
  * Uses courseCode hash to ensure consistent unique colors
  */
-export function generateCourseColor(courseCode: string, usedColors: string[]): string {
+export function generateCourseColor(courseCode: string, usedColors: string[], options?: { theme?: 'light' | 'dark' }): string {
   const familyOptions = COLOR_FAMILIES
     .map((family) => family.map((palette) => palette.DEFAULT).filter((color) => !usedColors.includes(color)))
     .filter((available) => available.length > 0);
@@ -321,8 +304,18 @@ export function generateCourseColor(courseCode: string, usedColors: string[]): s
   for (let i = 0; i < courseCode.length; i++) {
     hash = courseCode.charCodeAt(i) + ((hash << 5) - hash);
   }
-  const fallbackPalette = COURSE_COLOR_POOL;
-  return fallbackPalette[Math.abs(hash) % fallbackPalette.length];
+  return COURSE_COLOR_POOL[Math.abs(hash) % COURSE_COLOR_POOL.length];
+}
+
+/**
+ * Given a stored course color, map it to the appropriate shade for the current theme.
+ */
+export function adjustCourseColorForTheme(color: string | undefined, theme: 'light' | 'dark'): string {
+  if (!color) return color ?? '#8B5CF6';
+  if (theme === 'dark') return color;
+  const palette = DEFAULT_TO_PALETTE.get(color.toLowerCase());
+  if (!palette) return color;
+  return palette[100] ?? palette.DEFAULT;
 }
 
 /**
