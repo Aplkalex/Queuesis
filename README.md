@@ -161,11 +161,11 @@ No installation needed!
 ### 💻 Run Locally
 **Want to develop or customize?**
 
-<a href="#-local-development">
+<a href="#-getting-started-1">
   <img src="https://img.shields.io/badge/Setup_Guide-4C1D95?style=for-the-badge&logoColor=white" alt="Setup Guide" height="45"/>
 </a>
 
- Follow our quick [setup guide](#-getting-started-1) below
+ Follow our guide below!
 </td>
 </tr>
 </table>
