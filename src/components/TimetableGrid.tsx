@@ -608,6 +608,16 @@ export function TimetableGrid({
     const endMinutes = timeToMinutes(slot.endTime);
     const durationMinutes = endMinutes - startMinutes;
     const blockHeightPx = (durationMinutes / 60) * slotHeight;
+    const styleWidth =
+      typeof style.width === 'string'
+        ? Number.parseFloat(style.width)
+        : typeof style.width === 'number'
+          ? style.width
+          : undefined;
+    const fallbackWidth = isSmallScreen ? 90 : 170;
+    const estimatedBlockWidth =
+      blockDimensions.width > 0 ? blockDimensions.width : Math.max(styleWidth ?? 0, fallbackWidth);
+    const estimatedBlockHeight = blockDimensions.height > 0 ? blockDimensions.height : blockHeightPx;
 
     // Check if there are alternatives to swap to (needed for drag handles)
     const courseData = availableCourses.find((c) => c.courseCode === selectedCourse.course.courseCode);
@@ -670,41 +680,73 @@ export function TimetableGrid({
 
     // Calculate smart text sizes
     const smartText = useMemo(() => {
-      const measuredWidth = blockDimensions.width;
-      const measuredHeight = blockDimensions.height;
-      const styleWidth =
-        typeof style.width === 'string'
-          ? Number.parseFloat(style.width)
-          : typeof style.width === 'number'
-            ? style.width
-            : undefined;
-      const estimatedWidth = measuredWidth > 0 ? measuredWidth : Math.max(styleWidth ?? 0, 170);
-      const estimatedHeight = measuredHeight > 0 ? measuredHeight : blockHeightPx;
-      return calculateSmartTextSizes(estimatedWidth, estimatedHeight, overlapCount, isSmallScreen);
-    }, [blockDimensions.width, blockDimensions.height, blockHeightPx, overlapCount, isSmallScreen, style.width]);
+      if (!isSmallScreen) return null;
+      return calculateSmartTextSizes(estimatedBlockWidth, estimatedBlockHeight, overlapCount, isSmallScreen);
+    }, [estimatedBlockWidth, estimatedBlockHeight, overlapCount, isSmallScreen]);
 
     // Determine display mode and font sizes
     type DisplayMode = 'compact' | 'tight' | 'full';
     let displayMode: DisplayMode;
     let firstFs: number;
     let secondFs: number;
+    const isNarrowDesktopBlock = !isSmallScreen && overlapCount >= 2;
+    const isUltraTightMobile = isSmallScreen && estimatedBlockWidth < 80;
 
     if (isSmallScreen && smartText) {
       displayMode = smartText.layout === 'compact' ? 'compact' : smartText.layout === 'comfortable' ? 'tight' : 'full';
-      firstFs = Math.max(10, Math.min(12, smartText.primary));
-      secondFs = Math.max(9, Math.min(11, smartText.secondary));
+      const mobilePrimaryMin = smartText.layout === 'compact' ? 7.4 : 8.6;
+      const mobileSecondaryMin = smartText.layout === 'compact' ? 6.4 : 7.4;
+      const widthPenalty =
+        smartText.layout === 'compact'
+          ? isUltraTightMobile
+            ? estimatedBlockWidth < 65
+              ? 0.75
+              : 0.85
+            : 1
+          : isUltraTightMobile
+            ? 0.9
+            : 1;
+      firstFs = Math.max(mobilePrimaryMin, Math.min(11.5, smartText.primary * widthPenalty));
+      secondFs = Math.max(mobileSecondaryMin, Math.min(10.5, smartText.secondary * widthPenalty));
     } else {
       displayMode = blockHeightPx < 50 ? 'compact' : blockHeightPx < 80 ? 'tight' : 'full';
       firstFs = displayMode === 'full' ? 11 : displayMode === 'tight' ? 10.5 : 9.5;
       secondFs = displayMode === 'full' ? 9 : displayMode === 'tight' ? 8.5 : 8;
     }
 
+    if (isNarrowDesktopBlock) {
+      const compression = Math.max(0.75, 1 - 0.12 * (overlapCount - 1));
+      firstFs = Number((firstFs * compression).toFixed(2));
+      secondFs = Number((secondFs * compression).toFixed(2));
+    }
+
+    const baseBlockPaddingY =
+      displayMode === 'compact'
+        ? isSmallScreen
+          ? 1.5
+          : 3
+        : displayMode === 'tight'
+          ? isSmallScreen
+            ? 3
+            : 4
+          : isSmallScreen
+            ? 4
+            : 6;
     const blockPaddingY =
-      displayMode === 'compact' ? (isSmallScreen ? 2 : 3) : displayMode === 'tight' ? 4 : 6;
-    const lineHeights = {
+      isNarrowDesktopBlock && baseBlockPaddingY > 2 ? baseBlockPaddingY - 1 : baseBlockPaddingY;
+    const baseLineHeights = {
       primary: displayMode === 'compact' ? 1.06 : displayMode === 'tight' ? 1.14 : 1.22,
       secondary: displayMode === 'compact' ? 1.05 : displayMode === 'tight' ? 1.1 : 1.18,
     };
+    const mobileLineHeightScale = isSmallScreen ? (displayMode === 'compact' ? 0.9 : 0.95) : 1;
+    const lineHeights = {
+      primary: Number((baseLineHeights.primary * mobileLineHeightScale).toFixed(3)),
+      secondary: Number((baseLineHeights.secondary * mobileLineHeightScale).toFixed(3)),
+    };
+    if (isNarrowDesktopBlock) {
+      lineHeights.primary = Number((lineHeights.primary * 0.95).toFixed(3));
+      lineHeights.secondary = Number((lineHeights.secondary * 0.95).toFixed(3));
+    }
 
     const shouldAbbreviate = isSmallScreen && smartText?.abbreviate;
     const abbr =
@@ -717,6 +759,13 @@ export function TimetableGrid({
     const classNumber = selectedCourse.selectedSection.classNumber;
 
     const isDesktop = !isSmallScreen;
+    const blockPaddingXClass = isSmallScreen ? 'pl-1 pr-1.5' : isNarrowDesktopBlock ? 'pl-1 pr-2' : 'pl-1.5 pr-3';
+    const blockGapClass =
+      displayMode === 'compact'
+        ? isSmallScreen
+          ? 'justify-center gap-px'
+          : 'justify-center gap-0.5'
+        : 'justify-center gap-1';
 
     const { setNodeRef: setDropRef, isOver } = useDroppable({
       id: `drop-${uniqueId}`,
@@ -735,14 +784,8 @@ export function TimetableGrid({
     const desktopLine2Title = `${classNumber ? `#${classNumber}` : ''}${classNumber ? ' • ' : ''}${desktopLocationLabel}`;
 
     // Prepare text content
-    const measuredWidth = blockDimensions.width || undefined;
-    const estimatedWidth =
-      measuredWidth ??
-      (typeof style.width === 'string'
-        ? Number.parseFloat(style.width)
-        : typeof style.width === 'number'
-          ? style.width
-          : 170);
+    const measuredWidth = blockDimensions.width > 0 ? blockDimensions.width : undefined;
+    const estimatedWidth = estimatedBlockWidth;
     const courseCode = (() => {
       const raw = selectedCourse.course.courseCode;
       if (!shouldAbbreviate) return raw;
@@ -857,12 +900,7 @@ export function TimetableGrid({
         )}
 
         {/* Content */}
-        <div
-          className={cn(
-            'flex h-full flex-col pl-1.5 pr-3',
-            displayMode === 'compact' ? 'justify-center gap-0.5' : 'justify-center gap-1',
-          )}
-        >
+        <div className={cn('flex h-full flex-col', blockPaddingXClass, blockGapClass)}>
           {isDesktop ? (
             <div className="flex flex-col gap-0.5">
               <div
@@ -891,11 +929,16 @@ export function TimetableGrid({
             </div>
           ) : (
             <>
-              <div className="flex flex-col gap-0.5">
+              <div className="flex flex-col gap-px">
                 {/* Line 1: Course Code */}
                 <div
-                  className="font-semibold break-words"
-                  style={{ fontSize: `${firstFs}px`, color: textColor, lineHeight: lineHeights.primary }}
+                  className="font-semibold truncate max-w-full"
+                  style={{
+                    fontSize: `${firstFs}px`,
+                    color: textColor,
+                    lineHeight: lineHeights.primary,
+                    whiteSpace: 'nowrap',
+                  }}
                   title={selectedCourse.course.courseCode}
                 >
                   {courseCode}
@@ -906,8 +949,13 @@ export function TimetableGrid({
 
                 {/* Line 2: Section label */}
                 <div
-                  className="opacity-90 break-words"
-                  style={{ fontSize: `${secondFs}px`, color: textColor, lineHeight: lineHeights.secondary }}
+                  className="opacity-90 truncate max-w-full"
+                  style={{
+                    fontSize: `${secondFs}px`,
+                    color: textColor,
+                    lineHeight: lineHeights.secondary,
+                    whiteSpace: 'nowrap',
+                  }}
                   title={`${abbr} ${sectionId}`}
                 >
                   {abbr} {sectionId}
@@ -916,18 +964,29 @@ export function TimetableGrid({
 
               {/* Line 3: Class Number + Location */}
               <div
-                className="opacity-90 break-words"
-                style={{ fontSize: `${secondFs}px`, color: textColor, lineHeight: lineHeights.secondary }}
+                className="opacity-90 truncate max-w-full"
+                style={{
+                  fontSize: `${secondFs}px`,
+                  color: textColor,
+                  lineHeight: lineHeights.secondary,
+                  whiteSpace: 'nowrap',
+                }}
                 title={classNumber ? `#${classNumber} • ${locationDisplay}` : locationDisplay}
               >
-                {classNumber ? `#${classNumber} • ` : ''}{locationDisplay}
+                {classNumber ? `#${classNumber} • ` : ''}
+                {locationDisplay}
               </div>
             </>
           )}
         </div>
 
         {/* Badges in top-right */}
-        <div className="absolute top-1 right-1 flex flex-col items-end gap-0.5 pointer-events-none">
+        <div
+          className={cn(
+            'absolute top-1 right-1 flex flex-col items-end gap-0.5 pointer-events-none',
+            isNarrowDesktopBlock && 'scale-90 origin-top-right',
+          )}
+        >
           {hasConflict && (
             <span className="flex h-3 w-3 items-center justify-center rounded-full bg-yellow-300/90 text-slate-900">
               <AlertCircle className="h-2 w-2" />
