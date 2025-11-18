@@ -22,7 +22,8 @@
 
 <br/>
 
-<<div align="center">
+<div align="center">
+<table border="0">
 <table>
 <tr>
 <td>
