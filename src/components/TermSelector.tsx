@@ -82,9 +82,9 @@ export function TermSelector({
         onClick={() => (open ? handleClose() : handleOpen())}
         disabled={isLoading}
         className={cn(
-          'inline-flex items-center gap-1.5 text-xs px-3 py-1.5 pr-7 rounded-full border',
-          'bg-gradient-to-br from-white/95 to-white/80 dark:from-[#2d2d30] dark:to-[#1f1f22]',
-          'text-gray-800 dark:text-gray-100 border-gray-200 dark:border-gray-700',
+          'inline-flex items-center gap-1.5 text-xs px-3 py-1.5 pr-7 rounded-lg border',
+          'bg-white dark:bg-[#1f1f22]',
+          'text-gray-800 dark:text-gray-100 border-gray-300 dark:border-gray-700',
           'shadow-sm hover:shadow transition-all cursor-pointer appearance-none whitespace-nowrap',
           'focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent',
           isLoading && 'opacity-60 cursor-not-allowed',
