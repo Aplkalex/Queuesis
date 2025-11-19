@@ -582,7 +582,7 @@ const CourseListItem = memo(function CourseListItem({
                         ? 'border-gray-200 dark:border-gray-700 bg-gray-100/50 dark:bg-gray-800/50 opacity-50 cursor-not-allowed'
                         : hasAvailableSeats(section)
                         ? 'border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/10'
-                        : 'border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-[#1e1e1e] opacity-60'
+                        : 'border-amber-200 dark:border-amber-700 bg-amber-50/80 dark:bg-amber-900/20'
                     )}
                   >
                     <SectionButton

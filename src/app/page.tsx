@@ -721,6 +721,18 @@ export default function Home() {
       queueFullSectionWarning(course, section);
     }
 
+    const warnIfNoSchedule = (target: Section) => {
+      if (!target.timeSlots || target.timeSlots.length === 0) {
+        showGenerationNotice({
+          title: 'Meeting time missing',
+          message: `${course.courseCode} ${target.sectionType} ${target.sectionId} has no published schedule yet. Please verify on CUSIS before registration.`,
+          tone: 'warning',
+        });
+      }
+    };
+
+    warnIfNoSchedule(section);
+
     // Get existing color for this course if any section is already selected
     const existingCourseColor = selectedCourses.find(
       (sc) => sc.course.courseCode === course.courseCode
@@ -799,6 +811,7 @@ export default function Home() {
               color: lectureColor, // Same color as lecture
             },
           ];
+          warnIfNoSchedule(parentLecture);
           setSelectedCourses(newCourses);
           return;
         }
@@ -842,6 +855,40 @@ export default function Home() {
         setSelectedCourses([...selectedCourses, newCourse]);
         return;
       }
+    }
+
+    if (section.sectionType === 'Seminar') {
+      const seminarIndex = selectedCourses.findIndex(
+        (sc) =>
+          sc.course.courseCode === course.courseCode &&
+          sc.selectedSection.sectionType === 'Seminar'
+      );
+      const seminarColor =
+        existingCourseColor || generateCourseColor(course.courseCode, usedColors);
+      const newSeminar: SelectedCourse = {
+        course,
+        selectedSection: section,
+        color: seminarColor,
+      };
+      const comparisonPool =
+        seminarIndex !== -1
+          ? selectedCourses.filter((_, idx) => idx !== seminarIndex)
+          : selectedCourses;
+      const conflictingCourseCodes = detectNewCourseConflicts(newSeminar, comparisonPool);
+      if (conflictingCourseCodes.length > 0) {
+        const newConflicts = conflictingCourseCodes.map((code) => ({
+          course1: course.courseCode,
+          course2: code,
+        }));
+        setConflictToast(newConflicts);
+        setConflictingCourses([course.courseCode, ...conflictingCourseCodes]);
+      }
+      const updatedCourses = [...comparisonPool];
+      const insertIndex =
+        seminarIndex !== -1 ? Math.min(seminarIndex, updatedCourses.length) : updatedCourses.length;
+      updatedCourses.splice(insertIndex, 0, newSeminar);
+      setSelectedCourses(updatedCourses);
+      return;
     }
 
     // Default: add new section
