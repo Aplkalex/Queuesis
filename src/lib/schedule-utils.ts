@@ -329,7 +329,7 @@ export function adjustCourseColorForTheme(color: string | undefined, theme: 'lig
   if (theme === 'dark') return color;
   const palette = DEFAULT_TO_PALETTE.get(color.toLowerCase());
   if (!palette) return color;
-  return palette[100] ?? palette.DEFAULT;
+  return palette[300] ?? palette.DEFAULT;
 }
 
 /**
