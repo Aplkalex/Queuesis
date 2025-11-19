@@ -127,7 +127,6 @@ const BugReportMenu = ({
 
   useEffect(() => {
     if (!open) return;
-    recomputePosition();
     const handlePointer = (event: MouseEvent | TouchEvent) => {
       if (!containerRef.current) return;
       if (!containerRef.current.contains(event.target as Node)) {
@@ -155,7 +154,13 @@ const BugReportMenu = ({
     <div ref={containerRef} className="relative">
       <button
         type="button"
-        onClick={() => setOpen((prev) => !prev)}
+        onClick={() => {
+          const next = !open;
+          setOpen(next);
+          if (next) {
+            recomputePosition();
+          }
+        }}
         className={triggerClassName}
         aria-haspopup="menu"
         aria-expanded={open}
