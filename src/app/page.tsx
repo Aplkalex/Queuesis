@@ -1470,6 +1470,19 @@ export default function Home() {
               <div className="text-base sm:text-lg font-black text-gray-900 dark:text-white tracking-tight">
                 Queuesis
               </div>
+              {/* Desktop GitHub link near brand */}
+              <a
+                href="https://github.com/Aplkalex/Queuesis"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hidden lg:inline-flex items-center justify-center w-9 h-9 rounded-lg border transition-all duration-200 ease-out shadow-sm hover:shadow-md active:scale-95
+                           bg-gray-100/80 border-gray-200 text-gray-700 hover:bg-gray-200/80 hover:border-gray-300
+                           dark:bg-white/5 dark:border-white/10 dark:text-white dark:hover:bg-white/10"
+                aria-label="Open GitHub repository"
+                title="GitHub"
+              >
+                <Github className="w-4.5 h-4.5" />
+              </a>
               {/* Mobile Quick Actions trigger near brand */}
               <button
                 type="button"
@@ -1531,19 +1544,6 @@ export default function Home() {
 
             {/* Stats and Theme Toggle - Compact */}
             <div className="flex items-center gap-2 sm:gap-3 lg:gap-4">
-              {/* GitHub link (desktop) */}
-              <a
-                href="https://github.com/Aplkalex/Queuesis"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hidden lg:inline-flex items-center justify-center w-9 h-9 rounded-xl border transition-all duration-200 ease-out shadow-sm hover:shadow-md active:scale-95
-                           bg-gray-100/80 border-gray-200 text-gray-700 hover:bg-gray-200/80 hover:border-gray-300
-                           dark:bg-white/5 dark:border-white/10 dark:text-white dark:hover:bg-white/10"
-                aria-label="Open GitHub repository"
-                title="GitHub"
-              >
-                <Github className="w-4.5 h-4.5" />
-              </a>
               <div className="hidden lg:block">
                 <ThemeToggle />
               </div>
