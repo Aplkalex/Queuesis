@@ -103,23 +103,53 @@ const BugReportMenu = ({
 }: BugReportMenuProps) => {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const [menuStyle, setMenuStyle] = useState<{ top: number; left: number; width: number }>({
+    top: 0,
+    left: 0,
+    width: 260,
+  });
+
+  const recomputePosition = useCallback(() => {
+    if (typeof window === 'undefined' || !containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const maxWidth = 260;
+    const width = Math.min(maxWidth, window.innerWidth - 24);
+    let left = align === 'right' ? rect.right - width : rect.left;
+    left = Math.min(Math.max(12, left), window.innerWidth - width - 12);
+    const estimatedHeight = 200;
+    let top = rect.bottom + 12;
+    if (top + estimatedHeight > window.innerHeight - 12) {
+      top = rect.top - estimatedHeight - 12;
+    }
+    top = Math.max(12, top);
+    setMenuStyle({ top, left, width });
+  }, [align]);
 
   useEffect(() => {
     if (!open) return;
+    recomputePosition();
     const handlePointer = (event: MouseEvent | TouchEvent) => {
       if (!containerRef.current) return;
       if (!containerRef.current.contains(event.target as Node)) {
         setOpen(false);
       }
     };
+    const handleResize = () => recomputePosition();
     document.addEventListener('pointerdown', handlePointer);
-    return () => document.removeEventListener('pointerdown', handlePointer);
-  }, [open]);
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('scroll', handleResize, true);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointer);
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('scroll', handleResize, true);
+    };
+  }, [open, recomputePosition]);
 
-  const menuPosition = align === 'right' ? 'right-0' : 'left-0';
-  const menuWidthClass = 'w-64';
   const headerPadding = 'px-4 py-3';
   const bodyPadding = 'px-4 py-3';
+  const mailtoHref = `mailto:queuesis@aplkalex.com?subject=${encodeURIComponent('Queuesis Feedback')}&body=${encodeURIComponent(
+    'Hi QueueSis team,\n\n(Describe your issue or idea here)\n'
+  )}`;
 
   return (
     <div ref={containerRef} className="relative">
@@ -136,11 +166,8 @@ const BugReportMenu = ({
       </button>
       {open && (
         <div
-          className={cn(
-            `absolute mt-2 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#121212] shadow-2xl z-50 text-sm ${menuPosition}`,
-            menuWidthClass,
-            'max-w-[80vw]'
-          )}
+          className="fixed rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#121212] shadow-2xl z-[80] text-sm"
+          style={{ top: menuStyle.top, left: menuStyle.left, width: menuStyle.width }}
           role="menu"
         >
           <div className={`${headerPadding} border-b border-gray-100 dark:border-gray-800`}>
@@ -150,7 +177,7 @@ const BugReportMenu = ({
             </div>
           </div>
           <a
-            href="mailto:queuesis@aplkalex.com"
+            href={mailtoHref}
             className={`flex items-center justify-between ${bodyPadding} hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors`}
           >
             <div>
@@ -2080,6 +2107,11 @@ export default function Home() {
                     />
                   </div>
                   <div className="flex items-center gap-1 flex-shrink-0 px-1 py-0.5 rounded-lg border border-gray-200/70 dark:border-gray-700/40 bg-white/70 dark:bg-[#1e1e1e]/60">
+                    {selectedCourses.length > 0 && (
+                      <div className="text-[11px] text-gray-600 dark:text-gray-400 px-2">
+                        {uniqueCourseCount} course{uniqueCourseCount !== 1 ? 's' : ''} • {calculateTotalCredits(selectedCourses)} credits
+                      </div>
+                    )}
                     <button
                       onClick={handleImportButtonClick}
                       className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded-md transition-colors"
@@ -2129,9 +2161,6 @@ export default function Home() {
               >
                 {selectedCourses.length > 0 ? (
                   <>
-                    <div className="text-xs text-gray-600 dark:text-gray-400 px-4">
-                      {uniqueCourseCount} course{uniqueCourseCount !== 1 ? 's' : ''} • {calculateTotalCredits(selectedCourses)} credits
-                    </div>
                     <div className="px-4 py-3 max-h-[280px] overflow-y-auto scrollbar-thin scrollbar-thumb-purple-400 dark:scrollbar-thumb-purple-600 scrollbar-track-transparent">
                       <div className="space-y-2">
                         {selectedCourses.map((sc, idx) => {
