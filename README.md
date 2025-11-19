@@ -37,8 +37,7 @@
 <br/><br/>
 
 ## 🎥 Video Showcase
-https://github.com/user-attachments/assets/df3b80b8-a84c-4f9e-ac58-7627dfefda06
-
+https://github.com/user-attachments/assets/1219127c-e958-4496-b7ec-94ed48727549
 
 
 <br/>
