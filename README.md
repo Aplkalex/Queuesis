@@ -639,7 +639,7 @@ After deployment, verify:
 
 ### 💡 Community Suggestions
 
-Have an idea? [Open an issue](https://github.com/Aplkalex/cuhk-scheduler/issues) with the `enhancement` label!
+Have an idea or bug report? Either email [queuesis@aplkalex.com](mailto:queuesis@aplkalex.com) or open a new GitHub issue at [Queuesis Issues](https://github.com/Aplkalex/Queuesis/issues/new/choose) so we can tackle it quickly.
 
 ---
 

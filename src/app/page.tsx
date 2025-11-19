@@ -37,6 +37,7 @@ import {
   Lock,
   Unlock,
   Github,
+  Bug,
 } from 'lucide-react';
 import TermSelector from '@/components/TermSelector';
 import ConflictToast from '@/components/ConflictToast';
@@ -84,6 +85,86 @@ const useIsMobile = (breakpoint = 1024) => {
   }, [breakpoint]);
 
   return isMobile;
+};
+
+type BugReportMenuProps = {
+  align?: 'left' | 'right';
+  triggerClassName?: string;
+  label?: string;
+  iconSize?: number;
+};
+
+const BugReportMenu = ({
+  align = 'right',
+  triggerClassName,
+  label,
+  iconSize = 16,
+}: BugReportMenuProps) => {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handlePointer = (event: MouseEvent | TouchEvent) => {
+      if (!containerRef.current) return;
+      if (!containerRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('pointerdown', handlePointer);
+    return () => document.removeEventListener('pointerdown', handlePointer);
+  }, [open]);
+
+  const menuPosition = align === 'right' ? 'right-0' : 'left-0';
+
+  return (
+    <div ref={containerRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className={triggerClassName}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        title="Report an issue"
+      >
+        <Bug style={{ width: iconSize, height: iconSize }} />
+        {label && <span className="text-xs font-semibold">{label}</span>}
+      </button>
+      {open && (
+        <div
+          className={`absolute mt-2 w-64 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#121212] shadow-2xl z-50 text-sm ${menuPosition}`}
+          role="menu"
+        >
+          <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
+            <div className="font-semibold text-gray-900 dark:text-gray-100 text-sm">Need help?</div>
+            <div className="text-[11px] text-gray-500 dark:text-gray-400">Report issues or suggest improvements.</div>
+          </div>
+          <a
+            href="mailto:queuesis@aplkalex.com"
+            className="flex items-center justify-between px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          >
+            <div>
+              <div className="font-semibold text-gray-900 dark:text-gray-100">Email Support</div>
+              <div className="text-[11px] text-gray-500 dark:text-gray-400">queuesis@aplkalex.com</div>
+            </div>
+            <span className="text-[10px] text-gray-400">↗︎</span>
+          </a>
+          <a
+            href="https://github.com/Aplkalex/Queuesis/issues/new/choose"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors rounded-b-2xl"
+          >
+            <div>
+              <div className="font-semibold text-gray-900 dark:text-gray-100">GitHub Issue</div>
+              <div className="text-[11px] text-gray-500 dark:text-gray-400">opens in new tab</div>
+            </div>
+            <span className="text-[10px] text-gray-400">↗︎</span>
+          </a>
+        </div>
+      )}
+    </div>
+  );
 };
 
 type ScheduleExportEntry = {
@@ -1734,6 +1815,15 @@ export default function Home() {
               >
                 <Github className="w-4.5 h-4.5" />
               </a>
+              <div className="hidden lg:block">
+                <BugReportMenu
+                  triggerClassName="inline-flex items-center justify-center w-9 h-9 rounded-lg border transition-all duration-200 ease-out shadow-sm hover:shadow-md active:scale-95
+                    bg-gray-100/80 border-gray-200 text-gray-700 hover:bg-gray-200/80 hover:border-gray-300
+                    dark:bg-white/5 dark:border-white/10 dark:text-white dark:hover:bg-white/10"
+                  align="left"
+                  iconSize={18}
+                />
+              </div>
               {/* Mobile Quick Actions trigger near brand */}
               <button
                 type="button"
@@ -1760,6 +1850,13 @@ export default function Home() {
               >
                 <Github className="w-4 h-4" />
               </a>
+              <BugReportMenu
+                triggerClassName="lg:hidden inline-flex items-center justify-center w-9 h-9 rounded-xl border transition-all duration-200 ease-out shadow-sm active:scale-95
+                  bg-gray-100/80 border-gray-200 text-gray-700 hover:bg-gray-200/80 hover:border-gray-300
+                  dark:bg-white/5 dark:border-white/10 dark:text-white dark:hover:bg-white/10 ml-1"
+                align="left"
+                iconSize={18}
+              />
               {/* Mobile Import/Export near brand (timetable view) */}
               {isMobile && mobileView === 'timetable' && (
                 <>
@@ -2597,6 +2694,7 @@ export default function Home() {
           </div>
         </div>
       </main>
+
 
       {/* Hidden export surface for consistent PNG/PDF captures */}
       <div className="fixed top-0 left-[-200vw] pointer-events-none z-[-1]" aria-hidden="true">
