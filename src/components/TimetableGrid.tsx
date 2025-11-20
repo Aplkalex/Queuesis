@@ -584,6 +584,7 @@ export function TimetableGrid({
       top: 0,
       left: 0,
       width: '100%',
+      height: '100%',
     };
 
     return (
@@ -1187,7 +1188,13 @@ export function TimetableGrid({
 
                     const { top, left, height, width, ...restStyle } = courseStyle;
                     const wrapperStyle: CSSProperties = { top, left, height, width, position: 'absolute' };
-                    const innerStyle: CourseStyle = { ...restStyle, top: 0, left: 0, width: '100%' };
+                    const innerStyle: CourseStyle = {
+                      ...restStyle,
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '100%',
+                    };
 
                     return (
                       <div key={entry.key} className="absolute group" style={wrapperStyle}>
