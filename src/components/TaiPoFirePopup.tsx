@@ -43,7 +43,7 @@ export default function TaiPoFirePopup() {
                                 <AlertTriangle className="w-4 h-4" />
                                 URGENT
                             </span>
-                            <span className="text-sm text-gray-500 dark:text-gray-400">Nov 27</span>
+                            <span className="text-sm text-gray-500 dark:text-gray-400">Nov 28</span>
                         </div>
                         <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
                             <span>請關注大埔宏福苑火警</span>
@@ -65,29 +65,6 @@ export default function TaiPoFirePopup() {
                 {/* Body */}
                 <div className="p-6 space-y-8">
 
-                    {/* Critical: Body Identification */}
-                    <div className="bg-gray-900 text-white rounded-xl p-6 border-2 border-red-500 shadow-lg animate-pulse-slow">
-                        <h3 className="font-bold text-xl mb-4 flex items-center gap-2 text-red-400">
-                            <AlertTriangle className="w-6 h-6" /> 認領屍體程序 Body Identification Procedure
-                        </h3>
-                        <div className="space-y-3">
-                            <div className="font-bold text-lg">地點 Location: 大埔廣福社區會堂 Tai Po Kwong Fuk Community Hall</div>
-                            <div>地址 Address: 香港大埔廣宏街 Kwong Wang Street, Tai Po</div>
-                            <div className="flex items-center gap-2">
-                                <span className="bg-red-600 px-2 py-0.5 rounded text-sm font-bold">時間 Time</span>
-                                <span className="font-mono text-lg">15:00 - 23:00</span>
-                            </div>
-                            <div className="p-3 bg-white/10 rounded-lg border border-white/20">
-                                <p className="font-bold text-yellow-400 mb-1">⚠️ 注意 Attention:</p>
-                                <p>煩請家屬帶齊身分證明文件去登記</p>
-                                <p className="text-sm opacity-80">Family members please bring identification documents for registration.</p>
-                            </div>
-                            <div className="text-sm text-gray-400 mt-2">
-                                消息來源 Source: <a href="tel:1878999" className="underline hover:text-white">1878 999</a> (警方熱線 Police Hotline)
-                            </div>
-                        </div>
-                    </div>
-
                     {/* Unified Platform */}
                     <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-900/30 rounded-xl p-4">
                         <h3 className="font-bold text-indigo-800 dark:text-indigo-300 mb-3 flex items-center gap-2 text-lg">
@@ -97,18 +74,7 @@ export default function TaiPoFirePopup() {
                             🕸️ 進入平台 Enter Platform
                         </a>
 
-                        <div className="grid sm:grid-cols-2 gap-4 text-sm">
-                            <div className="bg-white dark:bg-zinc-800 p-3 rounded-lg border border-indigo-100 dark:border-indigo-900/50">
-                                <div className="font-bold text-indigo-700 dark:text-indigo-400 mb-1">👥 線下人手 Offline Manpower</div>
-                                <p className="text-gray-600 dark:text-gray-300">廣傳此訊息，將各 Group 的物資訊息投稿入平台。</p>
-                                <p className="text-xs text-gray-400 mt-1">Spread this msg, submit supplies info from groups to the platform.</p>
-                            </div>
-                            <div className="bg-white dark:bg-zinc-800 p-3 rounded-lg border border-indigo-100 dark:border-indigo-900/50">
-                                <div className="font-bold text-indigo-700 dark:text-indigo-400 mb-1">💻 Web App Developers</div>
-                                <p className="text-gray-600 dark:text-gray-300">考慮加個欄位公佈「停收物資」的站頭，避免過剩。</p>
-                                <p className="text-xs text-gray-400 mt-1">Consider adding a field for stations "stopping collection" to avoid surplus.</p>
-                            </div>
-                        </div>
+
                     </div>
 
                     {/* Must Read / Lazy Pack */}
@@ -131,19 +97,6 @@ export default function TaiPoFirePopup() {
                                     <div className="text-xs text-gray-500 dark:text-gray-400">Latest Supplies Demand List</div>
                                 </div>
                             </a>
-                        </div>
-                    </div>
-
-                    {/* Supplies Status Warning */}
-                    <div className="bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-900/30 rounded-xl p-4 text-center">
-                        <h3 className="text-lg font-bold text-green-800 dark:text-green-300 mb-1 flex items-center justify-center gap-2">
-                            <AlertTriangle className="w-5 h-5" /> 🚨 物資同人都大致足夠 🚨
-                        </h3>
-                        <p className="font-medium text-green-700 dark:text-green-400">Supplies & Manpower Sufficient</p>
-                        <div className="mt-2 text-sm text-green-600 dark:text-green-500 space-y-1">
-                            <p>除非各站經物資組特別要求，否則默認該站已滿！</p>
-                            <p>Unless specifically requested, assume stations are full!</p>
-                            <p className="font-bold">🚨 只做調動 Only Reallocation 🚨</p>
                         </div>
                     </div>
 
