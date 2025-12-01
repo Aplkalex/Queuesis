@@ -43,7 +43,7 @@ export const metadata: Metadata = {
   },
 };
 
-import TaiPoFirePopup from "@/components/TaiPoFirePopup";
+// import TaiPoFirePopup from "@/components/TaiPoFirePopup";
 
 export default function RootLayout({
   children,
@@ -58,7 +58,7 @@ export default function RootLayout({
       >
         <ThemeProvider>
           {children}
-          <TaiPoFirePopup />
+          {/* <TaiPoFirePopup /> */}
         </ThemeProvider>
         <Analytics />
         <SpeedInsights />
