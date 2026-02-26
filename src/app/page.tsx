@@ -1389,6 +1389,50 @@ export default function Home() {
     }
   }, [ensureScheduleForExport, selectedCourses, selectedTerm, showGenerationNotice]);
 
+  const captureWithWatermark = useCallback(
+    async (node: HTMLElement, pixelRatio: number) => {
+      const originalInlinePosition = node.style.position;
+      const computedPosition = window.getComputedStyle(node).position;
+
+      if (computedPosition === 'static') {
+        node.style.position = 'relative';
+      }
+
+      const watermark = document.createElement('div');
+      watermark.textContent = 'https://queuesis.aplkalex.com/';
+      watermark.style.position = 'absolute';
+      watermark.style.left = '50%';
+      watermark.style.bottom = '6px';
+      watermark.style.transform = 'translateX(-50%)';
+      watermark.style.fontSize = '10px';
+      watermark.style.letterSpacing = '0.02em';
+      watermark.style.fontWeight = '500';
+      watermark.style.fontFamily =
+        'ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif';
+      watermark.style.color = isDarkMode ? 'rgba(255,255,255,0.12)' : 'rgba(17,24,39,0.10)';
+      watermark.style.userSelect = 'none';
+      watermark.style.pointerEvents = 'none';
+      watermark.style.zIndex = '2147483647';
+
+      node.appendChild(watermark);
+
+      try {
+        return await toPng(node, {
+          cacheBust: true,
+          pixelRatio,
+          backgroundColor: isDarkMode ? '#0f0f0f' : '#ffffff',
+          includeQueryParams: true,
+        });
+      } finally {
+        if (node.contains(watermark)) {
+          node.removeChild(watermark);
+        }
+        node.style.position = originalInlinePosition;
+      }
+    },
+    [isDarkMode]
+  );
+
   const handleExportPng = useCallback(async () => {
     if (!ensureScheduleForExport()) {
       return;
@@ -1405,12 +1449,8 @@ export default function Home() {
 
     setIsExportingImage(true);
     try {
-      const dataUrl = await toPng(node, {
-        cacheBust: true,
-        pixelRatio: 2,
-        backgroundColor: isDarkMode ? '#0f0f0f' : '#ffffff',
-        includeQueryParams: true,
-      });
+      const dataUrl = await captureWithWatermark(node, 2);
+
       const link = document.createElement('a');
       link.href = dataUrl;
       link.download = `cuhk-timetable-${selectedTerm}-${new Date().toISOString().slice(0, 10)}.png`;
@@ -1433,7 +1473,7 @@ export default function Home() {
     } finally {
       setIsExportingImage(false);
     }
-  }, [ensureScheduleForExport, isDarkMode, selectedTerm, showGenerationNotice]);
+  }, [captureWithWatermark, ensureScheduleForExport, selectedTerm, showGenerationNotice]);
 
   const handleExportPdf = useCallback(async () => {
     if (!ensureScheduleForExport()) {
@@ -1451,12 +1491,7 @@ export default function Home() {
 
     setIsExportingPdf(true);
     try {
-      const dataUrl = await toPng(node, {
-        cacheBust: true,
-        pixelRatio: 2.5,
-        backgroundColor: isDarkMode ? '#0f0f0f' : '#ffffff',
-        includeQueryParams: true,
-      });
+      const dataUrl = await captureWithWatermark(node, 2.5);
 
       const orientation = node.clientWidth >= node.clientHeight ? 'landscape' : 'portrait';
       const pdf = new jsPDF({
@@ -1484,7 +1519,7 @@ export default function Home() {
     } finally {
       setIsExportingPdf(false);
     }
-  }, [ensureScheduleForExport, isDarkMode, selectedTerm, showGenerationNotice]);
+  }, [captureWithWatermark, ensureScheduleForExport, selectedTerm, showGenerationNotice]);
 
   const handleImportButtonClick = useCallback(() => {
     importInputRef.current?.click();
