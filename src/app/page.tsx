@@ -70,6 +70,8 @@ type GenerationNotice = {
   tone: 'info' | 'warning' | 'error';
 };
 
+const NO_TIMETABLE_WARNING = 'No timetable slots — won’t appear in timetable.';
+
 // Feature flags (compile-time via Next.js env in client)
 const ENABLE_TEST_MODE = process.env.NEXT_PUBLIC_ENABLE_TEST_MODE === 'true';
 
@@ -2279,7 +2281,7 @@ export default function Home() {
                                       >
                                         <span aria-hidden>⚠️</span>
                                         <span className="pointer-events-none hidden lg:block absolute left-1/2 top-full z-20 mt-1 -translate-x-1/2 whitespace-nowrap rounded-md border border-amber-300/60 dark:border-amber-700/60 bg-amber-50 dark:bg-amber-900/80 px-2 py-1 text-[10px] font-medium text-amber-800 dark:text-amber-100 opacity-0 translate-y-1 transition-all duration-150 group-hover/warn:opacity-100 group-hover/warn:translate-y-0">
-                                          This course currently has no schedule time slots, so it won’t appear in the timetable.
+                                          {NO_TIMETABLE_WARNING}
                                         </span>
                                       </span>
                                     )}
@@ -2608,13 +2610,11 @@ export default function Home() {
                           </span>
                           {!hasSchedule && (
                             <span
-                              className="relative text-white cursor-help leading-none group/warn"
+                              className="text-white cursor-help leading-none"
+                              title={NO_TIMETABLE_WARNING}
                               aria-label="Course has no schedule time slots"
                             >
                               <span aria-hidden>⚠️</span>
-                              <span className="pointer-events-none hidden lg:block absolute left-1/2 top-full z-20 mt-1 -translate-x-1/2 whitespace-nowrap rounded-md border border-amber-300/60 dark:border-amber-700/60 bg-amber-50 dark:bg-amber-900/80 px-2 py-1 text-[10px] font-medium text-amber-800 dark:text-amber-100 opacity-0 translate-y-1 transition-all duration-150 group-hover/warn:opacity-100 group-hover/warn:translate-y-0">
-                                This course currently has no schedule time slots, so it won’t appear in the timetable.
-                              </span>
                             </span>
                           )}
                           <button
@@ -3131,7 +3131,7 @@ export default function Home() {
                       .join(', '),
                     warning: hasRenderableTimeSlots(sc.selectedSection)
                       ? undefined
-                      : '⚠️ This course currently has no schedule time slots, so it won’t appear in the timetable.',
+                      : `⚠️ ${NO_TIMETABLE_WARNING}`,
                     color: sc.color ?? '#8B5CF6',
                     onClick: () => {
                       setSelectedCourseDetails(sc);
@@ -3147,7 +3147,7 @@ export default function Home() {
                       sub: courseInfo ? courseInfo.sections.length ? `${courseInfo.sections.length} sections` : 'No sections loaded' : 'Course selected',
                       warning: hasSchedule
                         ? undefined
-                        : '⚠️ This course currently has no schedule time slots, so it won’t appear in the timetable.',
+                        : `⚠️ ${NO_TIMETABLE_WARNING}`,
                       color: '#8B5CF6',
                       onClick: () => {
                         // Jump to courses tab and scroll the course into view if possible
