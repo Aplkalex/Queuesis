@@ -18,7 +18,7 @@ model Term {
 
 model Course {
   id                     String     @id @map("_id") @default(auto()) @db.ObjectId
-  courseCode             String     @unique
+  courseCode             String
   courseName             String
   department             String
   credits                Int
@@ -28,8 +28,12 @@ model Course {
   sections               Section[]
   term                   String
   career                 String
+  isActive               Boolean?   @default(true)
+  dataSource             String?    @default("manual")
   lastUpdated            DateTime?  @default(now())
 
+  @@unique([courseCode, term])
+  @@index([courseCode])
   @@index([term])
   @@index([department])
 }

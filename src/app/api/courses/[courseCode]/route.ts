@@ -21,6 +21,8 @@ const normalizeCourse = (course: PrismaCourse): SchedulerCourse => ({
   sections: course.sections as SchedulerCourse['sections'],
   term: course.term as SchedulerCourse['term'],
   career: course.career as SchedulerCourse['career'],
+  isActive: (course as PrismaCourse & { isActive?: boolean | null }).isActive ?? true,
+  dataSource: (course as PrismaCourse & { dataSource?: string | null }).dataSource ?? undefined,
   lastUpdated: course.lastUpdated ?? undefined,
 });
 
@@ -35,6 +37,7 @@ export async function GET(
     ? await (context.params as Promise<{ courseCode: string }>)
     : (context.params as { courseCode: string });
   const { courseCode } = resolved;
+  const term = request.nextUrl.searchParams.get('term');
   const useTestData = request.nextUrl.searchParams.get('testMode') === 'true';
 
   if (useTestData) {
@@ -44,8 +47,17 @@ export async function GET(
     }
   } else if (hasDatabase) {
     try {
-      const dbCourse = await prisma.course.findUnique({
-        where: { courseCode },
+      const where: Prisma.CourseWhereInput = {
+        courseCode,
+        OR: [{ isActive: true }, { isActive: null }, { isActive: { isSet: false } }],
+      };
+      if (term) {
+        where.term = term;
+      }
+
+      const dbCourse = await prisma.course.findFirst({
+        where,
+        orderBy: { lastUpdated: 'desc' },
       });
 
       if (dbCourse) {
@@ -59,7 +71,7 @@ export async function GET(
   if (allowFallback) {
     const source =
       generatedCourses.length > 0 ? generatedCourses : mockCourses;
-    const fallbackCourse = source.find((c) => c.courseCode === courseCode);
+    const fallbackCourse = source.find((c) => c.courseCode === courseCode && (!term || c.term === term));
 
     if (fallbackCourse) {
       return NextResponse.json({ success: true, data: fallbackCourse });

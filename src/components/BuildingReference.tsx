@@ -55,8 +55,8 @@ export function BuildingReference({ onBuildingClick, renderTrigger, className }:
       {/* Modal */}
       {isOpen && portalEl &&
         createPortal(
-          <div className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4" role="dialog" aria-modal="true">
-            <div className="bg-white/90 dark:bg-[#1e1e1e]/90 backdrop-blur-2xl rounded-2xl shadow-2xl max-w-4xl w-full max-h-[80vh] flex flex-col border border-gray-200/40 dark:border-gray-700/40">
+          <div className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-[2100] p-4" role="dialog" aria-modal="true">
+            <div className="bg-white/90 dark:bg-[#1e1e1e]/90 backdrop-blur-2xl rounded-2xl overflow-hidden shadow-2xl max-w-4xl w-full max-h-[80vh] flex flex-col border border-gray-200/40 dark:border-gray-700/40">
               {/* Header */}
               <div className="flex items-center justify-between p-6 border-b border-gray-200/40 dark:border-gray-700/40">
                 <div>

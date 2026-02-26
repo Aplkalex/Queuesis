@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, MapPin, ExternalLink, Building2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { parseLocation } from '@/lib/location-utils';
@@ -15,6 +16,13 @@ interface BuildingModalProps {
 export default function BuildingModal({ isOpen, onClose, location, appearance: _appearance = 'modern' }: BuildingModalProps) {
   const [rendered, setRendered] = useState(isOpen);
   const [visible, setVisible] = useState(false);
+  const [portalEl, setPortalEl] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const id = requestAnimationFrame(() => setPortalEl(document.body));
+    return () => cancelAnimationFrame(id);
+  }, []);
 
   useEffect(() => {
     let frame: number | null = null;
@@ -81,12 +89,12 @@ export default function BuildingModal({ isOpen, onClose, location, appearance: _
     'bg-white/40 hover:bg-white/55 text-slate-700 dark:text-slate-200 dark:bg-white/[0.08] dark:hover:bg-white/[0.12]'
   );
 
-  return (
+  const modalContent = (
     <>
       {/* Backdrop */}
       <div
         className={cn(
-          'fixed inset-0 z-[600] transition-opacity duration-200 ease-out',
+          'fixed inset-0 z-[2000] transition-opacity duration-200 ease-out',
           overlayClass,
           visible ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         )}
@@ -96,7 +104,7 @@ export default function BuildingModal({ isOpen, onClose, location, appearance: _
       {/* Modal */}
       <div
         className={cn(
-          'fixed left-1/2 top-1/2 z-[610] w-full max-w-md p-4 transition-opacity duration-200 ease-out',
+          'fixed left-1/2 top-1/2 z-[2010] w-full max-w-md p-4 transition-opacity duration-200 ease-out',
           '-translate-x-1/2 -translate-y-1/2',
           visible ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         )}
@@ -202,4 +210,7 @@ export default function BuildingModal({ isOpen, onClose, location, appearance: _
       </div>
     </>
   );
+
+  if (!portalEl) return null;
+  return createPortal(modalContent, portalEl);
 }

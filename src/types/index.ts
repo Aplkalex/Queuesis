@@ -77,6 +77,8 @@ export interface Course {
   career: 'Undergraduate' | 'Postgraduate';
   
   // Additional metadata
+  isActive?: boolean;
+  dataSource?: 'manual' | 'github' | string;
   lastUpdated?: Date;
 }
 

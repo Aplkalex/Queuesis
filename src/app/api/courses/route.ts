@@ -21,6 +21,8 @@ const normalizeCourse = (course: PrismaCourse): SchedulerCourse => ({
   sections: course.sections as SchedulerCourse['sections'],
   term: course.term as SchedulerCourse['term'],
   career: course.career as SchedulerCourse['career'],
+  isActive: (course as PrismaCourse & { isActive?: boolean | null }).isActive ?? true,
+  dataSource: (course as PrismaCourse & { dataSource?: string | null }).dataSource ?? undefined,
   lastUpdated: course.lastUpdated ?? undefined,
 });
 
@@ -50,7 +52,9 @@ export async function GET(request: NextRequest) {
     courses = testCourses;
   } else if (hasDatabase) {
     try {
-      const where: Prisma.CourseWhereInput = {};
+      const where: Prisma.CourseWhereInput = {
+        OR: [{ isActive: true }, { isActive: null }, { isActive: { isSet: false } }],
+      };
       if (term) {
         where.term = term;
       }
