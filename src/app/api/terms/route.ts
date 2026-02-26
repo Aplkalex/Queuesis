@@ -8,13 +8,34 @@ const FALLBACK_TERMS = [
 
 const hasDatabase = Boolean(process.env.MONGODB_URI);
 const allowFallback = process.env.ALLOW_FALLBACK_DATA !== 'false';
+const DB_QUERY_TIMEOUT_MS = Number(process.env.DB_QUERY_TIMEOUT_MS ?? 5000);
+
+const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> => {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => {
+          reject(new Error(`${label} timed out after ${timeoutMs}ms`));
+        }, timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+};
 
 export async function GET() {
   if (hasDatabase) {
     try {
-      const terms = await prisma.term.findMany({
-        orderBy: { id: 'asc' },
-      });
+      const terms = await withTimeout(
+        prisma.term.findMany({
+          orderBy: { id: 'asc' },
+        }),
+        DB_QUERY_TIMEOUT_MS,
+        'terms query'
+      );
 
       if (terms.length > 0) {
         const payload = terms

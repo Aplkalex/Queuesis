@@ -8,6 +8,23 @@ import type { Course as SchedulerCourse } from '@/types';
 
 const hasDatabase = Boolean(process.env.MONGODB_URI);
 const allowFallback = process.env.ALLOW_FALLBACK_DATA !== 'false';
+const DB_QUERY_TIMEOUT_MS = Number(process.env.DB_QUERY_TIMEOUT_MS ?? 5000);
+
+const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> => {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => {
+          reject(new Error(`${label} timed out after ${timeoutMs}ms`));
+        }, timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+};
 
 const normalizeCourse = (course: PrismaCourse): SchedulerCourse => ({
   _id: course.id,
@@ -81,10 +98,14 @@ export async function GET(request: NextRequest) {
         where.department = department;
       }
 
-      const dbCourses = await prisma.course.findMany({
-        where,
-        orderBy: { courseCode: 'asc' },
-      });
+      const dbCourses = await withTimeout(
+        prisma.course.findMany({
+          where,
+          orderBy: { courseCode: 'asc' },
+        }),
+        DB_QUERY_TIMEOUT_MS,
+        'courses query'
+      );
 
       courses = dbCourses.map(normalizeCourse);
     } catch (error) {
