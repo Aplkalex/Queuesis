@@ -616,6 +616,24 @@ export default function Home() {
     return map;
   }, [selectedCourses]);
 
+  const hasRenderableTimeSlots = useCallback((section: Section | null | undefined) => {
+    if (!section || !Array.isArray(section.timeSlots)) return false;
+    return section.timeSlots.some((slot) => Boolean(slot?.day && slot?.startTime && slot?.endTime));
+  }, []);
+
+  const courseHasRenderableSchedule = useMemo(() => {
+    const map = new Map<string, boolean>();
+    courses
+      .filter((course) => course.term === selectedTerm)
+      .forEach((course) => {
+        map.set(
+          course.courseCode,
+          course.sections.some((section) => hasRenderableTimeSlots(section))
+        );
+      });
+    return map;
+  }, [courses, selectedTerm, hasRenderableTimeSlots]);
+
   // Available courses for timetable interactions
   const availableCourses = courses;
 
@@ -2225,6 +2243,7 @@ export default function Home() {
                           const isExpanded = expandedScheduleCourse === idx;
                           const section = sc.selectedSection;
                           const hasSeats = hasAvailableSeats(section);
+                          const hasSchedule = hasRenderableTimeSlots(section);
                           
                           return (
                             <div
@@ -2251,8 +2270,19 @@ export default function Home() {
                                   onClick={() => setExpandedScheduleCourse(isExpanded ? null : idx)}
                                   className="flex-1 min-w-0 text-left"
                                 >
-                                  <div className="font-semibold text-xs text-gray-900 dark:text-gray-100">
+                                  <div className="font-semibold text-xs text-gray-900 dark:text-gray-100 flex items-center gap-1">
                                     {sc.course.courseCode}
+                                    {!hasSchedule && (
+                                      <span
+                                        className="relative inline-flex items-center cursor-help group/warn"
+                                        aria-label="Course has no schedule time slots"
+                                      >
+                                        <span aria-hidden>⚠️</span>
+                                        <span className="pointer-events-none hidden lg:block absolute left-1/2 top-full z-20 mt-1 -translate-x-1/2 whitespace-nowrap rounded-md border border-amber-300/60 dark:border-amber-700/60 bg-amber-50 dark:bg-amber-900/80 px-2 py-1 text-[10px] font-medium text-amber-800 dark:text-amber-100 opacity-0 translate-y-1 transition-all duration-150 group-hover/warn:opacity-100 group-hover/warn:translate-y-0">
+                                          This course currently has no schedule time slots, so it won’t appear in the timetable.
+                                        </span>
+                                      </span>
+                                    )}
                                   </div>
                                   <div className="text-[10px] text-gray-600 dark:text-gray-400">
                                     {section.sectionType} {section.sectionId}
@@ -2566,22 +2596,36 @@ export default function Home() {
 
                   {/* Compact Course Pills - Scrollable with better sizing */}
                   <div className="flex gap-1 overflow-x-auto scrollbar-none max-w-[300px] lg:max-w-[400px]">
-                    {selectedCourseCodes.map(code => (
-                      <div
-                        key={code}
-                        className="group flex items-center gap-1 px-2 py-1 bg-purple-600 dark:bg-purple-700 rounded-md whitespace-nowrap flex-shrink-0"
-                      >
-                        <span className="text-xs font-bold text-white">
-                          {code}
-                        </span>
-                        <button
-                          onClick={() => handleToggleCourseSelection(code)}
-                          className="text-white/70 hover:text-white hover:bg-white/20 rounded-full p-0.5 transition-all"
+                    {selectedCourseCodes.map(code => {
+                      const hasSchedule = courseHasRenderableSchedule.get(code) !== false;
+                      return (
+                        <div
+                          key={code}
+                          className="group flex items-center gap-1 px-2 py-1 bg-purple-600 dark:bg-purple-700 rounded-md whitespace-nowrap flex-shrink-0"
                         >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
+                          <span className="text-xs font-bold text-white">
+                            {code}
+                          </span>
+                          {!hasSchedule && (
+                            <span
+                              className="relative text-white cursor-help leading-none group/warn"
+                              aria-label="Course has no schedule time slots"
+                            >
+                              <span aria-hidden>⚠️</span>
+                              <span className="pointer-events-none hidden lg:block absolute left-1/2 top-full z-20 mt-1 -translate-x-1/2 whitespace-nowrap rounded-md border border-amber-300/60 dark:border-amber-700/60 bg-amber-50 dark:bg-amber-900/80 px-2 py-1 text-[10px] font-medium text-amber-800 dark:text-amber-100 opacity-0 translate-y-1 transition-all duration-150 group-hover/warn:opacity-100 group-hover/warn:translate-y-0">
+                                This course currently has no schedule time slots, so it won’t appear in the timetable.
+                              </span>
+                            </span>
+                          )}
+                          <button
+                            onClick={() => handleToggleCourseSelection(code)}
+                            className="text-white/70 hover:text-white hover:bg-white/20 rounded-full p-0.5 transition-all"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
 
                   {/* Compact Preferences - Buttons with hover text */}
@@ -3085,6 +3129,9 @@ export default function Home() {
                     sub: sc.selectedSection.timeSlots
                       .map((slot) => `${slot.day} ${slot.startTime}-${slot.endTime}`)
                       .join(', '),
+                    warning: hasRenderableTimeSlots(sc.selectedSection)
+                      ? undefined
+                      : '⚠️ This course currently has no schedule time slots, so it won’t appear in the timetable.',
                     color: sc.color ?? '#8B5CF6',
                     onClick: () => {
                       setSelectedCourseDetails(sc);
@@ -3093,10 +3140,14 @@ export default function Home() {
                   }))
                 : selectedCourseCodes.map((code) => {
                     const courseInfo = courses.find((c) => c.courseCode === code);
+                    const hasSchedule = courseHasRenderableSchedule.get(code) !== false;
                     return {
                       key: code,
                       title: courseInfo ? `${courseInfo.courseCode} • ${courseInfo.courseName}` : code,
                       sub: courseInfo ? courseInfo.sections.length ? `${courseInfo.sections.length} sections` : 'No sections loaded' : 'Course selected',
+                      warning: hasSchedule
+                        ? undefined
+                        : '⚠️ This course currently has no schedule time slots, so it won’t appear in the timetable.',
                       color: '#8B5CF6',
                       onClick: () => {
                         // Jump to courses tab and scroll the course into view if possible
@@ -3123,6 +3174,11 @@ export default function Home() {
                         <div className="flex flex-col">
                           <span className="text-sm font-bold text-gray-900 dark:text-white">{item.title}</span>
                           <span className="text-xs text-gray-600 dark:text-gray-400">{item.sub}</span>
+                          {item.warning && (
+                            <span className="text-[11px] mt-0.5 text-amber-700 dark:text-amber-300">
+                              {item.warning}
+                            </span>
+                          )}
                         </div>
                         <span
                           className="w-3 h-3 rounded-full border"
