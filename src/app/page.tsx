@@ -707,10 +707,12 @@ export default function Home() {
         if (!data?.data || !Array.isArray(data.data)) {
           throw new Error('Malformed term response');
         }
-        const nextTerms = data.data.map((term: { id: string; name: string }) => ({
-          id: term.id as TermType,
-          name: formatTermLabel(term.name ?? term.id),
-        })).filter((term) => term.id !== '2025-26-T1');
+        const nextTerms: Array<{ id: TermType; name: string }> = data.data
+          .map((term: { id: string; name: string }) => ({
+            id: term.id as TermType,
+            name: formatTermLabel(term.name ?? term.id),
+          }))
+          .filter((term: { id: TermType; name: string }) => term.id !== '2025-26-T1');
         if (nextTerms.length > 0) {
           const mergedTermsMap = new Map(DEFAULT_TERMS.map((term) => [term.id, term]));
           nextTerms.forEach((term) => {

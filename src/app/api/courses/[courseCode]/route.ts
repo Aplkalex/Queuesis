@@ -50,7 +50,7 @@ export async function GET(
       const where: Prisma.CourseWhereInput = {
         courseCode,
         OR: [{ isActive: true }, { isActive: null }, { isActive: { isSet: false } }],
-      } as any;
+      };
       if (term) {
         where.term = term;
       }

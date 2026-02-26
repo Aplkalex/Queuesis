@@ -52,8 +52,9 @@ export async function GET(request: NextRequest) {
     courses = testCourses;
   } else if (hasDatabase) {
     try {
-      const where: Prisma.CourseWhereInput = {};
-      where.OR = [{ isActive: true }, { isActive: null }, { isActive: { isSet: false } }] as any;
+      const where: Prisma.CourseWhereInput = {
+        OR: [{ isActive: true }, { isActive: null }, { isActive: { isSet: false } }],
+      };
       if (term) {
         where.term = term;
       }

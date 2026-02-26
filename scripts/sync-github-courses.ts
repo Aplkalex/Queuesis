@@ -8,6 +8,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { PrismaClient } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 import type { Course, DayOfWeek, Section, TimeSlot } from '@/types';
 
 interface CliOptions {
@@ -410,6 +411,14 @@ const sendDiscordNotification = async (message: string) => {
   }
 };
 
+const byCourseCodeAndTerm = (courseCode: string, term: string): Prisma.CourseWhereUniqueInput =>
+  ({
+    courseCode_term: {
+      courseCode,
+      term,
+    },
+  } as Prisma.CourseWhereUniqueInput);
+
 const main = async () => {
   const options = parseArgs(process.argv.slice(2));
   const githubToken = process.env.GITHUB_TOKEN;
@@ -523,16 +532,10 @@ const main = async () => {
 
   const fetchedKeys = new Set(mappedCourses.map((course) => `${course.courseCode}::${course.term}`));
   const now = new Date();
-  const courseDelegate = prisma.course as any;
 
   for (const mappedCourse of mappedCourses) {
-    const existing = await courseDelegate.findUnique({
-      where: {
-        courseCode_term: {
-          courseCode: mappedCourse.courseCode,
-          term: mappedCourse.term,
-        },
-      },
+    const existing = await prisma.course.findUnique({
+      where: byCourseCodeAndTerm(mappedCourse.courseCode, mappedCourse.term),
     });
 
     if (existing && existing.dataSource !== 'github') {
@@ -540,13 +543,8 @@ const main = async () => {
       continue;
     }
 
-    await courseDelegate.upsert({
-      where: {
-        courseCode_term: {
-          courseCode: mappedCourse.courseCode,
-          term: mappedCourse.term,
-        },
-      },
+    await prisma.course.upsert({
+      where: byCourseCodeAndTerm(mappedCourse.courseCode, mappedCourse.term),
       update: {
         courseName: mappedCourse.courseName,
         department: mappedCourse.department,
@@ -581,7 +579,7 @@ const main = async () => {
     stats.upserted += 1;
   }
 
-  const githubSummerCourses = await courseDelegate.findMany({
+  const githubSummerCourses = await prisma.course.findMany({
     where: {
       term: options.targetTerm,
       dataSource: 'github',
@@ -596,13 +594,8 @@ const main = async () => {
   for (const existing of githubSummerCourses) {
     if (fetchedKeys.has(`${existing.courseCode}::${existing.term}`)) continue;
 
-    await courseDelegate.update({
-      where: {
-        courseCode_term: {
-          courseCode: existing.courseCode,
-          term: existing.term,
-        },
-      },
+    await prisma.course.update({
+      where: byCourseCodeAndTerm(existing.courseCode, existing.term),
       data: {
         isActive: false,
         lastUpdated: now,
