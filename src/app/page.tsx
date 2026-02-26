@@ -70,7 +70,7 @@ type GenerationNotice = {
   tone: 'info' | 'warning' | 'error';
 };
 
-const NO_TIMETABLE_WARNING = 'No timetable slots — won’t appear in timetable.';
+const NO_TIMETABLE_WARNING = 'This Course has no schedules';
 
 // Feature flags (compile-time via Next.js env in client)
 const ENABLE_TEST_MODE = process.env.NEXT_PUBLIC_ENABLE_TEST_MODE === 'true';
@@ -2604,14 +2604,15 @@ export default function Home() {
                         <div
                           key={code}
                           className="group flex items-center gap-1 px-2 py-1 bg-purple-600 dark:bg-purple-700 rounded-md whitespace-nowrap flex-shrink-0"
+                          title={!hasSchedule ? NO_TIMETABLE_WARNING : undefined}
+                          aria-label={!hasSchedule ? `${code}: ${NO_TIMETABLE_WARNING}` : undefined}
                         >
                           <span className="text-xs font-bold text-white">
                             {code}
                           </span>
                           {!hasSchedule && (
                             <span
-                              className="text-white cursor-help leading-none"
-                              title={NO_TIMETABLE_WARNING}
+                              className="text-white leading-none"
                               aria-label="Course has no schedule time slots"
                             >
                               <span aria-hidden>⚠️</span>
