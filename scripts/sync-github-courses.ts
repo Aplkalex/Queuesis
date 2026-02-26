@@ -417,7 +417,7 @@ const byCourseCodeAndTerm = (courseCode: string, term: string): Prisma.CourseWhe
       courseCode,
       term,
     },
-  } as Prisma.CourseWhereUniqueInput);
+  } as unknown as Prisma.CourseWhereUniqueInput);
 
 const main = async () => {
   const options = parseArgs(process.argv.slice(2));
