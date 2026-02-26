@@ -70,7 +70,7 @@ type GenerationNotice = {
   tone: 'info' | 'warning' | 'error';
 };
 
-const NO_TIMETABLE_WARNING = 'This Course has no schedules';
+const NO_TIMETABLE_WARNING = 'This course has no schedule.';
 
 // Feature flags (compile-time via Next.js env in client)
 const ENABLE_TEST_MODE = process.env.NEXT_PUBLIC_ENABLE_TEST_MODE === 'true';
