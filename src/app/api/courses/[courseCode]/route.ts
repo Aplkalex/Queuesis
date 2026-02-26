@@ -21,8 +21,8 @@ const normalizeCourse = (course: PrismaCourse): SchedulerCourse => ({
   sections: course.sections as SchedulerCourse['sections'],
   term: course.term as SchedulerCourse['term'],
   career: course.career as SchedulerCourse['career'],
-  isActive: course.isActive ?? true,
-  dataSource: course.dataSource ?? undefined,
+  isActive: (course as PrismaCourse & { isActive?: boolean | null }).isActive ?? true,
+  dataSource: (course as PrismaCourse & { dataSource?: string | null }).dataSource ?? undefined,
   lastUpdated: course.lastUpdated ?? undefined,
 });
 
@@ -50,7 +50,7 @@ export async function GET(
         where: {
           courseCode,
           OR: [{ isActive: true }, { isActive: null }],
-        },
+        } as any,
       });
 
       if (dbCourse) {
