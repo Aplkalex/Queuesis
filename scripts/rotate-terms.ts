@@ -4,6 +4,7 @@ import { PrismaClient } from '@prisma/client';
 
 interface CliOptions {
   keepTerms: string[];
+  academicYear?: string;
   archiveDir: string;
   dryRun: boolean;
   purge: boolean;
@@ -20,11 +21,14 @@ interface ArchivePayload {
 const parseArgs = (argv: string[]): CliOptions => {
   const options: CliOptions = {
     keepTerms: ['2025-26-T1', '2025-26-T2', '2025-26-Summer'],
+    academicYear: undefined,
     archiveDir: path.resolve(process.cwd(), 'data/archive'),
     dryRun: false,
     purge: false,
     force: false,
   };
+
+  let keepTermsProvided = false;
 
   for (let index = 0; index < argv.length; index++) {
     const arg = argv[index];
@@ -36,10 +40,17 @@ const parseArgs = (argv: string[]): CliOptions => {
     switch (key) {
       case 'keepTerms':
         if (value) {
+          keepTermsProvided = true;
           options.keepTerms = value
             .split(',')
             .map((item) => item.trim())
             .filter(Boolean);
+          index++;
+        }
+        break;
+      case 'academicYear':
+        if (value) {
+          options.academicYear = value.trim();
           index++;
         }
         break;
@@ -61,6 +72,17 @@ const parseArgs = (argv: string[]): CliOptions => {
       default:
         break;
     }
+  }
+
+  if (options.academicYear && !keepTermsProvided) {
+    if (!/^\d{4}-\d{2}$/.test(options.academicYear)) {
+      throw new Error('academicYear must use format YYYY-YY (e.g. 2026-27).');
+    }
+    options.keepTerms = [
+      `${options.academicYear}-T1`,
+      `${options.academicYear}-T2`,
+      `${options.academicYear}-Summer`,
+    ];
   }
 
   if (options.keepTerms.length === 0) {
@@ -98,6 +120,7 @@ const main = async () => {
   console.log('🧭 Term rotation config');
   console.log(JSON.stringify({
     keepTerms: options.keepTerms,
+    academicYear: options.academicYear ?? null,
     archiveDir: options.archiveDir,
     dryRun: options.dryRun,
     purge: options.purge,

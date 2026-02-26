@@ -22,6 +22,13 @@ Archive + purge old terms from MongoDB:
 npm run rotate:terms
 ```
 
+One-click by academic year (auto keeps `T1/T2/Summer`):
+
+```bash
+npm run rotate:year:dry -- --academicYear 2026-27
+npm run rotate:year -- --academicYear 2026-27
+```
+
 ## Advanced usage
 
 Custom keep terms:
@@ -29,6 +36,15 @@ Custom keep terms:
 ```bash
 npx ts-node -P tsconfig.seed.json scripts/rotate-terms.ts \
   --keepTerms 2026-27-T1,2026-27-T2,2026-27-Summer \
+  --archiveDir data/archive \
+  --purge
+```
+
+Academic year input directly in script:
+
+```bash
+npx ts-node -P tsconfig.seed.json scripts/rotate-terms.ts \
+  --academicYear 2026-27 \
   --archiveDir data/archive \
   --purge
 ```
@@ -48,5 +64,7 @@ Without `--force`, if an archive file already exists, the script writes a timest
 ## Notes
 
 - `MONGODB_URI` is required.
+- `--academicYear YYYY-YY` auto-generates keep terms: `YYYY-YY-T1`, `YYYY-YY-T2`, `YYYY-YY-Summer`.
+- If both `--keepTerms` and `--academicYear` are passed, `--keepTerms` takes priority.
 - Archive payload includes metadata: `exportedAt`, `term`, `count`, and full `courses` records.
 - Keep terms are never deleted by this script.
