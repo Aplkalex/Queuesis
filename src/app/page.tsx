@@ -3104,8 +3104,9 @@ export default function Home() {
                 className={`absolute inset-0 bg-black/45 ${isMobileActionsClosing ? 'animate-fadeOut' : 'animate-fadeIn'}`}
                 onClick={() => closeMobileActions()}
               />
-          <div className={`absolute bottom-0 inset-x-0 rounded-t-3xl ${sheetClassName} p-5 space-y-4 max-h-[85vh] overflow-y-auto ${isMobileActionsClosing ? 'animate-slideDown' : 'animate-slideUp'} transform-gpu`} style={{willChange:'transform'}}>
-            <div className="flex items-center justify-between">
+          <div className={`absolute bottom-0 inset-x-0 rounded-t-3xl ${sheetClassName} px-4 pt-3 pb-4 max-h-[85vh] overflow-y-auto ${isMobileActionsClosing ? 'animate-slideDown' : 'animate-slideUp'} transform-gpu`} style={{willChange:'transform'}}>
+            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-gray-300/70 dark:bg-gray-600/70" />
+            <div className="flex items-start justify-between">
               <div>
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">Quick actions</h3>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Switch modes, tweak appearance, or open references.</p>
@@ -3113,20 +3114,20 @@ export default function Home() {
                   <button
                     type="button"
                     onClick={() => closeMobileActions()}
-                    className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
+                    className="p-2 rounded-full border border-gray-200/80 dark:border-gray-700/80 bg-white/80 dark:bg-[#1f1f22]/80 text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-[#252528] transition-colors"
                   >
                     <X className="w-4 h-4" />
                   </button>
                 </div>
 
-                <div className="space-y-2">
-                  <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-[0.2em]">Mode</div>
-                  <div className="grid grid-cols-2 gap-2">
+                <div className="mt-4 space-y-3">
+                  <div className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-[0.22em]">Mode</div>
+                  <div className="grid grid-cols-2 gap-2.5">
                     <button
                       type="button"
                       disabled={isSwitchingMode}
                       onClick={() => handleModeSwitch('auto-generate')}
-                      className={`px-3 py-2 rounded-xl text-sm font-semibold border ${scheduleMode === 'auto-generate' ? 'bg-purple-600 text-white border-purple-600' : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-[#1e1e1e]'}`}
+                      className={`px-3 py-2.5 rounded-xl text-sm font-semibold border transition-colors ${scheduleMode === 'auto-generate' ? 'bg-purple-600 text-white border-purple-600 shadow-[0_6px_20px_rgba(147,51,234,0.25)]' : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 bg-white/80 dark:bg-[#1e1e1e] hover:bg-white dark:hover:bg-[#252528]'}`}
                     >
                       Auto
                     </button>
@@ -3134,34 +3135,34 @@ export default function Home() {
                       type="button"
                       disabled={isSwitchingMode}
                       onClick={() => handleModeSwitch('manual')}
-                      className={`px-3 py-2 rounded-xl text-sm font-semibold border ${scheduleMode === 'manual' ? 'bg-purple-600 text-white border-purple-600' : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-[#1e1e1e]'}`}
+                      className={`px-3 py-2.5 rounded-xl text-sm font-semibold border transition-colors ${scheduleMode === 'manual' ? 'bg-purple-600 text-white border-purple-600 shadow-[0_6px_20px_rgba(147,51,234,0.25)]' : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 bg-white/80 dark:bg-[#1e1e1e] hover:bg-white dark:hover:bg-[#252528]'}`}
                     >
                       Manual
                     </button>
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-[0.2em]">Timetable style</div>
-                  <div className="grid grid-cols-2 gap-2">
+                <div className="mt-4 space-y-3">
+                  <div className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-[0.22em]">Timetable style</div>
+                  <div className="grid grid-cols-2 gap-2.5">
                     <button
                       type="button"
                       onClick={() => setTimetableAppearance('modern')}
-                      className={`px-3 py-2 rounded-xl text-sm font-semibold border ${timetableAppearance === 'modern' ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-[#1e1e1e]'}`}
+                      className={`px-3 py-2.5 rounded-xl text-sm font-semibold border transition-colors ${timetableAppearance === 'modern' ? 'bg-gray-900 text-white border-gray-900 dark:bg-[#0f172a] dark:border-[#0f172a]' : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 bg-white/80 dark:bg-[#1e1e1e] hover:bg-white dark:hover:bg-[#252528]'}`}
                     >
                       Modern
                     </button>
                     <button
                       type="button"
                       onClick={() => setTimetableAppearance('frosted')}
-                      className={`px-3 py-2 rounded-xl text-sm font-semibold border ${timetableAppearance === 'frosted' ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-[#1e1e1e]'}`}
+                      className={`px-3 py-2.5 rounded-xl text-sm font-semibold border transition-colors ${timetableAppearance === 'frosted' ? 'bg-gray-900 text-white border-gray-900 dark:bg-[#0f172a] dark:border-[#0f172a]' : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 bg-white/80 dark:bg-[#1e1e1e] hover:bg-white dark:hover:bg-[#252528]'}`}
                     >
                       Frosted
                     </button>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between border border-gray-200 dark:border-gray-700 rounded-2xl px-4 py-3">
+                <div className="mt-4 flex items-center justify-between border border-gray-200/90 dark:border-gray-700/90 rounded-2xl px-4 py-3 bg-white/70 dark:bg-[#1b1b1f]/70">
                   <div>
                     <p className="text-sm font-semibold text-gray-900 dark:text-white">Theme</p>
                     <p className="text-[11px] text-gray-500 dark:text-gray-400">Light / Dark</p>
@@ -3179,9 +3180,9 @@ export default function Home() {
                     <button
                       type="button"
                       onClick={open}
-                      className="w-full flex items-center justify-between px-4 py-3 rounded-2xl border text-left transition-colors
-                                 border-gray-200 bg-white/80 hover:bg-white
-                                 dark:border-purple-700 dark:bg-gradient-to-r dark:from-[#12011f] dark:to-[#200033]"
+                      className="mt-4 w-full flex items-center justify-between px-4 py-3 rounded-2xl border text-left transition-colors
+                                 border-gray-200/90 bg-white/75 hover:bg-white
+                                 dark:border-purple-700/80 dark:bg-gradient-to-r dark:from-[#12011f] dark:to-[#200033]"
                     >
                       <div className="flex-1 pr-3">
                         <p className="text-sm font-semibold text-gray-900 dark:text-white">Building reference</p>
@@ -3199,7 +3200,7 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => closeMobileActions()}
-                  className="w-full py-3 rounded-2xl border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-700 dark:text-gray-200"
+                  className="mt-4 w-full py-3 rounded-2xl border border-gray-200/90 dark:border-gray-700/90 text-sm font-semibold text-gray-700 dark:text-gray-200 bg-white/70 dark:bg-[#1b1b1f]/70 hover:bg-white dark:hover:bg-[#222227] transition-colors"
                 >
                   Close
                 </button>
