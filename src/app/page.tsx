@@ -249,7 +249,6 @@ const formatTermLabel = (label: string) => {
 };
 
 const DEFAULT_TERMS: Array<{ id: TermType; name: string }> = [
-  { id: '2025-26-T1', name: formatTermLabel('2025-26 Term 1') },
   { id: '2025-26-T2', name: formatTermLabel('2025-26 Term 2') },
   { id: '2025-26-Summer', name: formatTermLabel('2025-26 Summer') },
 ];
@@ -711,7 +710,7 @@ export default function Home() {
         const nextTerms = data.data.map((term: { id: string; name: string }) => ({
           id: term.id as TermType,
           name: formatTermLabel(term.name ?? term.id),
-        }));
+        })).filter((term) => term.id !== '2025-26-T1');
         if (nextTerms.length > 0) {
           const mergedTermsMap = new Map(DEFAULT_TERMS.map((term) => [term.id, term]));
           nextTerms.forEach((term) => {
@@ -1904,7 +1903,7 @@ export default function Home() {
                   title="Quick actions"
                   aria-expanded={isMobileActionsOpen}
                 >
-                  <Menu className="w-4 h-4 transition-transform duration-200 ease-out group-hover:rotate-90 text-purple-600 dark:text-white" />
+                  <Menu className="w-4 h-4 text-purple-600 dark:text-white" />
                 </button>
                 <a
                   href="https://github.com/Aplkalex/Queuesis"
