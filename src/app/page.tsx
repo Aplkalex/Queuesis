@@ -267,7 +267,6 @@ export default function Home() {
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
   const [fullSectionWarnings, setFullSectionWarnings] = useState<FullSectionWarningData[]>([]);
   const [showDisclaimer, setShowDisclaimer] = useState(true);
-  const [showTerm2OnlyNotice, setShowTerm2OnlyNotice] = useState(true);
   const [selectedCourseDetails, setSelectedCourseDetails] = useState<SelectedCourse | null>(null);
   const [swapModalCourse, setSwapModalCourse] = useState<SelectedCourse | null>(null);
   const [conflictToast, setConflictToast] = useState<Array<{ course1: string; course2: string }>>([]);
@@ -714,7 +713,14 @@ export default function Home() {
           name: formatTermLabel(term.name ?? term.id),
         }));
         if (nextTerms.length > 0) {
-          setTerms(nextTerms);
+          const mergedTermsMap = new Map(DEFAULT_TERMS.map((term) => [term.id, term]));
+          nextTerms.forEach((term) => {
+            mergedTermsMap.set(term.id, term);
+          });
+          const mergedTerms = Array.from(mergedTermsMap.values()).sort((left, right) =>
+            left.id.localeCompare(right.id)
+          );
+          setTerms(mergedTerms);
         }
       })
       .catch((error) => {
@@ -2014,22 +2020,6 @@ export default function Home() {
       <main className={`flex-1 w-full px-2 sm:px-4 lg:px-6 py-2 lg:py-3 bg-transparent flex flex-col ${isMobile ? 'overflow-y-auto' : 'overflow-hidden'}`}>
         {/* Warnings container - only takes space when needed */}
         <div className="max-w-[1600px] w-full mx-auto space-y-2 mb-2 flex-shrink-0">
-          {/* Term availability notice - Red, dismissible (match disclaimer styling) */}
-          {showTerm2OnlyNotice && (
-            <div className="bg-red-50/70 dark:bg-red-900/10 backdrop-blur-md border border-red-200/50 dark:border-red-800/30 rounded-lg p-2 flex items-center gap-2 shadow-lg">
-              <AlertTriangle className="w-3.5 h-3.5 text-red-600 dark:text-red-400 flex-shrink-0" />
-              <p className="text-[11px] sm:text-xs text-red-800 dark:text-red-300 flex-1">
-                Current version only has 2025-26 Term 2 data. Other terms may be incomplete or unavailable.
-              </p>
-              <button
-                onClick={() => setShowTerm2OnlyNotice(false)}
-                className="p-0.5 hover:bg-red-200/50 dark:hover:bg-red-800/30 rounded transition-colors flex-shrink-0"
-                aria-label="Dismiss term availability notice"
-              >
-                <X className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
-              </button>
-            </div>
-          )}
           {/* Test Mode Banner (hidden unless explicitly enabled) */}
           {ENABLE_TEST_MODE && isTestMode && (
             <div className="bg-emerald-50/70 dark:bg-emerald-900/10 backdrop-blur-md border border-emerald-200/50 dark:border-emerald-800/30 rounded-lg p-2 flex items-center gap-2 shadow-lg">
@@ -2128,7 +2118,6 @@ export default function Home() {
                       selectedTerm={selectedTerm}
                       onChange={handleTermChange}
                       isLoading={isTermsLoading}
-                      supportedTermId={'2025-26-T2'}
                     />
                   </div>
                   <div className="flex items-center gap-1 flex-shrink-0 px-1 py-0.5 rounded-lg border border-gray-200/70 dark:border-gray-700/40 bg-white/70 dark:bg-[#1e1e1e]/60">
