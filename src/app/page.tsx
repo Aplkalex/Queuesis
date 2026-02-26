@@ -3175,6 +3175,7 @@ export default function Home() {
                 <BuildingReference
                   onBuildingClick={(location) => {
                     setSelectedLocation(location);
+                    closeMobileActions();
                   }}
                   renderTrigger={(open) => (
                     <button
