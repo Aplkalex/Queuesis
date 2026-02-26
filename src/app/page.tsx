@@ -70,7 +70,7 @@ type GenerationNotice = {
   tone: 'info' | 'warning' | 'error';
 };
 
-const NO_TIMETABLE_WARNING = 'This course has no schedule';
+const NO_TIMETABLE_WARNING = '⚠️ This course has no schedule';
 
 // Feature flags (compile-time via Next.js env in client)
 const ENABLE_TEST_MODE = process.env.NEXT_PUBLIC_ENABLE_TEST_MODE === 'true';
@@ -2261,6 +2261,14 @@ export default function Home() {
                                 >
                                   <div className="font-semibold text-xs text-gray-900 dark:text-gray-100 flex items-center gap-1">
                                     {sc.course.courseCode}
+                                    {!hasSchedule && (
+                                      <span
+                                        className="text-[11px] leading-none text-amber-600 dark:text-amber-400"
+                                        aria-label="No schedule warning"
+                                      >
+                                        ⚠️
+                                      </span>
+                                    )}
                                   </div>
                                   <div className="text-[10px] text-gray-600 dark:text-gray-400">
                                     {section.sectionType} {section.sectionId}
