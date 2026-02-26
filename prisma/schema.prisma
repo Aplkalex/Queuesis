@@ -28,6 +28,8 @@ model Course {
   sections               Section[]
   term                   String
   career                 String
+  isActive               Boolean?   @default(true)
+  dataSource             String?    @default("manual")
   lastUpdated            DateTime?  @default(now())
 
   @@index([term])

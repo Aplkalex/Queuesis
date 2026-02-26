@@ -21,6 +21,8 @@ const normalizeCourse = (course: PrismaCourse): SchedulerCourse => ({
   sections: course.sections as SchedulerCourse['sections'],
   term: course.term as SchedulerCourse['term'],
   career: course.career as SchedulerCourse['career'],
+  isActive: course.isActive ?? true,
+  dataSource: course.dataSource ?? undefined,
   lastUpdated: course.lastUpdated ?? undefined,
 });
 
@@ -44,8 +46,11 @@ export async function GET(
     }
   } else if (hasDatabase) {
     try {
-      const dbCourse = await prisma.course.findUnique({
-        where: { courseCode },
+      const dbCourse = await prisma.course.findFirst({
+        where: {
+          courseCode,
+          OR: [{ isActive: true }, { isActive: null }],
+        },
       });
 
       if (dbCourse) {
