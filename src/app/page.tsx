@@ -2748,6 +2748,32 @@ export default function Home() {
         </div>
       </main>
 
+      <div className="px-3 sm:px-4 lg:px-6 pb-2 text-center text-[11px] text-gray-500 dark:text-gray-400">
+        <div>
+          Course data powered by{' '}
+          <a
+            href="https://github.com/EagleZhen"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline decoration-dotted underline-offset-2 hover:text-gray-700 dark:hover:text-gray-200"
+          >
+            EagleZhen
+          </a>
+        </div>
+        <div>
+          Made by Alex Wong with {'<3'} ({' '}
+          <a
+            href="https://github.com/Aplkalex/Queuesis"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline decoration-dotted underline-offset-2 hover:text-gray-700 dark:hover:text-gray-200"
+          >
+            https://github.com/Aplkalex/Queuesis
+          </a>
+          )
+        </div>
+      </div>
+
 
       {/* Hidden export surface for consistent PNG/PDF captures */}
       <div className="fixed top-0 left-[-200vw] pointer-events-none z-[-1]" aria-hidden="true">

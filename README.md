@@ -97,7 +97,19 @@ https://github.com/user-attachments/assets/1219127c-e958-4496-b7ec-94ed48727549
 
 Queuesis is a CUHK-focused timetable planner that combines intuitive drag-and-drop editing with a powerful deterministic schedule generator. Course data is sourced from CUSIS and can optionally be synced to MongoDB Atlas via Prisma for enhanced performance.
 
-> 📅 Current Term Support: This version currently supports 2025-2026 Term 2 course data. Support for additional terms will be added in future updates.
+> 📅 Current Term Support: This version supports **2025-26 Term 2** and **2025-26 Summer** in the scheduler.
+
+### What's New (Recent Updates)
+
+- **GitHub JSON Auto Sync (Phase 1)**: Added automated sync from the upstream CUHK JSON source into Queuesis format.
+- **Summer Term Support**: Added `2025-26 Summer` term selection in the app.
+- **Term-Safe Course Storage**: Upgraded course identity to `courseCode + term` so different terms can coexist safely.
+- **Data Retention Rotation**: Added term rotation tooling to archive old terms into JSON and optionally purge old records from MongoDB.
+- **Automation Commands**: Added one-click commands for yearly rotation and dry-run verification.
+
+### Phase 2 (Ongoing)
+
+Phase 2 is in progress: we are planning a native Queuesis scraper to reduce long-term dependency on external data pipelines.
 
 ### Why Queuesis?
 
@@ -724,6 +736,15 @@ We welcome contributions! Here's how to get started:
 - Built for CUHK students, by CUHK students
 - Inspired by university scheduling tools worldwide, particularly [UBC Scheduler](https://ubcscheduler.ca/)
 - Special thanks to all contributors and testers
+
+### Acknowledgments / Data Source
+
+The automated course data in **Phase 1** of this project is directly fetched from JSON files maintained by EagleZhen's **another-cuhk-course-planner**.
+
+A huge thanks to EagleZhen for building the scraper, sharing the data, and contributing to the CUHK developer community 🙏✨
+
+- Data repository: [another-cuhk-course-planner](https://github.com/EagleZhen/another-cuhk-course-planner)
+- Author profile: [EagleZhen](https://github.com/EagleZhen)
 
 ---
 

@@ -1,3 +1,10 @@
+// ==============================================================================
+// Feature: Auto-fetch CUHK Course Data (Phase 1)
+// Data Source: https://github.com/EagleZhen/another-cuhk-course-planner/tree/main/data
+// Note: Thanks to EagleZhen for providing the scraped JSON data.
+// License: AGPL-3.0
+// ==============================================================================
+
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { PrismaClient } from '@prisma/client';
