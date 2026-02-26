@@ -2826,9 +2826,11 @@ export default function Home() {
       </main>
 
       {!isMobile && (
-        <div className="fixed left-1/2 bottom-1 z-30 -translate-x-1/2 px-3 group">
-          <div className="h-[2px] w-40 rounded-full bg-purple-500/55 dark:bg-purple-400/55 transition-all duration-200 group-hover:w-48 group-hover:bg-purple-500/75 dark:group-hover:bg-purple-400/75" />
-          <div className="pointer-events-none absolute left-1/2 bottom-2 -translate-x-1/2 translate-y-2 opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:translate-y-0 group-focus-within:opacity-100">
+        <div className="fixed left-1/2 bottom-1 z-30 -translate-x-1/2 px-3">
+          <div className="group relative flex h-10 items-end justify-center">
+            <div className="absolute bottom-0 left-1/2 h-8 w-56 -translate-x-1/2" aria-hidden="true" />
+            <div className="h-[2px] w-40 rounded-full bg-purple-500/55 dark:bg-purple-400/55 transition-all duration-200 group-hover:w-48 group-hover:bg-purple-500/75 dark:group-hover:bg-purple-400/75" />
+            <div className="pointer-events-none absolute left-1/2 bottom-0 -translate-x-1/2 translate-y-2 opacity-0 transition-all duration-200 delay-150 group-hover:delay-0 group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:delay-0 group-focus-within:pointer-events-auto group-focus-within:translate-y-0 group-focus-within:opacity-100">
             <div className="rounded-xl border border-gray-200/35 dark:border-gray-700/30 bg-white/40 dark:bg-[#252526]/35 backdrop-blur-sm px-3 py-1.5 text-[11px] text-gray-500 dark:text-gray-400 whitespace-nowrap">
               <div className="flex items-center justify-center gap-x-2 gap-y-1">
                 <span>Made by</span>
@@ -2854,6 +2856,7 @@ export default function Home() {
                   EagleZhen
                 </a>
               </div>
+            </div>
             </div>
           </div>
         </div>
