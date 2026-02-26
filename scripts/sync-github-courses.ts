@@ -514,12 +514,19 @@ const main = async () => {
     throw new Error('MONGODB_URI is required for non-dry-run sync.');
   }
 
-  const fetchedCodes = new Set(mappedCourses.map((course) => course.courseCode));
+  const fetchedKeys = new Set(mappedCourses.map((course) => `${course.courseCode}::${course.term}`));
   const now = new Date();
   const courseDelegate = prisma.course as any;
 
   for (const mappedCourse of mappedCourses) {
-    const existing = await courseDelegate.findUnique({ where: { courseCode: mappedCourse.courseCode } });
+    const existing = await courseDelegate.findUnique({
+      where: {
+        courseCode_term: {
+          courseCode: mappedCourse.courseCode,
+          term: mappedCourse.term,
+        },
+      },
+    });
 
     if (existing && existing.dataSource !== 'github') {
       stats.skipped += 1;
@@ -527,7 +534,12 @@ const main = async () => {
     }
 
     await courseDelegate.upsert({
-      where: { courseCode: mappedCourse.courseCode },
+      where: {
+        courseCode_term: {
+          courseCode: mappedCourse.courseCode,
+          term: mappedCourse.term,
+        },
+      },
       update: {
         courseName: mappedCourse.courseName,
         department: mappedCourse.department,
@@ -566,18 +578,24 @@ const main = async () => {
     where: {
       term: options.targetTerm,
       dataSource: 'github',
-      OR: [{ isActive: true }, { isActive: null }],
+      OR: [{ isActive: true }, { isActive: null }, { isActive: { isSet: false } }],
     },
     select: {
       courseCode: true,
+      term: true,
     },
   });
 
   for (const existing of githubSummerCourses) {
-    if (fetchedCodes.has(existing.courseCode)) continue;
+    if (fetchedKeys.has(`${existing.courseCode}::${existing.term}`)) continue;
 
     await courseDelegate.update({
-      where: { courseCode: existing.courseCode },
+      where: {
+        courseCode_term: {
+          courseCode: existing.courseCode,
+          term: existing.term,
+        },
+      },
       data: {
         isActive: false,
         lastUpdated: now,

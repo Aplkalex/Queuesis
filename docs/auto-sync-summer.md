@@ -58,8 +58,8 @@ Required repository secrets:
 - `GITHUB_TOKEN` (optional but recommended)
 - `DISCORD_WEBHOOK_URL` (optional)
 
-## Important caveat in current schema
+## Term separation behavior
 
-`courseCode` is currently unique in Prisma. This means cross-term coexistence for same course code is not fully supported yet.
+Schema now uses composite uniqueness on `courseCode + term`, so the same course code can coexist across multiple terms (e.g. `2025-26-T2` and `2025-26-Summer`) without overwriting each other.
 
-For this Phase 1 rollout, keep sync focused on one target term (Summer), and avoid mixing multi-term full datasets in the same database until composite uniqueness (e.g. `courseCode + term`) is introduced.
+The sync job upserts only the configured target term and marks inactive only within that same term for `dataSource='github'` records.
