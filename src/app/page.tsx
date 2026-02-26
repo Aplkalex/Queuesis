@@ -255,6 +255,12 @@ const DEFAULT_TERMS: Array<{ id: TermType; name: string }> = [
   { id: '2025-26-Summer', name: formatTermLabel('2025-26 Summer') },
 ];
 
+const TERM_PRIORITY: Record<TermType, number> = {
+  '2025-26-T2': 1,
+  '2025-26-Summer': 2,
+  '2025-26-T1': 3,
+};
+
 export default function Home() {
   const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState('');
@@ -283,7 +289,7 @@ export default function Home() {
   const fullSectionWarningIdRef = useRef(0);
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const [isSwitchingMode, startModeTransition] = useTransition();
-  const [selectedTerm, setSelectedTerm] = useState<TermType>('2025-26-T2');
+  const [selectedTerm, setSelectedTerm] = useState<TermType>('2025-26-Summer');
   const [swapWarning, setSwapWarning] = useState<string | null>(null);
   const [isSwapWarningExiting, setIsSwapWarningExiting] = useState(false);
   const [swapWarningType, setSwapWarningType] = useState<'full' | 'conflict' | null>(null);
@@ -725,9 +731,12 @@ export default function Home() {
           nextTerms.forEach((term) => {
             mergedTermsMap.set(term.id, term);
           });
-          const mergedTerms = Array.from(mergedTermsMap.values()).sort((left, right) =>
-            left.id.localeCompare(right.id)
-          );
+          const mergedTerms = Array.from(mergedTermsMap.values()).sort((left, right) => {
+            const leftPriority = TERM_PRIORITY[left.id] ?? Number.MAX_SAFE_INTEGER;
+            const rightPriority = TERM_PRIORITY[right.id] ?? Number.MAX_SAFE_INTEGER;
+            if (leftPriority !== rightPriority) return leftPriority - rightPriority;
+            return left.name.localeCompare(right.name);
+          });
           setTerms(mergedTerms);
         }
       })

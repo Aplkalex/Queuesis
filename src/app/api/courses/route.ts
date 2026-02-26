@@ -39,6 +39,25 @@ const matchesSearch = (course: SchedulerCourse, query: string) => {
   );
 };
 
+const pickFallbackCourses = (requestedTerm: string | null, useTestData: boolean): SchedulerCourse[] => {
+  if (useTestData) {
+    return testCourses;
+  }
+
+  const fallbackCandidates: SchedulerCourse[][] = [generatedCourses, mockCourses];
+
+  if (requestedTerm) {
+    const match = fallbackCandidates.find((dataset) =>
+      dataset.some((course) => course.term === requestedTerm)
+    );
+    if (match) {
+      return match;
+    }
+  }
+
+  return fallbackCandidates.find((dataset) => dataset.length > 0) ?? [];
+};
+
 export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
   const term = params.get('term');
@@ -74,12 +93,7 @@ export async function GET(request: NextRequest) {
   }
 
   if (courses.length === 0 && allowFallback) {
-    const fallbackSource = useTestData
-      ? testCourses
-      : generatedCourses.length > 0
-        ? generatedCourses
-        : mockCourses;
-    courses = fallbackSource;
+    courses = pickFallbackCourses(term, useTestData);
   }
 
   if (courses.length === 0 && !allowFallback) {
