@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import type { Prisma, Course as PrismaCourse } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { mockCourses } from '@/data/mock-courses';
-import { generatedCourses } from '@/data/generated-courses';
+import { getGeneratedCoursesForTerm } from '@/data/generated-courses';
 import { testCourses } from '@/data/test-courses';
 import type { Course as SchedulerCourse } from '@/types';
 
@@ -69,8 +69,9 @@ export async function GET(
   }
 
   if (allowFallback) {
+    const generatedForTerm = getGeneratedCoursesForTerm(term);
     const source =
-      generatedCourses.length > 0 ? generatedCourses : mockCourses;
+      generatedForTerm.length > 0 ? generatedForTerm : mockCourses;
     const fallbackCourse = source.find((c) => c.courseCode === courseCode && (!term || c.term === term));
 
     if (fallbackCourse) {

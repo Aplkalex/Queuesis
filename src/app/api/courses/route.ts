@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import type { Prisma, Course as PrismaCourse } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { mockCourses } from '@/data/mock-courses';
-import { generatedCourses } from '@/data/generated-courses';
+import { getGeneratedCoursesForTerm } from '@/data/generated-courses';
 import { testCourses } from '@/data/test-courses';
 import type { Course as SchedulerCourse } from '@/types';
 
@@ -61,7 +61,8 @@ const pickFallbackCourses = (requestedTerm: string | null, useTestData: boolean)
     return testCourses;
   }
 
-  const fallbackCandidates: SchedulerCourse[][] = [generatedCourses, mockCourses];
+  const generatedForRequestedTerm = getGeneratedCoursesForTerm(requestedTerm);
+  const fallbackCandidates: SchedulerCourse[][] = [generatedForRequestedTerm, mockCourses];
 
   if (requestedTerm) {
     const match = fallbackCandidates.find((dataset) =>
