@@ -838,8 +838,15 @@ export function TimetableGrid({
           : null;
     const statusBorderColor = statusHighlightColor ?? palette.border;
     const desktopLine1 = `${selectedCourse.course.courseCode.toUpperCase()} | ${abbr} ${sectionId}`;
+    const isShortCourse = durationMinutes < 60;
+    const shortClassLabel = classNumber ? `#${classNumber}` : '';
+    const desktopLine1WithClass = isShortCourse && shortClassLabel
+      ? `${desktopLine1}  ${shortClassLabel}`
+      : desktopLine1;
     const desktopLocationLabel = locationDisplay;
-    const desktopLine2Title = `${classNumber ? `#${classNumber}` : ''}${classNumber ? ' • ' : ''}${desktopLocationLabel}`;
+    const desktopLine2Title = isShortCourse
+      ? desktopLocationLabel
+      : `${classNumber ? `#${classNumber}` : ''}${classNumber ? ' • ' : ''}${desktopLocationLabel}`;
     const hideMobileLocation = isSmallScreen && (displayMode === 'compact' || estimatedBlockHeight < 60);
     const mobileLocationParts = (() => {
       if (!isSmallScreen) return null;
@@ -979,9 +986,9 @@ export function TimetableGrid({
               <div
                 className="font-semibold break-words"
                 style={{ fontSize: `${firstFs}px`, color: textColor, lineHeight: lineHeights.primary }}
-                title={desktopLine1}
+                title={desktopLine1WithClass}
               >
-                {desktopLine1}
+                {desktopLine1WithClass}
                 {selectedCourse.locked && (
                   <Lock className="inline-block ml-1 w-2.5 h-2.5 opacity-80" />
                 )}
@@ -991,7 +998,7 @@ export function TimetableGrid({
                 style={{ fontSize: `${secondFs}px`, color: textColor, lineHeight: lineHeights.secondary }}
                 title={desktopLine2Title.trim()}
               >
-                {classNumber && (
+                {classNumber && !isShortCourse && (
                   <span className="font-medium">{`#${classNumber}`}</span>
                 )}
                 <span className="inline-flex items-center gap-1">
