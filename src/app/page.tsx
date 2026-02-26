@@ -3108,6 +3108,7 @@ export default function Home() {
                     sub: sc.selectedSection.timeSlots
                       .map((slot) => `${slot.day} ${slot.startTime}-${slot.endTime}`)
                       .join(', '),
+                    warning: hasRenderableTimeSlots(sc.selectedSection) ? undefined : NO_TIMETABLE_WARNING,
                     color: sc.color ?? '#8B5CF6',
                     onClick: () => {
                       setSelectedCourseDetails(sc);
@@ -3116,10 +3117,14 @@ export default function Home() {
                   }))
                 : selectedCourseCodes.map((code) => {
                     const courseInfo = courses.find((c) => c.courseCode === code);
+                    const hasSchedule = courseInfo
+                      ? courseInfo.sections.some((section) => hasRenderableTimeSlots(section))
+                      : true;
                     return {
                       key: code,
                       title: courseInfo ? `${courseInfo.courseCode} • ${courseInfo.courseName}` : code,
                       sub: courseInfo ? courseInfo.sections.length ? `${courseInfo.sections.length} sections` : 'No sections loaded' : 'Course selected',
+                      warning: hasSchedule ? undefined : NO_TIMETABLE_WARNING,
                       color: '#8B5CF6',
                       onClick: () => {
                         // Jump to courses tab and scroll the course into view if possible
@@ -3146,6 +3151,11 @@ export default function Home() {
                         <div className="flex flex-col">
                           <span className="text-sm font-bold text-gray-900 dark:text-white">{item.title}</span>
                           <span className="text-xs text-gray-600 dark:text-gray-400">{item.sub}</span>
+                          {item.warning && (
+                            <span className="text-[11px] mt-0.5 text-amber-700 dark:text-amber-300">
+                              {item.warning}
+                            </span>
+                          )}
                         </div>
                         <span
                           className="w-3 h-3 rounded-full border"
