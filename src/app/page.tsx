@@ -1235,27 +1235,38 @@ export default function Home() {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showTermChangeConfirm, setShowTermChangeConfirm] = useState(false);
   const [pendingTerm, setPendingTerm] = useState<TermType | null>(null);
+
+  const clearScheduleState = useCallback(() => {
+    setSelectedCourses([]);
+    setSelectedCourseCodes([]);
+    setGeneratedSchedules([]);
+    setSelectedScheduleIndex(0);
+    setUndoStack([]);
+    setConflictToast([]);
+    setFullSectionWarnings([]);
+    setConflictingCourses([]);
+    handleDismissUndo();
+    updateConflicts([]);
+  }, [handleDismissUndo, updateConflicts]);
   
   const handleClearSchedule = () => {
     setShowClearConfirm(true);
   };
 
   const confirmClearSchedule = () => {
-    // Clear all schedule-related state
-    setSelectedCourses([]);
-    setSelectedCourseCodes([]);
-    setGeneratedSchedules([]);
-    setSelectedScheduleIndex(0);
+    clearScheduleState();
     setShowClearConfirm(false);
-    setUndoStack([]);
-    setFullSectionWarnings([]);
-    handleDismissUndo();
-    updateConflicts([]);
   };
 
   // Handle term change - clear schedule when switching terms
   const handleTermChange = (newTerm: TermType) => {
-    if (selectedCourses.length > 0) {
+    if (newTerm === selectedTerm) {
+      return;
+    }
+
+    const hasSelectedCourses = selectedCourses.length > 0 || selectedCourseCodes.length > 0;
+
+    if (hasSelectedCourses) {
       // If there are courses in the schedule, show confirmation modal
       setPendingTerm(newTerm);
       setShowTermChangeConfirm(true);
@@ -1267,10 +1278,7 @@ export default function Home() {
 
   const confirmTermChange = () => {
     if (pendingTerm) {
-      setSelectedCourses([]);
-      setConflictToast([]);
-      setFullSectionWarnings([]);
-      setConflictingCourses([]);
+      clearScheduleState();
       setSelectedTerm(pendingTerm);
       setShowTermChangeConfirm(false);
       setPendingTerm(null);
@@ -2782,7 +2790,8 @@ export default function Home() {
               )}
             </div>
           </div>
-          <div className="px-3 sm:px-4 lg:px-6 pb-2 pt-2 mt-auto">
+          {isMobile && (
+            <div className="px-3 sm:px-4 lg:px-6 pb-2 pt-2 mt-auto">
             <div className="mx-auto max-w-[1600px]">
               <div className="rounded-xl border border-gray-200/35 dark:border-gray-700/30 bg-white/40 dark:bg-[#252526]/35 backdrop-blur-sm px-3 py-1.5 text-[11px] text-gray-500 dark:text-gray-400">
                 <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
@@ -2811,9 +2820,44 @@ export default function Home() {
                 </div>
               </div>
             </div>
-          </div>
+            </div>
+          )}
         </div>
       </main>
+
+      {!isMobile && (
+        <div className="fixed left-1/2 bottom-1 z-30 -translate-x-1/2 px-3 group">
+          <div className="h-[2px] w-40 rounded-full bg-purple-500/55 dark:bg-purple-400/55 transition-all duration-200 group-hover:w-48 group-hover:bg-purple-500/75 dark:group-hover:bg-purple-400/75" />
+          <div className="pointer-events-none absolute left-1/2 bottom-2 -translate-x-1/2 translate-y-2 opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:translate-y-0 group-focus-within:opacity-100">
+            <div className="rounded-xl border border-gray-200/35 dark:border-gray-700/30 bg-white/40 dark:bg-[#252526]/35 backdrop-blur-sm px-3 py-1.5 text-[11px] text-gray-500 dark:text-gray-400 whitespace-nowrap">
+              <div className="flex items-center justify-center gap-x-2 gap-y-1">
+                <span>Made by</span>
+                <a
+                  href="https://github.com/Aplkalex"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium underline underline-offset-2 decoration-gray-400/70 hover:text-gray-700 dark:hover:text-gray-200"
+                >
+                  AlexWong
+                </a>
+                <span>with {'<3'}</span>
+                <span className="text-gray-300 dark:text-gray-600">•</span>
+                <span>© 2026 Queuesis</span>
+                <span className="text-gray-300 dark:text-gray-600">•</span>
+                <span>Course data powered by</span>
+                <a
+                  href="https://github.com/EagleZhen"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium underline underline-offset-2 decoration-gray-400/70 hover:text-gray-700 dark:hover:text-gray-200"
+                >
+                  EagleZhen
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
 
       {/* Hidden export surface for consistent PNG/PDF captures */}
