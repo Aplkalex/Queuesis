@@ -43,6 +43,9 @@ export const TIMETABLE_CONFIG = {
   sidebarWidth: 80,
 };
 
+// Timetable text behavior
+export const SHORT_CLASS_INLINE_NUMBER_THRESHOLD_MINUTES = 60;
+
 // Days of the week
 export const WEEKDAYS = [
   'Monday',

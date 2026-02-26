@@ -3,7 +3,7 @@
 import { useState, memo, useTransition, useRef, useEffect, useMemo } from 'react';
 import type { CSSProperties, /* MouseEvent */ } from 'react';
 import { SelectedCourse, DayOfWeek, Course, Section, TimeSlot } from '@/types';
-import { TIMETABLE_CONFIG, WEEKDAYS, WEEKDAY_SHORT } from '@/lib/constants';
+import { TIMETABLE_CONFIG, WEEKDAYS, WEEKDAY_SHORT, SHORT_CLASS_INLINE_NUMBER_THRESHOLD_MINUTES } from '@/lib/constants';
 import { timeToMinutes, formatTime, hasAvailableSeats, adjustCourseColorForTheme } from '@/lib/schedule-utils';
 import { cn } from '@/lib/utils';
 import { X, AlertCircle, RefreshCw, GripVertical, Lock, MapPin } from 'lucide-react';
@@ -838,7 +838,7 @@ export function TimetableGrid({
           : null;
     const statusBorderColor = statusHighlightColor ?? palette.border;
     const desktopLine1 = `${selectedCourse.course.courseCode.toUpperCase()} | ${abbr} ${sectionId}`;
-    const isShortCourse = durationMinutes < 60;
+    const isShortCourse = durationMinutes < SHORT_CLASS_INLINE_NUMBER_THRESHOLD_MINUTES;
     const shortClassLabel = classNumber ? `#${classNumber}` : '';
     const desktopLine1WithClass = isShortCourse && shortClassLabel
       ? `${desktopLine1}  ${shortClassLabel}`

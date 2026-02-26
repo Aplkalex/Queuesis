@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, useDraggable, useDroppable } from '@dnd-kit/core';
 import { SelectedCourse, DayOfWeek, TimeSlot, Section } from '@/types';
-import { TIMETABLE_CONFIG, WEEKDAYS } from '@/lib/constants';
+import { TIMETABLE_CONFIG, WEEKDAYS, SHORT_CLASS_INLINE_NUMBER_THRESHOLD_MINUTES } from '@/lib/constants';
 import { timeToMinutes, formatTime, hasAvailableSeats } from '@/lib/schedule-utils';
 import { cn } from '@/lib/utils';
 import { X, AlertCircle, GripVertical } from 'lucide-react';
@@ -235,7 +235,7 @@ function DraggableCourseBlock({
             : (selectedCourse.selectedSection.sectionType === 'Tutorial' ? 'TUT' : selectedCourse.selectedSection.sectionType);
           const first = `${selectedCourse.course.courseCode} | ${abbr} ${selectedCourse.selectedSection.sectionId}`;
           const classLabel = selectedCourse.selectedSection.classNumber ? `#${selectedCourse.selectedSection.classNumber}` : '';
-          const isShortCourse = durationMinutes < 60;
+          const isShortCourse = durationMinutes < SHORT_CLASS_INLINE_NUMBER_THRESHOLD_MINUTES;
           const firstWithClass = isShortCourse && classLabel ? `${first}  ${classLabel}` : first;
           const locationLabelRaw = slot.location || selectedCourse.selectedSection.timeSlots.find((s) => s.location)?.location || 'Location TBA';
           const normalizedLocationLabel = locationLabelRaw.replace(/[_]+/g, ' ');
