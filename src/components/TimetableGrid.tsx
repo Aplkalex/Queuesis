@@ -984,7 +984,10 @@ export function TimetableGrid({
           {isDesktop ? (
             <div className="flex flex-col gap-0.5">
               <div
-                className="font-semibold break-words"
+                className={cn(
+                  'font-semibold',
+                  isShortCourse ? 'whitespace-nowrap truncate' : 'break-words'
+                )}
                 style={{ fontSize: `${firstFs}px`, color: textColor, lineHeight: lineHeights.primary }}
                 title={desktopLine1WithClass}
               >
@@ -994,16 +997,21 @@ export function TimetableGrid({
                 )}
               </div>
               <div
-                className="opacity-90 break-words flex flex-wrap items-center gap-x-2 gap-y-0.5"
+                className={cn(
+                  'opacity-90',
+                  isShortCourse
+                    ? 'flex items-center gap-1 min-w-0 whitespace-nowrap'
+                    : 'break-words flex flex-wrap items-center gap-x-2 gap-y-0.5'
+                )}
                 style={{ fontSize: `${secondFs}px`, color: textColor, lineHeight: lineHeights.secondary }}
                 title={desktopLine2Title.trim()}
               >
                 {classNumber && !isShortCourse && (
                   <span className="font-medium">{`#${classNumber}`}</span>
                 )}
-                <span className="inline-flex items-center gap-1">
+                <span className={cn('inline-flex items-center gap-1', isShortCourse && 'min-w-0')}>
                   <MapPin className="w-2.5 h-2.5 text-white/90" />
-                  <span>{desktopLocationLabel}</span>
+                  <span className={cn(isShortCourse && 'truncate')}>{desktopLocationLabel}</span>
                 </span>
               </div>
             </div>
