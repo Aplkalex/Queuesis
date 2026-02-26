@@ -15,7 +15,9 @@
     "db:seed": "ts-node -P tsconfig.seed.json prisma/seed.ts",
     "import:courses": "ts-node -P tsconfig.seed.json scripts/import-json.ts",
     "convert:excel": "ts-node -P tsconfig.seed.json scripts/convert-excel.ts",
-    "sync:cuhk:summer": "ts-node -P tsconfig.seed.json scripts/sync-github-courses.ts --term 2025-26-Summer --academicYear 2025-26 --season Summer"
+    "sync:cuhk:summer": "ts-node -P tsconfig.seed.json scripts/sync-github-courses.ts --term 2025-26-Summer --academicYear 2025-26 --season Summer",
+    "rotate:terms:dry": "ts-node -P tsconfig.seed.json scripts/rotate-terms.ts --keepTerms 2025-26-T1,2025-26-T2,2025-26-Summer --archiveDir data/archive --dry-run",
+    "rotate:terms": "ts-node -P tsconfig.seed.json scripts/rotate-terms.ts --keepTerms 2025-26-T1,2025-26-T2,2025-26-Summer --archiveDir data/archive --purge"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
