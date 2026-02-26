@@ -2745,34 +2745,38 @@ export default function Home() {
               )}
             </div>
           </div>
+          <div className="px-3 sm:px-4 lg:px-6 pb-2 pt-2 mt-auto">
+            <div className="mx-auto max-w-[1600px]">
+              <div className="rounded-xl border border-gray-200/35 dark:border-gray-700/30 bg-white/40 dark:bg-[#252526]/35 backdrop-blur-sm px-3 py-1.5 text-[11px] text-gray-500 dark:text-gray-400">
+                <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+                  <span>Made by</span>
+                  <a
+                    href="https://github.com/Aplkalex"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium underline underline-offset-2 decoration-gray-400/70 hover:text-gray-700 dark:hover:text-gray-200"
+                  >
+                    AlexWong
+                  </a>
+                  <span>with {'<3'}</span>
+                  <span className="text-gray-300 dark:text-gray-600">•</span>
+                  <span>© 2026 Queuesis</span>
+                  <span className="text-gray-300 dark:text-gray-600">•</span>
+                  <span>Course data powered by</span>
+                  <a
+                    href="https://github.com/EagleZhen"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium underline underline-offset-2 decoration-gray-400/70 hover:text-gray-700 dark:hover:text-gray-200"
+                  >
+                    EagleZhen
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </main>
-
-      <div className="px-3 sm:px-4 lg:px-6 pb-2 text-center text-[11px] text-gray-500 dark:text-gray-400">
-        <div>
-          Course data powered by{' '}
-          <a
-            href="https://github.com/EagleZhen"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline decoration-dotted underline-offset-2 hover:text-gray-700 dark:hover:text-gray-200"
-          >
-            EagleZhen
-          </a>
-        </div>
-        <div>
-          Made by Alex Wong with {'<3'} ({' '}
-          <a
-            href="https://github.com/Aplkalex/Queuesis"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline decoration-dotted underline-offset-2 hover:text-gray-700 dark:hover:text-gray-200"
-          >
-            https://github.com/Aplkalex/Queuesis
-          </a>
-          )
-        </div>
-      </div>
 
 
       {/* Hidden export surface for consistent PNG/PDF captures */}
