@@ -10,6 +10,7 @@ const normalizeLocationText = (value: string): string => {
     .replace(/\bBLDG\b/g, 'BUILDING')
     .replace(/\bINT'L\b/g, 'INTERNATIONAL')
     .replace(/\bINTL\b/g, 'INTERNATIONAL')
+    .replace(/\bACAD\b/g, 'ACADEMIC')
     .replace(/\s+/g, ' ')
     .trim();
 };
