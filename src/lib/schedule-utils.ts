@@ -402,6 +402,47 @@ const isDependentSectionType = (type: Section['sectionType']) =>
   DEPENDENT_SECTION_TYPES.has(type);
 
 /**
+ * Resolve the lecture ID that a dependent section (Tutorial/Lab) belongs to.
+ *
+ * Priority:
+ * 1) Use explicit parentLecture when present and valid.
+ * 2) Infer from sectionId prefix pattern (e.g., AT01 -> A, BT02 -> B) when valid.
+ */
+export function resolveParentLectureId(
+  section: Section,
+  course: Course
+): string | null {
+  if (!isDependentSectionType(section.sectionType)) {
+    return null;
+  }
+
+  const lectureIds = new Set(
+    course.sections
+      .filter((candidate) => candidate.sectionType === 'Lecture')
+      .map((lecture) => lecture.sectionId)
+  );
+
+  if (lectureIds.size === 0) {
+    return null;
+  }
+
+  const explicitParent = section.parentLecture?.trim();
+  if (explicitParent && explicitParent !== '-' && lectureIds.has(explicitParent)) {
+    return explicitParent;
+  }
+
+  const inferredPrefix = section.sectionId.match(/^([A-Za-z]+)/)?.[1];
+  if (inferredPrefix) {
+    const inferredLectureId = inferredPrefix.charAt(0).toUpperCase();
+    if (lectureIds.has(inferredLectureId)) {
+      return inferredLectureId;
+    }
+  }
+
+  return null;
+}
+
+/**
  * Determine which lecture is effectively active for a course based on current selections.
  * Falls back to the parent lecture of any selected tutorial/lab if the lecture itself
  * hasn't been explicitly added yet.
@@ -423,21 +464,14 @@ export function getActiveLectureId(
   const dependentSection = selectedCourses.find(
     (sc) =>
       sc.course.courseCode === course.courseCode &&
-      isDependentSectionType(sc.selectedSection.sectionType) &&
-      sc.selectedSection.parentLecture
+      isDependentSectionType(sc.selectedSection.sectionType)
   );
 
-  if (!dependentSection?.selectedSection.parentLecture) {
+  if (!dependentSection) {
     return null;
   }
 
-  const parentLectureId = dependentSection.selectedSection.parentLecture;
-  const lectureExists = course.sections.some(
-    (section) =>
-      section.sectionType === 'Lecture' && section.sectionId === parentLectureId
-  );
-
-  return lectureExists ? parentLectureId : null;
+  return resolveParentLectureId(dependentSection.selectedSection, course);
 }
 
 /**
@@ -461,7 +495,8 @@ export function removeDependentSectionsForLecture(
     }
 
     if (isDependentSectionType(selectedSection.sectionType)) {
-      return selectedSection.parentLecture === lectureId;
+      const parentLectureId = resolveParentLectureId(selectedSection, sc.course);
+      return parentLectureId === lectureId;
     }
 
     return true;
@@ -488,10 +523,11 @@ export function removeLectureAndDependents(
     }
 
     if (isDependentSectionType(selectedSection.sectionType)) {
-      if (!selectedSection.parentLecture) {
+      const parentLectureId = resolveParentLectureId(selectedSection, sc.course);
+      if (!parentLectureId) {
         return false;
       }
-      return selectedSection.parentLecture !== lectureId;
+      return parentLectureId !== lectureId;
     }
 
     return true;

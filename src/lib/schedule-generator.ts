@@ -6,7 +6,7 @@
  */
 
 import { Course, Section, SelectedCourse, TimeSlot, /* DayOfWeek */ } from '@/types';
-import { timeSlotsOverlap, hasAvailableSeats } from './schedule-utils';
+import { timeSlotsOverlap, hasAvailableSeats, resolveParentLectureId } from './schedule-utils';
 
 // Only log in development mode to avoid performance overhead in production
 const IS_DEV = process.env.NODE_ENV === 'development';
@@ -548,10 +548,12 @@ function getCourseSectionCombinations(
   const allCombinations: SelectedCourse[][] = [];
 
   // Get universal sections once (not per lecture) - BUG FIX
-  const universalSections = course.sections.filter(section =>
-    section.sectionType !== 'Lecture' &&
-    section.parentLecture === undefined
-  );
+  const universalSections = course.sections.filter((section) => {
+    if (section.sectionType === 'Lecture') {
+      return false;
+    }
+    return !resolveParentLectureId(section, course);
+  });
 
   for (const lecture of lectures) {
     // Skip full lectures if excluding
@@ -560,10 +562,12 @@ function getCourseSectionCombinations(
     }
 
     // Get sections tied to this specific lecture
-    const lectureSpecificSections = course.sections.filter(section => 
-      section.sectionType !== 'Lecture' && 
-      section.parentLecture === lecture.sectionId
-    );
+    const lectureSpecificSections = course.sections.filter((section) => {
+      if (section.sectionType === 'Lecture') {
+        return false;
+      }
+      return resolveParentLectureId(section, course) === lecture.sectionId;
+    });
 
     // Group lecture-specific sections by type first
     const lectureSpecificByType: Record<string, Section[]> = {};

@@ -10,7 +10,7 @@ import BuildingModal from '@/components/BuildingModal';
 import { CourseDetailsModal } from '@/components/CourseDetailsModal';
 import { SectionSwapModal } from '@/components/SectionSwapModal';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { generateCourseColor, calculateTotalCredits, detectConflicts, hasAvailableSeats, detectNewCourseConflicts, countUniqueCourses, removeDependentSectionsForLecture, removeLectureAndDependents, timeToMinutes, adjustCourseColorForTheme } from '@/lib/schedule-utils';
+import { generateCourseColor, calculateTotalCredits, detectConflicts, hasAvailableSeats, detectNewCourseConflicts, countUniqueCourses, removeDependentSectionsForLecture, removeLectureAndDependents, timeToMinutes, adjustCourseColorForTheme, resolveParentLectureId } from '@/lib/schedule-utils';
 import { TIMETABLE_CONFIG, WEEKDAY_SHORT } from '@/lib/constants';
 import { generateSchedules, type GeneratedSchedule } from '@/lib/schedule-generator';
 import { DISCLAIMER } from '@/lib/constants';
@@ -928,18 +928,20 @@ export default function Home() {
       return;
     }
 
+    const resolvedParentLectureId = resolveParentLectureId(section, course);
+
     // For tutorials, check if the parent lecture is selected
-    if (section.sectionType === 'Tutorial' && section.parentLecture) {
+    if (section.sectionType === 'Tutorial' && resolvedParentLectureId) {
       const parentLectureCourse = selectedCourses.find(
         (sc) => sc.course.courseCode === course.courseCode && 
                 sc.selectedSection.sectionType === 'Lecture' && 
-                sc.selectedSection.sectionId === section.parentLecture
+                sc.selectedSection.sectionId === resolvedParentLectureId
       );
 
       if (!parentLectureCourse) {
         // Auto-add the parent lecture
         const parentLecture = course.sections.find(
-          (s) => s.sectionType === 'Lecture' && s.sectionId === section.parentLecture
+          (s) => s.sectionType === 'Lecture' && s.sectionId === resolvedParentLectureId
         );
 
         if (parentLecture) {
@@ -966,7 +968,7 @@ export default function Home() {
         const existingTutorialIndex = selectedCourses.findIndex(
           (sc) => sc.course.courseCode === course.courseCode && 
                   sc.selectedSection.sectionType === 'Tutorial' && 
-                  sc.selectedSection.parentLecture === section.parentLecture
+                  resolveParentLectureId(sc.selectedSection, sc.course) === resolvedParentLectureId
         );
 
         if (existingTutorialIndex !== -1) {
@@ -1107,7 +1109,7 @@ export default function Home() {
 
     // Find available tutorials for the new lecture
     const availableTutorials = courseData.sections.filter(
-      s => s.sectionType === 'Tutorial' && s.parentLecture === newLectureId
+      (s) => s.sectionType === 'Tutorial' && resolveParentLectureId(s, courseData) === newLectureId
     );
 
     // Pick a random tutorial (or the first one if only one available)
@@ -1129,7 +1131,7 @@ export default function Home() {
           }
           // Remove old tutorials for this lecture
           if (selectedCourse.selectedSection.sectionType === 'Tutorial' && 
-              selectedCourse.selectedSection.parentLecture === currentLectureId) {
+              resolveParentLectureId(selectedCourse.selectedSection, selectedCourse.course) === currentLectureId) {
             return null; // Mark for removal
           }
         }

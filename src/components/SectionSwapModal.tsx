@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Course, Section } from '@/types';
-import { hasAvailableSeats } from '@/lib/schedule-utils';
+import { hasAvailableSeats, resolveParentLectureId } from '@/lib/schedule-utils';
 import { cn } from '@/lib/utils';
 import { X, RefreshCw, AlertCircle, ChevronDown } from 'lucide-react';
 
@@ -22,7 +22,9 @@ export function SectionSwapModal({ course, currentSection, onSwap, onClose }: Se
   
   // Get tutorials for each lecture to show availability
   const getTutorialsForLecture = (lectureId: string) => {
-    return course.sections.filter(s => s.sectionType === 'Tutorial' && s.parentLecture === lectureId);
+    return course.sections.filter(
+      (s) => s.sectionType === 'Tutorial' && resolveParentLectureId(s, course) === lectureId
+    );
   };
 
   // Toggle expand/collapse for a lecture
