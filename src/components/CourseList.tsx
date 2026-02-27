@@ -2,7 +2,7 @@
 
 import { memo, useEffect, useMemo, useState } from 'react';
 import { Course, Section, SelectedCourse } from '@/types';
-import { hasAvailableSeats, getActiveLectureId } from '@/lib/schedule-utils';
+import { hasAvailableSeats, getActiveLectureId, resolveParentLectureId } from '@/lib/schedule-utils';
 import { cn } from '@/lib/utils';
 import { Plus, Trash2, ChevronDown, ChevronRight, Info, AlertCircle, Check, RefreshCw } from 'lucide-react';
 
@@ -553,9 +553,10 @@ const CourseListItem = memo(function CourseListItem({
               let selectedTutorialForThisCourse = null;
               
               if (section.sectionType === 'Tutorial' && hasBothLecAndTut) {
+                const sectionParentLectureId = resolveParentLectureId(section, course);
                 selectedTutorialForThisCourse = courseSelections.find(sc => 
                   sc.selectedSection.sectionType === 'Tutorial' &&
-                  sc.selectedSection.parentLecture === section.parentLecture
+                  resolveParentLectureId(sc.selectedSection, sc.course) === sectionParentLectureId
                 )?.selectedSection;
                 isDisabled = !!(selectedTutorialForThisCourse && 
                                selectedTutorialForThisCourse.sectionId !== section.sectionId);

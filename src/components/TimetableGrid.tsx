@@ -4,7 +4,7 @@ import { useState, memo, useTransition, useRef, useEffect, useMemo } from 'react
 import type { CSSProperties, /* MouseEvent */ } from 'react';
 import { SelectedCourse, DayOfWeek, Course, Section, TimeSlot } from '@/types';
 import { TIMETABLE_CONFIG, WEEKDAYS, WEEKDAY_SHORT, SHORT_CLASS_INLINE_NUMBER_THRESHOLD_MINUTES } from '@/lib/constants';
-import { timeToMinutes, formatTime, hasAvailableSeats, adjustCourseColorForTheme } from '@/lib/schedule-utils';
+import { timeToMinutes, formatTime, hasAvailableSeats, adjustCourseColorForTheme, resolveParentLectureId } from '@/lib/schedule-utils';
 import { cn } from '@/lib/utils';
 import { X, AlertCircle, RefreshCw, GripVertical, Lock, MapPin } from 'lucide-react';
 import {
@@ -465,9 +465,9 @@ export function TimetableGrid({
       // Non-lecture same-type swaps (Tutorial, Lab, etc.)
       else if (draggedSection.sectionType !== 'Lecture' && targetSection.sectionType === draggedSection.sectionType) {
         if (isSameCourse) {
-          const dParent = draggedSection.parentLecture;
-          const tParent = targetSection.parentLecture;
-          if ((dParent == null && tParent == null) || dParent === tParent) {
+          const draggedParentLectureId = resolveParentLectureId(draggedSection, draggedCourse.course);
+          const targetParentLectureId = resolveParentLectureId(targetSection, targetCourse.course);
+          if (draggedParentLectureId === targetParentLectureId) {
             if (onSwapTutorials) {
               onSwapTutorials(
                 draggedCourse.course.courseCode,
@@ -675,22 +675,16 @@ export function TimetableGrid({
       if (selectedCourse.selectedSection.sectionType === 'Lecture') {
         const lectureCount = courseData.sections.filter((section) => section.sectionType === 'Lecture').length;
         hasAlternatives = lectureCount > 1;
-      } else if (selectedCourse.selectedSection.sectionType === 'Tutorial') {
-        const tutorialCount = courseData.sections.filter(
-          (section) =>
-            section.sectionType === 'Tutorial' &&
-            (section.parentLecture === selectedCourse.selectedSection.parentLecture ||
-              (section.parentLecture === undefined && selectedCourse.selectedSection.parentLecture === undefined))
-        ).length;
-        hasAlternatives = tutorialCount > 1;
-      } else if (selectedCourse.selectedSection.sectionType === 'Lab') {
-        const labCount = courseData.sections.filter(
-          (section) =>
-            section.sectionType === 'Lab' &&
-            (section.parentLecture === selectedCourse.selectedSection.parentLecture ||
-              (section.parentLecture === undefined && selectedCourse.selectedSection.parentLecture === undefined))
-        ).length;
-        hasAlternatives = labCount > 1;
+      } else {
+        const currentParentLectureId = resolveParentLectureId(selectedCourse.selectedSection, selectedCourse.course);
+        const sameTypeCount = courseData.sections.filter((section) => {
+          if (section.sectionType !== selectedCourse.selectedSection.sectionType) {
+            return false;
+          }
+          const sectionParentLectureId = resolveParentLectureId(section, courseData);
+          return sectionParentLectureId === currentParentLectureId;
+        }).length;
+        hasAlternatives = sameTypeCount > 1;
       }
     }
 
@@ -1254,19 +1248,16 @@ export function TimetableGrid({
                     alternativeSections = courseData.sections.filter(
                       (section) => section.sectionType === 'Lecture'
                     );
-                  } else if (draggedCourse.selectedSection.sectionType === 'Tutorial') {
-                    // Show all tutorials with same parent lecture (including current)
-                    alternativeSections = courseData.sections.filter(
-                      (section) =>
-                        section.sectionType === 'Tutorial' &&
-                        section.parentLecture === draggedCourse.selectedSection.parentLecture
+                  } else {
+                    // Show all same-type sections with same resolved parent lecture (including current)
+                    const draggedParentLectureId = resolveParentLectureId(
+                      draggedCourse.selectedSection,
+                      draggedCourse.course
                     );
-                  } else if (draggedCourse.selectedSection.sectionType === 'Lab') {
-                    // Show all labs with same parent lecture (including current)
                     alternativeSections = courseData.sections.filter(
                       (section) =>
-                        section.sectionType === 'Lab' &&
-                        section.parentLecture === draggedCourse.selectedSection.parentLecture
+                        section.sectionType === draggedCourse.selectedSection.sectionType &&
+                        resolveParentLectureId(section, courseData) === draggedParentLectureId
                     );
                   }
 
