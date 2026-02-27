@@ -5,6 +5,7 @@ import {
   removeLectureAndDependents,
   detectNewCourseConflicts,
   pickTutorialForLectureSwap,
+  pickLinkedSectionForLectureSwap,
 } from '../schedule-utils';
 import { Course, Section, SelectedCourse } from '@/types';
 
@@ -89,6 +90,50 @@ const tutorialB01NoParent: Section = {
   seatsRemaining: 20,
 };
 
+const labA03NoParent: Section = {
+  sectionId: 'AL03',
+  sectionType: 'Lab',
+  timeSlots: [
+    { day: 'Thursday', startTime: '12:00', endTime: '13:00' },
+  ],
+  quota: 20,
+  enrolled: 8,
+  seatsRemaining: 12,
+};
+
+const labB03NoParent: Section = {
+  sectionId: 'BL03',
+  sectionType: 'Lab',
+  timeSlots: [
+    { day: 'Thursday', startTime: '13:00', endTime: '14:00' },
+  ],
+  quota: 20,
+  enrolled: 8,
+  seatsRemaining: 12,
+};
+
+const seminarA01NoParent: Section = {
+  sectionId: 'AS01',
+  sectionType: 'Seminar',
+  timeSlots: [
+    { day: 'Monday', startTime: '18:00', endTime: '19:00' },
+  ],
+  quota: 20,
+  enrolled: 8,
+  seatsRemaining: 12,
+};
+
+const seminarB01NoParent: Section = {
+  sectionId: 'BS01',
+  sectionType: 'Seminar',
+  timeSlots: [
+    { day: 'Monday', startTime: '19:00', endTime: '20:00' },
+  ],
+  quota: 20,
+  enrolled: 8,
+  seatsRemaining: 12,
+};
+
 const orphanTutorial: Section = {
   sectionId: 'T-ORPHAN',
   sectionType: 'Tutorial',
@@ -121,6 +166,10 @@ const patternCourse: Course = {
     tutorialA03NoParent,
     tutorialB03NoParent,
     tutorialB01NoParent,
+    labA03NoParent,
+    labB03NoParent,
+    seminarA01NoParent,
+    seminarB01NoParent,
   ],
   term: '2025-26-Summer',
   career: 'Undergraduate',
@@ -242,7 +291,7 @@ describe('course selection helpers', () => {
       .filter((sc) => sc.course.courseCode === baseCourse.courseCode)
       .map((sc) => sc.selectedSection.sectionId);
 
-    expect(remainingIds).toEqual(['B']);
+    expect(remainingIds).toEqual(['T-ORPHAN', 'B']);
     expect(
       result.some((sc) => sc.course.courseCode === otherCourse.courseCode)
     ).toBe(true);
@@ -292,5 +341,29 @@ describe('course selection helpers', () => {
     );
 
     expect(selectedTutorial?.sectionId).toBe('BT01');
+  });
+
+  it('maps lab by section pattern during lecture swap (AL03 -> BL03)', () => {
+    const selectedLab = pickLinkedSectionForLectureSwap(
+      patternCourse,
+      'Lab',
+      'A',
+      'B',
+      'AL03'
+    );
+
+    expect(selectedLab?.sectionId).toBe('BL03');
+  });
+
+  it('maps seminar by section pattern during lecture swap (AS01 -> BS01)', () => {
+    const selectedSeminar = pickLinkedSectionForLectureSwap(
+      patternCourse,
+      'Seminar',
+      'A',
+      'B',
+      'AS01'
+    );
+
+    expect(selectedSeminar?.sectionId).toBe('BS01');
   });
 });

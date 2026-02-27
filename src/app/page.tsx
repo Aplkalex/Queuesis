@@ -10,7 +10,7 @@ import BuildingModal from '@/components/BuildingModal';
 import { CourseDetailsModal } from '@/components/CourseDetailsModal';
 import { SectionSwapModal } from '@/components/SectionSwapModal';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { generateCourseColor, calculateTotalCredits, detectConflicts, hasAvailableSeats, detectNewCourseConflicts, countUniqueCourses, removeDependentSectionsForLecture, removeLectureAndDependents, timeToMinutes, adjustCourseColorForTheme, resolveParentLectureId, pickTutorialForLectureSwap } from '@/lib/schedule-utils';
+import { generateCourseColor, calculateTotalCredits, detectConflicts, hasAvailableSeats, detectNewCourseConflicts, countUniqueCourses, removeDependentSectionsForLecture, removeLectureAndDependents, timeToMinutes, adjustCourseColorForTheme, resolveParentLectureId, pickLinkedSectionForLectureSwap } from '@/lib/schedule-utils';
 import { TIMETABLE_CONFIG, WEEKDAY_SHORT } from '@/lib/constants';
 import { generateSchedules, type GeneratedSchedule } from '@/lib/schedule-generator';
 import { DISCLAIMER } from '@/lib/constants';
@@ -1097,7 +1097,7 @@ export default function Home() {
     });
   }, [pushUndoEntry, updateConflicts, showGenerationNotice]);
 
-  // Swap lecture section and automatically assign tutorial
+  // Swap lecture section and deterministically remap lecture-linked sections
   const handleSwapLectureSection = (courseCode: string, currentLectureId: string, newLectureId: string) => {
     // Find the course data
     const courseData = courses.find(c => c.courseCode === courseCode && c.term === selectedTerm);
@@ -1109,19 +1109,42 @@ export default function Home() {
 
     // Update selected courses
     setSelectedCourses(prev => {
-      const previousTutorial = prev.find(
+      const previousLinkedSections = prev.filter(
         (selectedCourse) =>
           selectedCourse.course.courseCode === courseCode &&
-          selectedCourse.selectedSection.sectionType === 'Tutorial' &&
+          selectedCourse.selectedSection.sectionType !== 'Lecture' &&
           resolveParentLectureId(selectedCourse.selectedSection, selectedCourse.course) === currentLectureId
       );
 
-      const selectedTutorial = pickTutorialForLectureSwap(
-        courseData,
-        currentLectureId,
-        newLectureId,
-        previousTutorial?.selectedSection.sectionId
+      const linkedSectionTypes = Array.from(
+        new Set(previousLinkedSections.map((selection) => selection.selectedSection.sectionType))
       );
+
+      if (linkedSectionTypes.length === 0) {
+        const hasLinkedTutorialInNewLecture = courseData.sections.some(
+          (section) =>
+            section.sectionType === 'Tutorial' &&
+            resolveParentLectureId(section, courseData) === newLectureId
+        );
+        if (hasLinkedTutorialInNewLecture) {
+          linkedSectionTypes.push('Tutorial');
+        }
+      }
+
+      const selectedLinkedSections = linkedSectionTypes
+        .map((sectionType) => {
+          const previousForType = previousLinkedSections.find(
+            (selection) => selection.selectedSection.sectionType === sectionType
+          );
+          return pickLinkedSectionForLectureSwap(
+            courseData,
+            sectionType,
+            currentLectureId,
+            newLectureId,
+            previousForType?.selectedSection.sectionId
+          );
+        })
+        .filter((section): section is Section => Boolean(section));
 
       const updated = prev.map(selectedCourse => {
         if (selectedCourse.course.courseCode === courseCode) {
@@ -1133,8 +1156,8 @@ export default function Home() {
               selectedSection: newLecture,
             };
           }
-          // Remove old tutorials for this lecture
-          if (selectedCourse.selectedSection.sectionType === 'Tutorial' && 
+          // Remove old lecture-linked sections for this lecture (Tutorial/Lab/Seminar...)
+          if (selectedCourse.selectedSection.sectionType !== 'Lecture' &&
               resolveParentLectureId(selectedCourse.selectedSection, selectedCourse.course) === currentLectureId) {
             return null; // Mark for removal
           }
@@ -1142,11 +1165,11 @@ export default function Home() {
         return selectedCourse;
       }).filter(Boolean) as SelectedCourse[];
 
-      // Add the new tutorial if available
-      if (selectedTutorial) {
+      // Add linked sections for the new lecture (Tutorial/Lab/Seminar etc.)
+      for (const linkedSection of selectedLinkedSections) {
         updated.push({
           course: courseData,
-          selectedSection: selectedTutorial,
+          selectedSection: linkedSection,
           color: updated.find(c => c.course.courseCode === courseCode)?.color || generateCourseColor(courseCode, []),
         });
       }

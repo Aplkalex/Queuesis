@@ -396,10 +396,7 @@ export function detectNewCourseConflicts(
   return conflicts;
 }
 
-const DEPENDENT_SECTION_TYPES = new Set<Section['sectionType']>(['Tutorial', 'Lab']);
-
-const isDependentSectionType = (type: Section['sectionType']) =>
-  DEPENDENT_SECTION_TYPES.has(type);
+const isDependentSectionType = (type: Section['sectionType']) => type !== 'Lecture';
 
 /**
  * Resolve the lecture ID that a dependent section (Tutorial/Lab) belongs to.
@@ -442,6 +439,58 @@ export function resolveParentLectureId(
   return null;
 }
 
+const isLectureLinkedSection = (section: Section, course: Course): boolean => {
+  if (section.sectionType === 'Lecture') {
+    return false;
+  }
+  return Boolean(resolveParentLectureId(section, course));
+};
+
+/**
+ * Pick a deterministic linked section for lecture swap.
+ *
+ * Rules:
+ * 1) Section type must match and belong to newLectureId.
+ * 2) Prefer section pattern mapping from previous section (e.g., AT03 -> BT03).
+ * 3) Fallback to first section by stable sectionId sort.
+ */
+export function pickLinkedSectionForLectureSwap(
+  course: Course,
+  sectionType: Section['sectionType'],
+  currentLectureId: string,
+  newLectureId: string,
+  previousSectionId?: string
+): Section | null {
+  const availableSections = course.sections
+    .filter(
+      (section) =>
+        section.sectionType === sectionType &&
+        resolveParentLectureId(section, course) === newLectureId
+    )
+    .sort((left, right) =>
+      left.sectionId.localeCompare(right.sectionId, undefined, { numeric: true })
+    );
+
+  if (availableSections.length === 0) {
+    return null;
+  }
+
+  if (previousSectionId) {
+    const mappedSectionId = previousSectionId.startsWith(currentLectureId)
+      ? `${newLectureId}${previousSectionId.slice(currentLectureId.length)}`
+      : null;
+
+    if (mappedSectionId) {
+      const matched = availableSections.find((section) => section.sectionId === mappedSectionId);
+      if (matched) {
+        return matched;
+      }
+    }
+  }
+
+  return availableSections[0];
+}
+
 /**
  * Pick a deterministic tutorial when swapping lectures.
  *
@@ -456,34 +505,13 @@ export function pickTutorialForLectureSwap(
   newLectureId: string,
   previousTutorialId?: string
 ): Section | null {
-  const availableTutorials = course.sections
-    .filter(
-      (section) =>
-        section.sectionType === 'Tutorial' &&
-        resolveParentLectureId(section, course) === newLectureId
-    )
-    .sort((left, right) =>
-      left.sectionId.localeCompare(right.sectionId, undefined, { numeric: true })
-    );
-
-  if (availableTutorials.length === 0) {
-    return null;
-  }
-
-  if (previousTutorialId) {
-    const mappedTutorialId = previousTutorialId.startsWith(currentLectureId)
-      ? `${newLectureId}${previousTutorialId.slice(currentLectureId.length)}`
-      : null;
-
-    if (mappedTutorialId) {
-      const matched = availableTutorials.find((tutorial) => tutorial.sectionId === mappedTutorialId);
-      if (matched) {
-        return matched;
-      }
-    }
-  }
-
-  return availableTutorials[0];
+  return pickLinkedSectionForLectureSwap(
+    course,
+    'Tutorial',
+    currentLectureId,
+    newLectureId,
+    previousTutorialId
+  );
 }
 
 /**
@@ -508,7 +536,7 @@ export function getActiveLectureId(
   const dependentSection = selectedCourses.find(
     (sc) =>
       sc.course.courseCode === course.courseCode &&
-      isDependentSectionType(sc.selectedSection.sectionType)
+      isLectureLinkedSection(sc.selectedSection, sc.course)
   );
 
   if (!dependentSection) {
@@ -538,7 +566,7 @@ export function removeDependentSectionsForLecture(
       return selectedSection.sectionId === lectureId;
     }
 
-    if (isDependentSectionType(selectedSection.sectionType)) {
+    if (isLectureLinkedSection(selectedSection, sc.course)) {
       const parentLectureId = resolveParentLectureId(selectedSection, sc.course);
       return parentLectureId === lectureId;
     }
@@ -566,10 +594,10 @@ export function removeLectureAndDependents(
       return selectedSection.sectionId !== lectureId;
     }
 
-    if (isDependentSectionType(selectedSection.sectionType)) {
+    if (isLectureLinkedSection(selectedSection, sc.course)) {
       const parentLectureId = resolveParentLectureId(selectedSection, sc.course);
       if (!parentLectureId) {
-        return false;
+        return true;
       }
       return parentLectureId !== lectureId;
     }
