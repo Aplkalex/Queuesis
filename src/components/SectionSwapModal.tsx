@@ -222,7 +222,7 @@ export function SectionSwapModal({ course, currentSection, onSwap, onClose }: Se
         {/* Footer */}
         <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
           <p className="text-xs text-gray-600 dark:text-gray-400">
-            💡 When you change the lecture, a tutorial will be randomly assigned from the available tutorials.
+            💡 When you change the lecture, the tutorial is auto-matched by section pattern when possible, otherwise the first available tutorial is used.
           </p>
         </div>
       </div>

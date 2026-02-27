@@ -1107,18 +1107,43 @@ export default function Home() {
     const newLecture = courseData.sections.find(s => s.sectionId === newLectureId && s.sectionType === 'Lecture');
     if (!newLecture) return;
 
-    // Find available tutorials for the new lecture
-    const availableTutorials = courseData.sections.filter(
-      (s) => s.sectionType === 'Tutorial' && resolveParentLectureId(s, courseData) === newLectureId
-    );
-
-    // Pick a random tutorial (or the first one if only one available)
-    const randomTutorial = availableTutorials.length > 0
-      ? availableTutorials[Math.floor(Math.random() * availableTutorials.length)]
-      : null;
-
     // Update selected courses
     setSelectedCourses(prev => {
+      const previousTutorial = prev.find(
+        (selectedCourse) =>
+          selectedCourse.course.courseCode === courseCode &&
+          selectedCourse.selectedSection.sectionType === 'Tutorial' &&
+          resolveParentLectureId(selectedCourse.selectedSection, selectedCourse.course) === currentLectureId
+      );
+
+      const availableTutorials = courseData.sections
+        .filter(
+          (section) =>
+            section.sectionType === 'Tutorial' &&
+            resolveParentLectureId(section, courseData) === newLectureId
+        )
+        .sort((left, right) => left.sectionId.localeCompare(right.sectionId, undefined, { numeric: true }));
+
+      let selectedTutorial: Section | null = null;
+
+      if (availableTutorials.length > 0) {
+        if (previousTutorial) {
+          const previousTutorialId = previousTutorial.selectedSection.sectionId;
+          const mappedTutorialId = previousTutorialId.startsWith(currentLectureId)
+            ? `${newLectureId}${previousTutorialId.slice(currentLectureId.length)}`
+            : null;
+
+          if (mappedTutorialId) {
+            selectedTutorial =
+              availableTutorials.find((tutorial) => tutorial.sectionId === mappedTutorialId) ?? null;
+          }
+        }
+
+        if (!selectedTutorial) {
+          selectedTutorial = availableTutorials[0];
+        }
+      }
+
       const updated = prev.map(selectedCourse => {
         if (selectedCourse.course.courseCode === courseCode) {
           // Check if this is the lecture to swap
@@ -1139,10 +1164,10 @@ export default function Home() {
       }).filter(Boolean) as SelectedCourse[];
 
       // Add the new tutorial if available
-      if (randomTutorial) {
+      if (selectedTutorial) {
         updated.push({
           course: courseData,
-          selectedSection: randomTutorial,
+          selectedSection: selectedTutorial,
           color: updated.find(c => c.course.courseCode === courseCode)?.color || generateCourseColor(courseCode, []),
         });
       }
