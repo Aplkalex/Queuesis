@@ -930,8 +930,9 @@ export default function Home() {
 
     const resolvedParentLectureId = resolveParentLectureId(section, course);
 
-    // For tutorials, check if the parent lecture is selected
-    if (section.sectionType === 'Tutorial' && resolvedParentLectureId) {
+    // For lecture-linked non-lecture sections (Tutorial/Lab/Seminar...),
+    // ensure parent lecture is present and keep one section per type per lecture.
+    if (section.sectionType !== 'Lecture' && resolvedParentLectureId) {
       const parentLectureCourse = selectedCourses.find(
         (sc) => sc.course.courseCode === course.courseCode && 
                 sc.selectedSection.sectionType === 'Lecture' && 
@@ -964,16 +965,16 @@ export default function Home() {
           return;
         }
       } else {
-        // Replace existing tutorial from the same lecture
-        const existingTutorialIndex = selectedCourses.findIndex(
+        // Replace existing linked section of the same type from the same lecture
+        const existingLinkedSectionIndex = selectedCourses.findIndex(
           (sc) => sc.course.courseCode === course.courseCode && 
-                  sc.selectedSection.sectionType === 'Tutorial' && 
+                  sc.selectedSection.sectionType === section.sectionType && 
                   resolveParentLectureId(sc.selectedSection, sc.course) === resolvedParentLectureId
         );
 
-        if (existingTutorialIndex !== -1) {
+        if (existingLinkedSectionIndex !== -1) {
           const updatedCourses = [...selectedCourses];
-          updatedCourses[existingTutorialIndex] = {
+          updatedCourses[existingLinkedSectionIndex] = {
             course,
             selectedSection: section,
             color: parentLectureCourse.color, // Use same color as lecture
@@ -982,14 +983,14 @@ export default function Home() {
           return;
         }
 
-        // Add new tutorial with same color as lecture
+        // Add new linked section with same color as lecture
         const newCourse: SelectedCourse = {
           course,
           selectedSection: section,
           color: parentLectureCourse.color,
         };
 
-        // Detect conflicts before adding tutorial
+        // Detect conflicts before adding linked section
         const conflictingCourseCodes = detectNewCourseConflicts(newCourse, selectedCourses);
         if (conflictingCourseCodes.length > 0) {
           const newConflicts = conflictingCourseCodes.map(code => ({

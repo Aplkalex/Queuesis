@@ -123,11 +123,11 @@ const CourseListItem = memo(function CourseListItem({
     const labs = course.sections.filter(s => s.sectionType === 'Lab');
 
     // If there are lectures with associated tutorials or labs
-    if (lectures.length > 0 && (tutorials.some(t => t.parentLecture) || labs.some(l => l.parentLecture))) {
+    if (lectures.length > 0 && (tutorials.some(t => resolveParentLectureId(t, course)) || labs.some(l => resolveParentLectureId(l, course)))) {
       return lectures.map(lecture => ({
         lecture,
-        tutorials: tutorials.filter(t => t.parentLecture === lecture.sectionId),
-        labs: labs.filter(l => l.parentLecture === lecture.sectionId),
+        tutorials: tutorials.filter(t => resolveParentLectureId(t, course) === lecture.sectionId),
+        labs: labs.filter(l => resolveParentLectureId(l, course) === lecture.sectionId),
       }));
     }
 
