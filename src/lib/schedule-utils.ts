@@ -443,6 +443,50 @@ export function resolveParentLectureId(
 }
 
 /**
+ * Pick a deterministic tutorial when swapping lectures.
+ *
+ * Rules:
+ * 1) Tutorials must belong to newLectureId.
+ * 2) Prefer section pattern mapping from previous tutorial (e.g., AT03 -> BT03).
+ * 3) Fallback to the first tutorial by stable sectionId sort.
+ */
+export function pickTutorialForLectureSwap(
+  course: Course,
+  currentLectureId: string,
+  newLectureId: string,
+  previousTutorialId?: string
+): Section | null {
+  const availableTutorials = course.sections
+    .filter(
+      (section) =>
+        section.sectionType === 'Tutorial' &&
+        resolveParentLectureId(section, course) === newLectureId
+    )
+    .sort((left, right) =>
+      left.sectionId.localeCompare(right.sectionId, undefined, { numeric: true })
+    );
+
+  if (availableTutorials.length === 0) {
+    return null;
+  }
+
+  if (previousTutorialId) {
+    const mappedTutorialId = previousTutorialId.startsWith(currentLectureId)
+      ? `${newLectureId}${previousTutorialId.slice(currentLectureId.length)}`
+      : null;
+
+    if (mappedTutorialId) {
+      const matched = availableTutorials.find((tutorial) => tutorial.sectionId === mappedTutorialId);
+      if (matched) {
+        return matched;
+      }
+    }
+  }
+
+  return availableTutorials[0];
+}
+
+/**
  * Determine which lecture is effectively active for a course based on current selections.
  * Falls back to the parent lecture of any selected tutorial/lab if the lecture itself
  * hasn't been explicitly added yet.

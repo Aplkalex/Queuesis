@@ -10,7 +10,7 @@ import BuildingModal from '@/components/BuildingModal';
 import { CourseDetailsModal } from '@/components/CourseDetailsModal';
 import { SectionSwapModal } from '@/components/SectionSwapModal';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { generateCourseColor, calculateTotalCredits, detectConflicts, hasAvailableSeats, detectNewCourseConflicts, countUniqueCourses, removeDependentSectionsForLecture, removeLectureAndDependents, timeToMinutes, adjustCourseColorForTheme, resolveParentLectureId } from '@/lib/schedule-utils';
+import { generateCourseColor, calculateTotalCredits, detectConflicts, hasAvailableSeats, detectNewCourseConflicts, countUniqueCourses, removeDependentSectionsForLecture, removeLectureAndDependents, timeToMinutes, adjustCourseColorForTheme, resolveParentLectureId, pickTutorialForLectureSwap } from '@/lib/schedule-utils';
 import { TIMETABLE_CONFIG, WEEKDAY_SHORT } from '@/lib/constants';
 import { generateSchedules, type GeneratedSchedule } from '@/lib/schedule-generator';
 import { DISCLAIMER } from '@/lib/constants';
@@ -1116,33 +1116,12 @@ export default function Home() {
           resolveParentLectureId(selectedCourse.selectedSection, selectedCourse.course) === currentLectureId
       );
 
-      const availableTutorials = courseData.sections
-        .filter(
-          (section) =>
-            section.sectionType === 'Tutorial' &&
-            resolveParentLectureId(section, courseData) === newLectureId
-        )
-        .sort((left, right) => left.sectionId.localeCompare(right.sectionId, undefined, { numeric: true }));
-
-      let selectedTutorial: Section | null = null;
-
-      if (availableTutorials.length > 0) {
-        if (previousTutorial) {
-          const previousTutorialId = previousTutorial.selectedSection.sectionId;
-          const mappedTutorialId = previousTutorialId.startsWith(currentLectureId)
-            ? `${newLectureId}${previousTutorialId.slice(currentLectureId.length)}`
-            : null;
-
-          if (mappedTutorialId) {
-            selectedTutorial =
-              availableTutorials.find((tutorial) => tutorial.sectionId === mappedTutorialId) ?? null;
-          }
-        }
-
-        if (!selectedTutorial) {
-          selectedTutorial = availableTutorials[0];
-        }
-      }
+      const selectedTutorial = pickTutorialForLectureSwap(
+        courseData,
+        currentLectureId,
+        newLectureId,
+        previousTutorial?.selectedSection.sectionId
+      );
 
       const updated = prev.map(selectedCourse => {
         if (selectedCourse.course.courseCode === courseCode) {

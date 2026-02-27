@@ -4,6 +4,7 @@ import {
   removeDependentSectionsForLecture,
   removeLectureAndDependents,
   detectNewCourseConflicts,
+  pickTutorialForLectureSwap,
 } from '../schedule-utils';
 import { Course, Section, SelectedCourse } from '@/types';
 
@@ -55,6 +56,39 @@ const tutorialB: Section = {
   seatsRemaining: 15,
 };
 
+const tutorialA03NoParent: Section = {
+  sectionId: 'AT03',
+  sectionType: 'Tutorial',
+  timeSlots: [
+    { day: 'Friday', startTime: '12:00', endTime: '13:00' },
+  ],
+  quota: 30,
+  enrolled: 10,
+  seatsRemaining: 20,
+};
+
+const tutorialB03NoParent: Section = {
+  sectionId: 'BT03',
+  sectionType: 'Tutorial',
+  timeSlots: [
+    { day: 'Friday', startTime: '13:00', endTime: '14:00' },
+  ],
+  quota: 30,
+  enrolled: 10,
+  seatsRemaining: 20,
+};
+
+const tutorialB01NoParent: Section = {
+  sectionId: 'BT01',
+  sectionType: 'Tutorial',
+  timeSlots: [
+    { day: 'Friday', startTime: '14:00', endTime: '15:00' },
+  ],
+  quota: 30,
+  enrolled: 10,
+  seatsRemaining: 20,
+};
+
 const orphanTutorial: Section = {
   sectionId: 'T-ORPHAN',
   sectionType: 'Tutorial',
@@ -73,6 +107,22 @@ const baseCourse: Course = {
   credits: 3,
   sections: [lectureA, lectureB, tutorialA, tutorialB, orphanTutorial],
   term: '2025-26-T1',
+  career: 'Undergraduate',
+};
+
+const patternCourse: Course = {
+  courseCode: 'UGFH1000',
+  courseName: 'Pattern Course',
+  department: 'UGFH',
+  credits: 3,
+  sections: [
+    lectureA,
+    lectureB,
+    tutorialA03NoParent,
+    tutorialB03NoParent,
+    tutorialB01NoParent,
+  ],
+  term: '2025-26-Summer',
   career: 'Undergraduate',
 };
 
@@ -220,5 +270,27 @@ describe('course selection helpers', () => {
     );
 
     expect(conflicts).toEqual(['CONFLICT2000']);
+  });
+
+  it('maps tutorial by section pattern during lecture swap (AT03 -> BT03)', () => {
+    const selectedTutorial = pickTutorialForLectureSwap(
+      patternCourse,
+      'A',
+      'B',
+      'AT03'
+    );
+
+    expect(selectedTutorial?.sectionId).toBe('BT03');
+  });
+
+  it('falls back to first sorted tutorial when mapped target is missing', () => {
+    const selectedTutorial = pickTutorialForLectureSwap(
+      patternCourse,
+      'A',
+      'B',
+      'AT09'
+    );
+
+    expect(selectedTutorial?.sectionId).toBe('BT01');
   });
 });
