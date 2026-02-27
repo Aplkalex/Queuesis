@@ -97,4 +97,4 @@ To reseed Mongo with the small mock dataset for local testing, run `npm run db:s
 - [ ] Ran `npm run import:courses -- <json>` to push data into MongoDB (optional but recommended for production).
 - [ ] Restarted the Next.js dev server if you changed environment variables.
 
-Once these steps are done, the UI, schedule generator, and API routes will all reflect your manually curated dataset. No scraper required. 🎉
+Once these steps are done, the UI, schedule generator, and API routes will all reflect your manually curated dataset. No scraper required. 
