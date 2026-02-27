@@ -833,14 +833,8 @@ export function TimetableGrid({
     const statusBorderColor = statusHighlightColor ?? palette.border;
     const desktopLine1 = `${selectedCourse.course.courseCode.toUpperCase()} | ${abbr} ${sectionId}`;
     const isShortCourse = durationMinutes < SHORT_CLASS_INLINE_NUMBER_THRESHOLD_MINUTES;
-    const shortClassLabel = classNumber ? `#${classNumber}` : '';
-    const desktopLine1WithClass = isShortCourse && shortClassLabel
-      ? `${desktopLine1}  ${shortClassLabel}`
-      : desktopLine1;
     const desktopLocationLabel = locationDisplay;
-    const desktopLine2Title = isShortCourse
-      ? desktopLocationLabel
-      : `${classNumber ? `#${classNumber}` : ''}${classNumber ? ' • ' : ''}${desktopLocationLabel}`;
+    const desktopLine2Title = `${classNumber ? `#${classNumber}` : ''}${classNumber ? ' • ' : ''}${desktopLocationLabel}`;
     const hideMobileLocation = isSmallScreen && (displayMode === 'compact' || estimatedBlockHeight < 60);
     const mobileLocationParts = (() => {
       if (!isSmallScreen) return null;
@@ -983,9 +977,9 @@ export function TimetableGrid({
                   isShortCourse ? 'whitespace-nowrap truncate' : 'break-words'
                 )}
                 style={{ fontSize: `${firstFs}px`, color: textColor, lineHeight: lineHeights.primary }}
-                title={desktopLine1WithClass}
+                title={desktopLine1}
               >
-                {desktopLine1WithClass}
+                {desktopLine1}
                 {selectedCourse.locked && (
                   <Lock className="inline-block ml-1 w-2.5 h-2.5 opacity-80" />
                 )}
@@ -1000,7 +994,7 @@ export function TimetableGrid({
                 style={{ fontSize: `${secondFs}px`, color: textColor, lineHeight: lineHeights.secondary }}
                 title={desktopLine2Title.trim()}
               >
-                {classNumber && !isShortCourse && (
+                {classNumber && (
                   <span className="font-medium">{`#${classNumber}`}</span>
                 )}
                 <span className={cn('inline-flex items-center gap-1', isShortCourse && 'min-w-0')}>

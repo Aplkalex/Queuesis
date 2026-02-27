@@ -236,18 +236,15 @@ function DraggableCourseBlock({
           const first = `${selectedCourse.course.courseCode} | ${abbr} ${selectedCourse.selectedSection.sectionId}`;
           const classLabel = selectedCourse.selectedSection.classNumber ? `#${selectedCourse.selectedSection.classNumber}` : '';
           const isShortCourse = durationMinutes < SHORT_CLASS_INLINE_NUMBER_THRESHOLD_MINUTES;
-          const firstWithClass = isShortCourse && classLabel ? `${first}  ${classLabel}` : first;
           const locationLabelRaw = slot.location || selectedCourse.selectedSection.timeSlots.find((s) => s.location)?.location || 'Location TBA';
           const normalizedLocationLabel = locationLabelRaw.replace(/[_]+/g, ' ');
-          const second = isShortCourse
-            ? (normalizedLocationLabel || 'TBA')
-            : classLabel && normalizedLocationLabel
+          const second = classLabel && normalizedLocationLabel
               ? `${classLabel} • ${normalizedLocationLabel}`
               : (classLabel || normalizedLocationLabel || 'TBA');
           const timeRange = `${formatTime(slot.startTime)} – ${formatTime(slot.endTime)}`;
           const formattedCourseCode = selectedCourse.course.courseCode.replace(/([A-Za-z]+)(\d+)/, '$1 $2');
-          const mobileLineTwo = `${abbr} ${selectedCourse.selectedSection.sectionId}${classLabel && !isShortCourse ? ` • ${classLabel}` : ''}`;
-          const mobileLineThree = `${normalizedLocationLabel}${normalizedLocationLabel ? ' • ' : ''}${timeRange}`;
+          const mobileLineTwo = `${abbr} ${selectedCourse.selectedSection.sectionId}${classLabel ? ` • ${classLabel}` : ''}`;
+            const mobileLineThree = `${normalizedLocationLabel}${normalizedLocationLabel ? ' • ' : ''}${timeRange}`;
 
           const badgePreset = textConfig?.badgeSize ?? 'normal';
           const badgeClass =
@@ -365,10 +362,9 @@ function DraggableCourseBlock({
                     isSmallScreen ? 'whitespace-normal break-words' : 'truncate'
                   )}
                   style={{ fontSize: `${firstFs}px` }}
-                  title={firstWithClass}
+                  title={first}
                 >
                   {selectedCourse.course.courseCode} <span className="opacity-90">|</span> {abbr} {selectedCourse.selectedSection.sectionId}
-                  {isShortCourse && classLabel ? <span>{`  ${classLabel}`}</span> : null}
                 </div>
                 {(inlineBadges || (hasConflict || isFull)) && !isSmallScreen && (
                   <div className="flex flex-col items-end gap-0.5">
