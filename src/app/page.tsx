@@ -932,7 +932,7 @@ export default function Home() {
 
     // For lecture-linked non-lecture sections (Tutorial/Lab/Seminar...),
     // ensure parent lecture is present and keep one section per type per lecture.
-    if (section.sectionType !== 'Lecture' && resolvedParentLectureId) {
+    if (resolvedParentLectureId) {
       const parentLectureCourse = selectedCourses.find(
         (sc) => sc.course.courseCode === course.courseCode && 
                 sc.selectedSection.sectionType === 'Lecture' && 
