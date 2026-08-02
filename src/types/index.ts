@@ -3,7 +3,7 @@
 /**
  * Academic term selector (for dropdown)
  */
-export type TermType = '2025-26-T1' | '2025-26-T2' | '2025-26-Summer';
+export type TermType = '2025-26-T1' | '2025-26-T2' | '2025-26-Summer' | '2026-27-T1';
 
 /**
  * Days of the week

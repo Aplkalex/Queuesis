@@ -125,6 +125,8 @@ const EXCLUDED_SUBJECT_CODES = new Set([
   'XWAS',
 ]);
 
+const UPSTREAM_FETCH_CONCURRENCY = 16;
+
 const parseArgs = (argv: string[]): CliOptions => {
   const options: CliOptions = {
     repo: 'EagleZhen/another-cuhk-course-planner',
@@ -419,6 +421,12 @@ const byCourseCodeAndTerm = (courseCode: string, term: string): Prisma.CourseWhe
     },
   } as unknown as Prisma.CourseWhereUniqueInput);
 
+const termDisplayName = (term: string): string => {
+  const match = term.match(/^(\d{4}-\d{2})-(T1|T2|Summer)$/);
+  if (!match) return term;
+  return match[2] === 'Summer' ? `${match[1]} Summer` : `${match[1]} Term ${match[2].slice(1)}`;
+};
+
 const main = async () => {
   const options = parseArgs(process.argv.slice(2));
   const githubToken = process.env.GITHUB_TOKEN;
@@ -456,53 +464,72 @@ const main = async () => {
 
   const mappedCoursesByCode = new Map<string, Course>();
 
-  for (const file of subjectFiles) {
+  const mapSubjectFile = async (file: GitHubContentItem): Promise<Course[]> => {
     const subjectCode = file.name.replace(/\.json$/, '').toUpperCase();
+    const payload = await fetchJson<ExternalCourseDataFile>(file.download_url as string, githubToken);
+    const mappedCourses: Course[] = [];
 
-    try {
-      const payload = await fetchJson<ExternalCourseDataFile>(file.download_url as string, githubToken);
-      stats.filesFetched += 1;
+    for (const externalCourse of payload.courses ?? []) {
+      const matchedTerm = (externalCourse.terms ?? []).find((term) =>
+        isTargetTerm(term.term_name, options.academicYear, options.seasonKeyword)
+      );
 
-      const externalCourses = payload.courses ?? [];
+      if (!matchedTerm) continue;
 
-      for (const externalCourse of externalCourses) {
-        const matchedTerm = (externalCourse.terms ?? []).find((term) =>
-          isTargetTerm(term.term_name, options.academicYear, options.seasonKeyword)
-        );
+      const mapped = mapExternalCourse(externalCourse, matchedTerm, options.targetTerm, subjectCode);
+      if (mapped) mappedCourses.push(mapped);
+    }
 
-        if (!matchedTerm) continue;
+    return mappedCourses;
+  };
 
-        const mapped = mapExternalCourse(externalCourse, matchedTerm, options.targetTerm, subjectCode);
-        if (!mapped) continue;
+  const mergeMappedCourse = (mapped: Course) => {
+    const existing = mappedCoursesByCode.get(mapped.courseCode);
+    if (!existing) {
+      mappedCoursesByCode.set(mapped.courseCode, mapped);
+      return;
+    }
 
-        const existing = mappedCoursesByCode.get(mapped.courseCode);
-        if (!existing) {
-          mappedCoursesByCode.set(mapped.courseCode, mapped);
-          continue;
+    const mergedSections = [...existing.sections];
+    for (const section of mapped.sections) {
+      const duplicate = mergedSections.some(
+        (current) =>
+          current.sectionId === section.sectionId &&
+          current.sectionType === section.sectionType &&
+          current.classNumber === section.classNumber
+      );
+      if (!duplicate) mergedSections.push(section);
+    }
+
+    mappedCoursesByCode.set(mapped.courseCode, {
+      ...existing,
+      sections: mergedSections,
+      enrollmentRequirements: existing.enrollmentRequirements ?? mapped.enrollmentRequirements,
+      description: existing.description ?? mapped.description,
+      credits: existing.credits || mapped.credits,
+    });
+  };
+
+  for (let index = 0; index < subjectFiles.length; index += UPSTREAM_FETCH_CONCURRENCY) {
+    const batch = subjectFiles.slice(index, index + UPSTREAM_FETCH_CONCURRENCY);
+    const batchCourses = await Promise.all(
+      batch.map(async (file) => {
+        try {
+          const mappedCourses = await mapSubjectFile(file);
+          stats.filesFetched += 1;
+          return mappedCourses;
+        } catch (error) {
+          stats.filesFailed += 1;
+          console.warn(`⚠️ Failed to process ${file.name}:`, error);
+          return [];
         }
+      })
+    );
 
-        const mergedSections = [...existing.sections];
-        for (const section of mapped.sections) {
-          const duplicate = mergedSections.some(
-            (current) =>
-              current.sectionId === section.sectionId &&
-              current.sectionType === section.sectionType &&
-              current.classNumber === section.classNumber
-          );
-          if (!duplicate) mergedSections.push(section);
-        }
-
-        mappedCoursesByCode.set(mapped.courseCode, {
-          ...existing,
-          sections: mergedSections,
-          enrollmentRequirements: existing.enrollmentRequirements ?? mapped.enrollmentRequirements,
-          description: existing.description ?? mapped.description,
-          credits: existing.credits || mapped.credits,
-        });
+    for (const coursesInFile of batchCourses) {
+      for (const mappedCourse of coursesInFile) {
+        mergeMappedCourse(mappedCourse);
       }
-    } catch (error) {
-      stats.filesFailed += 1;
-      console.warn(`⚠️ Failed to process ${file.name}:`, error);
     }
   }
 
@@ -529,6 +556,12 @@ const main = async () => {
   if (!process.env.MONGODB_URI) {
     throw new Error('MONGODB_URI is required for non-dry-run sync.');
   }
+
+  await prisma.term.upsert({
+    where: { id: options.targetTerm },
+    update: { name: termDisplayName(options.targetTerm) },
+    create: { id: options.targetTerm, name: termDisplayName(options.targetTerm) },
+  });
 
   const fetchedKeys = new Set(mappedCourses.map((course) => `${course.courseCode}::${course.term}`));
   const now = new Date();

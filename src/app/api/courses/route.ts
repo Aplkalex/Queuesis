@@ -5,10 +5,13 @@ import { mockCourses } from '@/data/mock-courses';
 import { getGeneratedCoursesForTerm } from '@/data/generated-courses';
 import { testCourses } from '@/data/test-courses';
 import type { Course as SchedulerCourse } from '@/types';
+import courses2026T1 from '../../../../data/courses-2026-27-T1.json';
 
 const hasDatabase = Boolean(process.env.MONGODB_URI);
 const allowFallback = process.env.ALLOW_FALLBACK_DATA !== 'false';
 const DB_QUERY_TIMEOUT_MS = Number(process.env.DB_QUERY_TIMEOUT_MS ?? 5000);
+// JSON snapshots serialize Date fields, while API responses serialize them in the same form.
+const fallbackCourses2026T1 = courses2026T1 as unknown as SchedulerCourse[];
 
 const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> => {
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -59,6 +62,10 @@ const matchesSearch = (course: SchedulerCourse, query: string) => {
 const pickFallbackCourses = (requestedTerm: string | null, useTestData: boolean): SchedulerCourse[] => {
   if (useTestData) {
     return testCourses;
+  }
+
+  if (requestedTerm === '2026-27-T1') {
+    return fallbackCourses2026T1;
   }
 
   const generatedForRequestedTerm = getGeneratedCoursesForTerm(requestedTerm);

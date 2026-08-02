@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 
 const FALLBACK_TERMS = [
+  { id: '2026-27-T1', name: '2026-27 Term 1' },
   { id: '2025-26-T2', name: '2025-26 Term 2' },
   { id: '2025-26-Summer', name: '2025-26 Summer' },
 ];
@@ -38,9 +39,7 @@ export async function GET() {
       );
 
       if (terms.length > 0) {
-        const payload = terms
-          .map(({ id, name }) => ({ id, name }))
-          .filter((term) => term.id !== '2025-26-T1');
+        const payload = terms.map(({ id, name }) => ({ id, name }));
         return NextResponse.json({ success: true, count: payload.length, data: payload });
       }
     } catch (error) {

@@ -16,6 +16,7 @@
     "import:courses": "ts-node -P tsconfig.seed.json scripts/import-json.ts",
     "convert:excel": "ts-node -P tsconfig.seed.json scripts/convert-excel.ts",
     "sync:cuhk:summer": "ts-node -P tsconfig.seed.json scripts/sync-github-courses.ts --term 2025-26-Summer --academicYear 2025-26 --season Summer",
+    "sync:cuhk:2026-t1": "ts-node -P tsconfig.seed.json scripts/sync-github-courses.ts --term 2026-27-T1 --academicYear 2026-27 --season 'Term 1' --dataPath data/2026-27 --output data/courses-2026-27-T1.json",
     "rotate:terms:dry": "ts-node -P tsconfig.seed.json scripts/rotate-terms.ts --keepTerms 2025-26-T1,2025-26-T2,2025-26-Summer --archiveDir data/archive --dry-run",
     "rotate:terms": "ts-node -P tsconfig.seed.json scripts/rotate-terms.ts --keepTerms 2025-26-T1,2025-26-T2,2025-26-Summer --archiveDir data/archive --purge",
     "rotate:year:dry": "ts-node -P tsconfig.seed.json scripts/rotate-terms.ts --archiveDir data/archive --dry-run",

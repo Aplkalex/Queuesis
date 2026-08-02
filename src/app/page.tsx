@@ -251,14 +251,16 @@ const formatTermLabel = (label: string) => {
 };
 
 const DEFAULT_TERMS: Array<{ id: TermType; name: string }> = [
+  { id: '2026-27-T1', name: formatTermLabel('2026-27 Term 1') },
   { id: '2025-26-T2', name: formatTermLabel('2025-26 Term 2') },
   { id: '2025-26-Summer', name: formatTermLabel('2025-26 Summer') },
 ];
 
 const TERM_PRIORITY: Record<TermType, number> = {
-  '2025-26-T2': 1,
-  '2025-26-Summer': 2,
-  '2025-26-T1': 3,
+  '2026-27-T1': 1,
+  '2025-26-T2': 2,
+  '2025-26-Summer': 3,
+  '2025-26-T1': 4,
 };
 
 export default function Home() {
@@ -289,7 +291,7 @@ export default function Home() {
   const fullSectionWarningIdRef = useRef(0);
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const [isSwitchingMode, startModeTransition] = useTransition();
-  const [selectedTerm, setSelectedTerm] = useState<TermType>('2025-26-Summer');
+  const [selectedTerm, setSelectedTerm] = useState<TermType>('2026-27-T1');
   const [swapWarning, setSwapWarning] = useState<string | null>(null);
   const [isSwapWarningExiting, setIsSwapWarningExiting] = useState(false);
   const [swapWarningType, setSwapWarningType] = useState<'full' | 'conflict' | null>(null);
@@ -725,7 +727,6 @@ export default function Home() {
             id: term.id as TermType,
             name: formatTermLabel(term.name ?? term.id),
           }))
-          .filter((term: { id: TermType; name: string }) => term.id !== '2025-26-T1');
         if (nextTerms.length > 0) {
           const mergedTermsMap = new Map(DEFAULT_TERMS.map((term) => [term.id, term]));
           nextTerms.forEach((term) => {

@@ -1,20 +1,21 @@
-# Auto Sync (Phase 1): 2025-26 Summer Courses
+# Auto Sync (Phase 1): CUHK Courses
 
-This phase syncs course data from EagleZhen's public `data/*.json` files (GitHub raw content), maps them into Queuesis format, and upserts into MongoDB.
+This phase syncs course data from EagleZhen's public JSON files (GitHub raw content), maps them into Queuesis format, and upserts into MongoDB.
 
 ## What this phase does
 
-- Fetches upstream files from `EagleZhen/another-cuhk-course-planner` (`main/data/*.json`)
-- Filters to **2025-26 Summer** sections only
+- Fetches upstream files from `EagleZhen/another-cuhk-course-planner`
+- Filters to the configured term only
 - Maps external schema (`course_code`, `title`, `terms.schedule`, etc.) to Queuesis `Course[]`
 - Saves a local snapshot to `data/courses-2025-26-Summer.json`
 - Upserts records into MongoDB
 - Soft-deletes missing upstream courses by setting `isActive=false` (only for `dataSource='github'`)
 
-## New command
+## Commands
 
 ```bash
 npm run sync:cuhk:summer
+npm run sync:cuhk:2026-t1
 ```
 
 ## Dry run (no DB writes)
@@ -35,6 +36,14 @@ npx ts-node -P tsconfig.seed.json scripts/sync-github-courses.ts \
   --season Summer \
   --output data/courses-2025-26-Summer.json
 ```
+
+For 2026-27 Term 1, the upstream repository groups subject files under the academic-year directory:
+
+```bash
+npm run sync:cuhk:2026-t1
+```
+
+This uses `data/2026-27`, filters `2026-27 Term 1`, writes `data/courses-2026-27-T1.json`, and creates or updates the matching database term.
 
 ## Required env vars
 
