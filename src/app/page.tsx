@@ -1942,6 +1942,9 @@ export default function Home() {
 
   return (
     <div className="h-screen flex flex-col relative">
+      <h1 className="sr-only">
+        Queuesis: CUHK Timetable Planner and Course Schedule Builder
+      </h1>
       <input
         type="file"
         accept="application/json"
@@ -1958,7 +1961,7 @@ export default function Home() {
         <div className="w-full px-3 sm:px-4 lg:px-6 py-2">
             <div className="flex items-center justify-between max-w-[1600px] mx-auto">
             <div className="flex items-center gap-2">
-              <div className="text-base sm:text-lg font-black text-gray-900 dark:text-white tracking-tight">
+              <div className="text-base sm:text-lg font-black text-gray-900 dark:text-white tracking-tight" aria-label="Queuesis, CUHK Timetable Planner">
                 Queuesis
               </div>
               {/* Desktop GitHub link near brand */}

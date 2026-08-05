@@ -16,26 +16,53 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  // Make sure shared links and previews show the correct brand
   metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL ?? "https://queuesis.vercel.app"),
   title: {
     default: "Queuesis — CUHK Timetable Planner",
     template: "%s · Queuesis",
   },
   applicationName: "Queuesis",
-  description: "Plan your perfect CUHK timetable",
+  description: "Plan your perfect CUHK timetable.",
+  keywords: [
+    "CUHK timetable",
+    "CUHK timetable planner",
+    "CU timetable planner",
+    "Timetable CUHK",
+    "CUHK Course",
+    "CUHK planner",
+    "CUHK course planner",
+    "CUHK schedule planner",
+    "Chinese University of Hong Kong timetable",
+    "CUSIS timetable",
+  ],
+  authors: [{ name: "Queuesis" }],
+  category: "Education",
+  alternates: {
+    canonical: "/",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
   openGraph: {
     title: "Queuesis — CUHK Timetable Planner",
-    description: "Plan your perfect CUHK timetable",
+    description: "Build, optimize, and export your CUHK class timetable.",
     url: "/",
     siteName: "Queuesis",
     type: "website",
-    locale: "en_US",
+    locale: "en_HK",
   },
   twitter: {
     card: "summary",
     title: "Queuesis — CUHK Timetable Planner",
-    description: "Plan your perfect CUHK timetable",
+    description: "Build, optimize, and export your CUHK class timetable.",
   },
   icons: {
     icon: "/icon.png",
@@ -50,12 +77,38 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "https://queuesis.vercel.app";
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gradient-to-br from-purple-50 via-white to-blue-50 dark:bg-[#1e1e1e]`}
         suppressHydrationWarning
       >
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebApplication",
+              name: "Queuesis",
+              url: baseUrl,
+              applicationCategory: "EducationalApplication",
+              operatingSystem: "Web",
+              description:
+                "A CUHK timetable planner for searching courses, creating clash-free schedules, and exporting classes to a calendar.",
+              offers: {
+                "@type": "Offer",
+                price: "0",
+                priceCurrency: "HKD",
+              },
+              areaServed: {
+                "@type": "CollegeOrUniversity",
+                name: "The Chinese University of Hong Kong",
+              },
+            }),
+          }}
+        />
         <ThemeProvider>
           {children}
           {/* <TaiPoFirePopup /> */}
