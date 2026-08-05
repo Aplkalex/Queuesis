@@ -26,6 +26,7 @@ export const metadata: Metadata = {
   keywords: [
     "CUHK timetable",
     "CUHK timetable planner",
+    "CUHK timetable app",
     "CU timetable planner",
     "Timetable CUHK",
     "CUHK Course",
