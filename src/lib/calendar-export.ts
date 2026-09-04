@@ -71,6 +71,12 @@ const escapeIcsText = (value?: string | null) => {
     .replace(/;/g, '\\;');
 };
 
+const formatSectionTypeLabel = (sectionType: string) => {
+  if (sectionType === 'Lecture') return 'LEC';
+  if (sectionType === 'Tutorial') return 'TUT';
+  return sectionType.toUpperCase();
+};
+
 const resolveTermStartDate = (term: TermType): Date => {
   const override = envTermStartDates[term];
   const configured = override || TERM_START_DATES[term];
@@ -135,6 +141,8 @@ export const buildScheduleICS = (
       const dtStart = formatLocalTimestamp(startDate);
       const dtEnd = formatLocalTimestamp(endDate);
       const uid = `${selectedCourse.course.courseCode}-${section.sectionId}-${slot.day}-${slot.startTime}-${courseIdx}-${slotIdx}@queuesis.app`;
+      const courseCode = selectedCourse.course.courseCode.replace(/\s+/g, '');
+      const sectionTypeLabel = formatSectionTypeLabel(section.sectionType);
 
       const details = [
         selectedCourse.course.courseName,
@@ -147,7 +155,7 @@ export const buildScheduleICS = (
         'BEGIN:VEVENT',
         `UID:${uid}`,
         `DTSTAMP:${dtStamp}`,
-        `SUMMARY:${escapeIcsText(`${selectedCourse.course.courseCode} ${section.sectionId}`)}`,
+        `SUMMARY:${escapeIcsText(`${courseCode}${section.sectionId} - ${sectionTypeLabel}`)}`,
         `DTSTART;TZID=${HONG_KONG_TZ}:${dtStart}`,
         `DTEND;TZID=${HONG_KONG_TZ}:${dtEnd}`,
         `RRULE:FREQ=WEEKLY;COUNT=${weekCount}`,
