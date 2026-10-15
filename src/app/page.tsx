@@ -3409,9 +3409,9 @@ export default function Home() {
         const tone = generationNotice.tone;
         const toneStyles = {
           info: {
-            iconWrapper: 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-200',
-            title: 'text-purple-900 dark:text-purple-200',
-            button: 'bg-[#6A1E74] hover:bg-[#54185D]',
+            iconWrapper: 'bg-purple-100 text-purple-700 dark:bg-amber-900/40 dark:text-amber-300',
+            title: 'text-purple-900 dark:text-amber-300',
+            button: 'bg-[#6A1E74] hover:bg-[#54185D] dark:bg-[#C69214] dark:hover:bg-[#A8790F] dark:text-[#17100a]',
           },
           warning: {
             iconWrapper: 'bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-200',
@@ -3437,11 +3437,11 @@ export default function Home() {
             >
               <div className="p-6 space-y-4">
                 <div className="flex items-start gap-3">
-                  <div className={`p-3 rounded-full shadow ${styles.iconWrapper}`}>
+                  <div className={`p-3 rounded-full shadow ${styles.iconWrapper} ${tone === 'info' ? 'generation-notice-info-icon' : ''}`}>
                     <Icon className="w-5 h-5" />
                   </div>
                   <div className="flex-1">
-                    <h3 className={`text-lg font-semibold ${styles.title}`}>
+                    <h3 className={`text-lg font-semibold ${styles.title} ${tone === 'info' ? 'generation-notice-info-title' : ''}`}>
                       {generationNotice.title}
                     </h3>
                     <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
@@ -3461,7 +3461,7 @@ export default function Home() {
                   <button
                     type="button"
                     onClick={dismissGenerationNotice}
-                    className={`${styles.button} text-white font-semibold px-4 py-2 rounded-xl transition-transform hover:scale-[1.01]`}
+                    className={`${styles.button} ${tone === 'info' ? 'generation-notice-info-button' : ''} text-white font-semibold px-4 py-2 rounded-xl transition-transform hover:scale-[1.01]`}
                   >
                     Got it
                   </button>

@@ -17,6 +17,24 @@
   --color-purple-950: #19071c;
 }
 
+html.dark .generation-notice-info-icon {
+  background: #6b5211 !important;
+  color: #f4d77b !important;
+}
+
+html.dark .generation-notice-info-title {
+  color: #f4d77b !important;
+}
+
+html.dark .generation-notice-info-button {
+  background: #c69214 !important;
+  color: #17100a !important;
+}
+
+html.dark .generation-notice-info-button:hover {
+  background: #a8790f !important;
+}
+
 /* Force solid black background in dark mode */
 html.dark {
   background: #1e1e1e !important;
