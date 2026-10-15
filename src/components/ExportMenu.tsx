@@ -210,7 +210,7 @@ export function ExportMenu({
       </div>
       <div className="space-y-1">
         {menuOptions.map(({ id, label: optionLabel, description, Icon }) => {
-          const loading = (id === 'png' && isExportingImage) || (id === 'pdf' && isExportingPdf);
+          const loading = ((id === 'png' || id === 'svg') && isExportingImage) || (id === 'pdf' && isExportingPdf);
           return (
             <button
               key={id}
