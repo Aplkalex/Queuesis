@@ -328,8 +328,11 @@ export function TimetableGrid({
   );
 
   const gridLineClassName = isFrosted
-    ? 'border-gray-200/60 dark:border-gray-600/40'
-    : 'border-gray-200/35 dark:border-white/[0.08]';
+    ? 'border-gray-300/80 dark:border-gray-500/60'
+    : 'border-gray-300/55 dark:border-white/[0.18]';
+  const halfHourLineClassName = isFrosted
+    ? 'border-gray-200/55 dark:border-gray-600/35'
+    : 'border-gray-200/40 dark:border-white/[0.11]';
 
   const courseBlockBaseClass = cn(
     'absolute rounded-[7px] cursor-pointer group flex flex-col border bg-clip-padding select-none',
@@ -1002,6 +1005,15 @@ export function TimetableGrid({
                   <span className={cn(isShortCourse && 'truncate')}>{desktopLocationLabel}</span>
                 </span>
               </div>
+              {blockHeightPx >= 52 && (
+                <div
+                  className="mt-0.5 truncate opacity-75"
+                  style={{ fontSize: `${Math.max(7.5, secondFs - 1)}px`, color: textColor, lineHeight: 1.05 }}
+                  title={`${formatTime(slot.startTime)} – ${formatTime(slot.endTime)}`}
+                >
+                  {formatTime(slot.startTime)} – {formatTime(slot.endTime)}
+                </div>
+              )}
             </div>
           ) : (
             <div className="flex flex-col gap-0.5">
@@ -1159,12 +1171,19 @@ export function TimetableGrid({
                   height: `${slotHeight * hours.length}px`,
                 }}
               >
-                {/* Hour grid lines */}
+                {/* Hour and half-hour grid lines */}
                 {hours.slice(1).map((hour, idx) => (
                   <div
                     key={hour}
                     className={cn('absolute w-full border-t', gridLineClassName)}
                     style={{ top: `${(idx + 1) * slotHeight}px` }}
+                  />
+                ))}
+                {hours.slice(0, -1).map((hour) => (
+                  <div
+                    key={`${hour}-half`}
+                    className={cn('absolute w-full border-t border-dashed', halfHourLineClassName)}
+                    style={{ top: `${(hour - startHour + 0.5) * slotHeight}px` }}
                   />
                 ))}
 
