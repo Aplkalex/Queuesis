@@ -4,9 +4,9 @@
 
 // CUHK Brand Colors
 export const COLORS = {
-  primary: '#4B2E83',      // CUHK Purple
-  primaryLight: '#6B46A8',
-  primaryDark: '#3A2266',
+  primary: '#6A1E74',      // Pantone 255 C
+  primaryLight: '#9843A1',
+  primaryDark: '#54185D',
   secondary: '#FFD700',    // Gold accent
   background: '#F9FAFB',
   text: '#111827',
