@@ -3416,21 +3416,18 @@ export default function Home() {
         const toneStyles = {
           info: {
             iconWrapper: 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-200',
-            title: 'text-blue-900 dark:text-blue-100',
+            title: 'text-blue-900',
             button: 'bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-400',
-            accent: 'bg-blue-600',
           },
           warning: {
             iconWrapper: 'bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-200',
-            title: 'text-amber-900 dark:text-amber-100',
+            title: 'text-amber-900',
             button: 'bg-amber-600 dark:bg-amber-500 hover:bg-amber-700 dark:hover:bg-amber-400',
-            accent: 'bg-amber-600',
           },
           error: {
             iconWrapper: 'bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-200',
-            title: 'text-rose-900 dark:text-rose-100',
+            title: 'text-rose-900',
             button: 'bg-rose-600 dark:bg-rose-500 hover:bg-rose-700 dark:hover:bg-rose-400',
-            accent: 'bg-rose-600',
           },
         } as const;
         const styles = toneStyles[tone];
@@ -3441,10 +3438,9 @@ export default function Home() {
             onClick={dismissGenerationNotice}
           >
             <div
-              className="relative w-full max-w-md bg-white/95 dark:bg-[#131313]/95 rounded-2xl shadow-2xl border border-white/30 dark:border-white/10 overflow-hidden animate-slideUp"
+              className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden animate-slideUp"
               onClick={(event) => event.stopPropagation()}
             >
-              <div className={`absolute inset-x-0 top-0 h-1 ${styles.accent}`} />
               <div className="p-6 space-y-4">
                 <div className="flex items-start gap-3">
                   <div className={`p-3 rounded-full shadow ${styles.iconWrapper}`}>
@@ -3454,14 +3450,14 @@ export default function Home() {
                     <h3 className={`text-lg font-semibold ${styles.title}`}>
                       {generationNotice.title}
                     </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                    <p className="text-sm text-gray-600 mt-1">
                       {generationNotice.message}
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={dismissGenerationNotice}
-                    className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition p-1"
+                    className="text-gray-400 hover:text-gray-600 transition p-1"
                     aria-label="Dismiss message"
                   >
                     <X className="w-4 h-4" />
@@ -3471,7 +3467,7 @@ export default function Home() {
                   <button
                     type="button"
                     onClick={dismissGenerationNotice}
-                    className={`${styles.button} text-white font-semibold px-4 py-2 rounded-xl shadow-lg shadow-black/10 dark:shadow-black/40 transition-transform hover:scale-[1.01]`}
+                    className={`${styles.button} text-white font-semibold px-4 py-2 rounded-xl transition-transform hover:scale-[1.01]`}
                   >
                     Got it
                   </button>
