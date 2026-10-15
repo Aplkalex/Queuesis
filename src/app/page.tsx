@@ -1343,6 +1343,22 @@ export default function Home() {
     URL.revokeObjectURL(url);
   };
 
+  const svgDataUrlToBlob = (value: string) => {
+    if (value.trimStart().startsWith('<svg')) {
+      return new Blob([value], { type: 'image/svg+xml;charset=utf-8' });
+    }
+    const commaIndex = value.indexOf(',');
+    if (!value.startsWith('data:') || commaIndex < 0) {
+      throw new Error('SVG renderer returned an invalid data URL.');
+    }
+    const metadata = value.slice(5, commaIndex);
+    const payload = value.slice(commaIndex + 1);
+    const decoded = metadata.includes(';base64')
+      ? atob(payload)
+      : decodeURIComponent(payload);
+    return new Blob([decoded], { type: 'image/svg+xml;charset=utf-8' });
+  };
+
   const ensureScheduleForExport = useCallback(() => {
     if (!hasScheduleEntries) {
       showGenerationNotice({
@@ -1534,7 +1550,7 @@ export default function Home() {
     setIsExportingImage(true);
     try {
       const svg = await captureSvgWithWatermark(node);
-      triggerFileDownload(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }), `cuhk-timetable-${selectedTerm}-${new Date().toISOString().slice(0, 10)}.svg`);
+      triggerFileDownload(svgDataUrlToBlob(svg), `cuhk-timetable-${selectedTerm}-${new Date().toISOString().slice(0, 10)}.svg`);
       showGenerationNotice({ title: 'SVG ready', message: 'Downloaded a vector timetable that stays sharp at any size.', tone: 'info' });
     } catch (error) {
       console.error('SVG export failed', error);
@@ -3402,19 +3418,19 @@ export default function Home() {
             iconWrapper: 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-200',
             title: 'text-blue-900 dark:text-blue-100',
             button: 'bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-400',
-            accent: 'bg-black',
+            accent: 'bg-blue-600',
           },
           warning: {
             iconWrapper: 'bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-200',
             title: 'text-amber-900 dark:text-amber-100',
             button: 'bg-amber-600 dark:bg-amber-500 hover:bg-amber-700 dark:hover:bg-amber-400',
-            accent: 'bg-black',
+            accent: 'bg-amber-600',
           },
           error: {
             iconWrapper: 'bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-200',
             title: 'text-rose-900 dark:text-rose-100',
             button: 'bg-rose-600 dark:bg-rose-500 hover:bg-rose-700 dark:hover:bg-rose-400',
-            accent: 'bg-black',
+            accent: 'bg-rose-600',
           },
         } as const;
         const styles = toneStyles[tone];
