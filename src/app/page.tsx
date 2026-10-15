@@ -45,7 +45,7 @@ import ConflictToast from '@/components/ConflictToast';
 import FullSectionWarningToast, { type FullSectionWarningData } from '@/components/FullSectionWarningToast';
 import { ExportMenu } from '@/components/ExportMenu';
 import { buildScheduleICS, GOOGLE_CALENDAR_IMPORT_URL } from '@/lib/calendar-export';
-import { toPng } from 'html-to-image';
+import { toPng, toSvg } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 
 type SnapshotUndoEntry = {
@@ -1490,6 +1490,60 @@ export default function Home() {
     [isDarkMode]
   );
 
+  const captureSvgWithWatermark = useCallback(
+    async (node: HTMLElement) => {
+      const originalInlinePosition = node.style.position;
+      const computedPosition = window.getComputedStyle(node).position;
+      if (computedPosition === 'static') node.style.position = 'relative';
+
+      const watermark = document.createElement('div');
+      watermark.textContent = 'https://queuesis.aplkalex.com/';
+      Object.assign(watermark.style, {
+        position: 'absolute',
+        left: '50%',
+        bottom: '6px',
+        transform: 'translateX(-50%)',
+        fontSize: '10px',
+        letterSpacing: '0.02em',
+        fontWeight: '500',
+        fontFamily: 'ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif',
+        color: isDarkMode ? 'rgba(255,255,255,0.12)' : 'rgba(17,24,39,0.10)',
+        userSelect: 'none',
+        pointerEvents: 'none',
+        zIndex: '2147483647',
+      });
+      node.appendChild(watermark);
+      try {
+        return await toSvg(node, {
+          cacheBust: true,
+          backgroundColor: isDarkMode ? '#0f0f0f' : '#ffffff',
+          includeQueryParams: true,
+        });
+      } finally {
+        if (node.contains(watermark)) node.removeChild(watermark);
+        node.style.position = originalInlinePosition;
+      }
+    },
+    [isDarkMode]
+  );
+
+  const handleExportSvg = useCallback(async () => {
+    if (!ensureScheduleForExport()) return;
+    const node = exportSurfaceRef.current ?? timetableCaptureRef.current;
+    if (!node) return;
+    setIsExportingImage(true);
+    try {
+      const svg = await captureSvgWithWatermark(node);
+      triggerFileDownload(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }), `cuhk-timetable-${selectedTerm}-${new Date().toISOString().slice(0, 10)}.svg`);
+      showGenerationNotice({ title: 'SVG ready', message: 'Downloaded a vector timetable that stays sharp at any size.', tone: 'info' });
+    } catch (error) {
+      console.error('SVG export failed', error);
+      showGenerationNotice({ title: 'SVG export failed', message: 'Unable to render the timetable as a vector image.', tone: 'error' });
+    } finally {
+      setIsExportingImage(false);
+    }
+  }, [captureSvgWithWatermark, ensureScheduleForExport, selectedTerm, showGenerationNotice]);
+
   const handleExportPng = useCallback(async () => {
     if (!ensureScheduleForExport()) {
       return;
@@ -1551,14 +1605,16 @@ export default function Home() {
       const dataUrl = await captureWithWatermark(node, 2.5);
 
       const orientation = node.clientWidth >= node.clientHeight ? 'landscape' : 'portrait';
-      const pdf = new jsPDF({
-        orientation,
-        unit: 'px',
-        format: [node.clientWidth, node.clientHeight],
-      });
+      const pdf = new jsPDF({ orientation, unit: 'mm', format: 'a4' });
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      pdf.addImage(dataUrl, 'PNG', 0, 0, pageWidth, pageHeight);
+      const margin = 10;
+      const availableWidth = pageWidth - margin * 2;
+      const availableHeight = pageHeight - margin * 2;
+      const scale = Math.min(availableWidth / node.clientWidth, availableHeight / node.clientHeight);
+      const imageWidth = node.clientWidth * scale;
+      const imageHeight = node.clientHeight * scale;
+      pdf.addImage(dataUrl, 'PNG', (pageWidth - imageWidth) / 2, (pageHeight - imageHeight) / 2, imageWidth, imageHeight);
       pdf.save(`cuhk-timetable-${selectedTerm}-${new Date().toISOString().slice(0, 10)}.pdf`);
 
       showGenerationNotice({
@@ -2039,6 +2095,7 @@ export default function Home() {
                     disabled={!hasScheduleEntries}
                     onExportJson={handleExportScheduleJson}
                     onExportPng={handleExportPng}
+                    onExportSvg={handleExportSvg}
                     onExportPdf={handleExportPdf}
                     onExportIcs={handleExportIcs}
                     onExportGoogle={handleExportGoogleCalendar}
@@ -2231,6 +2288,7 @@ export default function Home() {
                       disabled={!hasScheduleEntries}
                       onExportJson={handleExportScheduleJson}
                       onExportPng={handleExportPng}
+                      onExportSvg={handleExportSvg}
                       onExportPdf={handleExportPdf}
                       onExportIcs={handleExportIcs}
                       onExportGoogle={handleExportGoogleCalendar}
