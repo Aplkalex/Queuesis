@@ -1624,13 +1624,7 @@ export default function Home() {
       const pdf = new jsPDF({ orientation, unit: 'mm', format: 'a4' });
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 10;
-      const availableWidth = pageWidth - margin * 2;
-      const availableHeight = pageHeight - margin * 2;
-      const scale = Math.min(availableWidth / node.clientWidth, availableHeight / node.clientHeight);
-      const imageWidth = node.clientWidth * scale;
-      const imageHeight = node.clientHeight * scale;
-      pdf.addImage(dataUrl, 'PNG', (pageWidth - imageWidth) / 2, (pageHeight - imageHeight) / 2, imageWidth, imageHeight);
+      pdf.addImage(dataUrl, 'PNG', 0, 0, pageWidth, pageHeight);
       pdf.save(`cuhk-timetable-${selectedTerm}-${new Date().toISOString().slice(0, 10)}.pdf`);
 
       showGenerationNotice({
