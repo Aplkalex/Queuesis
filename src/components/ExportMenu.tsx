@@ -3,7 +3,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Download, FileCode, ImageDown, FileDown, CalendarDays, CalendarPlus } from 'lucide-react';
+import { Download, FileCode, ImageDown, FileDown, CalendarDays, CalendarPlus, ScanLine } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type ExportMenuProps = {
@@ -15,6 +15,7 @@ type ExportMenuProps = {
   menuClassName?: string;
   onExportJson: () => void;
   onExportPng: () => void;
+  onExportSvg: () => void;
   onExportPdf: () => void;
   onExportIcs: () => void;
   onExportGoogle: () => void;
@@ -36,6 +37,13 @@ const menuOptions = [
     description: 'Shareable image',
     Icon: ImageDown,
     key: 'png',
+  },
+  {
+    id: 'svg',
+    label: 'SVG vector image',
+    description: 'Sharp at any size',
+    Icon: ScanLine,
+    key: 'svg',
   },
   {
     id: 'pdf',
@@ -69,6 +77,7 @@ export function ExportMenu({
   menuClassName,
   onExportJson,
   onExportPng,
+  onExportSvg,
   onExportPdf,
   onExportIcs,
   onExportGoogle,
@@ -157,6 +166,9 @@ export function ExportMenu({
       case 'png':
         onExportPng();
         break;
+      case 'svg':
+        onExportSvg();
+        break;
       case 'pdf':
         onExportPdf();
         break;
@@ -198,7 +210,7 @@ export function ExportMenu({
       </div>
       <div className="space-y-1">
         {menuOptions.map(({ id, label: optionLabel, description, Icon }) => {
-          const loading = (id === 'png' && isExportingImage) || (id === 'pdf' && isExportingPdf);
+          const loading = ((id === 'png' || id === 'svg') && isExportingImage) || (id === 'pdf' && isExportingPdf);
           return (
             <button
               key={id}

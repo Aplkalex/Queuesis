@@ -45,7 +45,7 @@ import ConflictToast from '@/components/ConflictToast';
 import FullSectionWarningToast, { type FullSectionWarningData } from '@/components/FullSectionWarningToast';
 import { ExportMenu } from '@/components/ExportMenu';
 import { buildScheduleICS, GOOGLE_CALENDAR_IMPORT_URL } from '@/lib/calendar-export';
-import { toPng } from 'html-to-image';
+import { toPng, toSvg } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 
 type SnapshotUndoEntry = {
@@ -1343,6 +1343,22 @@ export default function Home() {
     URL.revokeObjectURL(url);
   };
 
+  const svgDataUrlToBlob = (value: string) => {
+    if (value.trimStart().startsWith('<svg')) {
+      return new Blob([value], { type: 'image/svg+xml;charset=utf-8' });
+    }
+    const commaIndex = value.indexOf(',');
+    if (!value.startsWith('data:') || commaIndex < 0) {
+      throw new Error('SVG renderer returned an invalid data URL.');
+    }
+    const metadata = value.slice(5, commaIndex);
+    const payload = value.slice(commaIndex + 1);
+    const decoded = metadata.includes(';base64')
+      ? atob(payload)
+      : decodeURIComponent(payload);
+    return new Blob([decoded], { type: 'image/svg+xml;charset=utf-8' });
+  };
+
   const ensureScheduleForExport = useCallback(() => {
     if (!hasScheduleEntries) {
       showGenerationNotice({
@@ -1490,6 +1506,60 @@ export default function Home() {
     [isDarkMode]
   );
 
+  const captureSvgWithWatermark = useCallback(
+    async (node: HTMLElement) => {
+      const originalInlinePosition = node.style.position;
+      const computedPosition = window.getComputedStyle(node).position;
+      if (computedPosition === 'static') node.style.position = 'relative';
+
+      const watermark = document.createElement('div');
+      watermark.textContent = 'https://queuesis.aplkalex.com/';
+      Object.assign(watermark.style, {
+        position: 'absolute',
+        left: '50%',
+        bottom: '6px',
+        transform: 'translateX(-50%)',
+        fontSize: '10px',
+        letterSpacing: '0.02em',
+        fontWeight: '500',
+        fontFamily: 'ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif',
+        color: isDarkMode ? 'rgba(255,255,255,0.12)' : 'rgba(17,24,39,0.10)',
+        userSelect: 'none',
+        pointerEvents: 'none',
+        zIndex: '2147483647',
+      });
+      node.appendChild(watermark);
+      try {
+        return await toSvg(node, {
+          cacheBust: true,
+          backgroundColor: isDarkMode ? '#0f0f0f' : '#ffffff',
+          includeQueryParams: true,
+        });
+      } finally {
+        if (node.contains(watermark)) node.removeChild(watermark);
+        node.style.position = originalInlinePosition;
+      }
+    },
+    [isDarkMode]
+  );
+
+  const handleExportSvg = useCallback(async () => {
+    if (!ensureScheduleForExport()) return;
+    const node = exportSurfaceRef.current ?? timetableCaptureRef.current;
+    if (!node) return;
+    setIsExportingImage(true);
+    try {
+      const svg = await captureSvgWithWatermark(node);
+      triggerFileDownload(svgDataUrlToBlob(svg), `cuhk-timetable-${selectedTerm}-${new Date().toISOString().slice(0, 10)}.svg`);
+      showGenerationNotice({ title: 'SVG ready', message: 'Downloaded a vector timetable that stays sharp at any size.', tone: 'info' });
+    } catch (error) {
+      console.error('SVG export failed', error);
+      showGenerationNotice({ title: 'SVG export failed', message: 'Unable to render the timetable as a vector image.', tone: 'error' });
+    } finally {
+      setIsExportingImage(false);
+    }
+  }, [captureSvgWithWatermark, ensureScheduleForExport, selectedTerm, showGenerationNotice]);
+
   const handleExportPng = useCallback(async () => {
     if (!ensureScheduleForExport()) {
       return;
@@ -1551,11 +1621,7 @@ export default function Home() {
       const dataUrl = await captureWithWatermark(node, 2.5);
 
       const orientation = node.clientWidth >= node.clientHeight ? 'landscape' : 'portrait';
-      const pdf = new jsPDF({
-        orientation,
-        unit: 'px',
-        format: [node.clientWidth, node.clientHeight],
-      });
+      const pdf = new jsPDF({ orientation, unit: 'mm', format: 'a4' });
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
       pdf.addImage(dataUrl, 'PNG', 0, 0, pageWidth, pageHeight);
@@ -2039,6 +2105,7 @@ export default function Home() {
                     disabled={!hasScheduleEntries}
                     onExportJson={handleExportScheduleJson}
                     onExportPng={handleExportPng}
+                    onExportSvg={handleExportSvg}
                     onExportPdf={handleExportPdf}
                     onExportIcs={handleExportIcs}
                     onExportGoogle={handleExportGoogleCalendar}
@@ -2231,6 +2298,7 @@ export default function Home() {
                       disabled={!hasScheduleEntries}
                       onExportJson={handleExportScheduleJson}
                       onExportPng={handleExportPng}
+                      onExportSvg={handleExportSvg}
                       onExportPdf={handleExportPdf}
                       onExportIcs={handleExportIcs}
                       onExportGoogle={handleExportGoogleCalendar}
@@ -3341,22 +3409,19 @@ export default function Home() {
         const tone = generationNotice.tone;
         const toneStyles = {
           info: {
-            iconWrapper: 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-200',
-            title: 'text-blue-900 dark:text-blue-100',
-            button: 'bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-400',
-            accent: 'bg-black',
+            iconWrapper: 'bg-purple-100 text-purple-700 dark:bg-amber-900/40 dark:text-amber-300',
+            title: 'text-purple-900 dark:text-amber-300',
+            button: 'bg-[#6A1E74] hover:bg-[#54185D] dark:bg-[#C69214] dark:hover:bg-[#A8790F] dark:text-[#17100a]',
           },
           warning: {
             iconWrapper: 'bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-200',
-            title: 'text-amber-900 dark:text-amber-100',
+            title: 'text-amber-900',
             button: 'bg-amber-600 dark:bg-amber-500 hover:bg-amber-700 dark:hover:bg-amber-400',
-            accent: 'bg-black',
           },
           error: {
             iconWrapper: 'bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-200',
-            title: 'text-rose-900 dark:text-rose-100',
+            title: 'text-rose-900',
             button: 'bg-rose-600 dark:bg-rose-500 hover:bg-rose-700 dark:hover:bg-rose-400',
-            accent: 'bg-black',
           },
         } as const;
         const styles = toneStyles[tone];
@@ -3367,17 +3432,16 @@ export default function Home() {
             onClick={dismissGenerationNotice}
           >
             <div
-              className="relative w-full max-w-md bg-white/95 dark:bg-[#131313]/95 rounded-2xl shadow-2xl border border-white/30 dark:border-white/10 overflow-hidden animate-slideUp"
+              className="relative w-full max-w-md bg-white dark:bg-[#0f0f0f] rounded-2xl shadow-2xl border border-gray-200 dark:border-white/10 overflow-hidden animate-slideUp"
               onClick={(event) => event.stopPropagation()}
             >
-              <div className={`absolute inset-x-0 top-0 h-1 ${styles.accent}`} />
               <div className="p-6 space-y-4">
                 <div className="flex items-start gap-3">
-                  <div className={`p-3 rounded-full shadow ${styles.iconWrapper}`}>
+                  <div className={`p-3 rounded-full shadow ${styles.iconWrapper} ${tone === 'info' ? 'generation-notice-info-icon' : ''}`}>
                     <Icon className="w-5 h-5" />
                   </div>
                   <div className="flex-1">
-                    <h3 className={`text-lg font-semibold ${styles.title}`}>
+                    <h3 className={`text-lg font-semibold ${styles.title} ${tone === 'info' ? 'generation-notice-info-title' : ''}`}>
                       {generationNotice.title}
                     </h3>
                     <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
@@ -3397,7 +3461,7 @@ export default function Home() {
                   <button
                     type="button"
                     onClick={dismissGenerationNotice}
-                    className={`${styles.button} text-white font-semibold px-4 py-2 rounded-xl shadow-lg shadow-black/10 dark:shadow-black/40 transition-transform hover:scale-[1.01]`}
+                    className={`${styles.button} ${tone === 'info' ? 'generation-notice-info-button' : ''} text-white font-semibold px-4 py-2 rounded-xl transition-transform hover:scale-[1.01]`}
                   >
                     Got it
                   </button>
