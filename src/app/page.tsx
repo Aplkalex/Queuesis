@@ -3409,9 +3409,9 @@ export default function Home() {
         const tone = generationNotice.tone;
         const toneStyles = {
           info: {
-            iconWrapper: 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-200',
-            title: 'text-blue-900',
-            button: 'bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-400',
+            iconWrapper: 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-200',
+            title: 'text-purple-900 dark:text-purple-200',
+            button: 'bg-[#6A1E74] hover:bg-[#54185D]',
           },
           warning: {
             iconWrapper: 'bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-200',
@@ -3432,7 +3432,7 @@ export default function Home() {
             onClick={dismissGenerationNotice}
           >
             <div
-              className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden animate-slideUp"
+              className="relative w-full max-w-md bg-white dark:bg-[#0f0f0f] rounded-2xl shadow-2xl border border-gray-200 dark:border-white/10 overflow-hidden animate-slideUp"
               onClick={(event) => event.stopPropagation()}
             >
               <div className="p-6 space-y-4">
@@ -3444,14 +3444,14 @@ export default function Home() {
                     <h3 className={`text-lg font-semibold ${styles.title}`}>
                       {generationNotice.title}
                     </h3>
-                    <p className="text-sm text-gray-600 mt-1">
+                    <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
                       {generationNotice.message}
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={dismissGenerationNotice}
-                    className="text-gray-400 hover:text-gray-600 transition p-1"
+                    className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition p-1"
                     aria-label="Dismiss message"
                   >
                     <X className="w-4 h-4" />
