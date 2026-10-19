@@ -2746,25 +2746,25 @@ export default function Home() {
                   <div className="flex flex-col gap-1 px-2 py-1 bg-white/50 dark:bg-[#1e1e1e]/50 backdrop-blur-sm rounded-lg border border-gray-200 dark:border-gray-700 flex-shrink-0">
                     <div className="flex items-center justify-between gap-2 text-[10px] leading-none font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
                       <span>Skip full</span>
-                    <button
-                      type="button"
-                      onClick={() => setExcludeFullSections(current => !current)}
-                      className={`relative inline-flex h-4 w-7 shrink-0 items-center rounded-full transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-500 ${
-                        excludeFullSections 
-                          ? 'bg-purple-600 dark:bg-purple-500' 
-                          : 'bg-gray-300 dark:bg-gray-600'
-                      }`}
-                      role="switch"
-                      aria-label="Skip full sections"
-                      aria-checked={excludeFullSections}
-                      title={excludeFullSections ? "Skip full sections: ON" : "Skip full sections: OFF"}
-                    >
-                      <span
-                        className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform duration-300 ${
-                          excludeFullSections ? 'translate-x-3.5' : 'translate-x-0.5'
+                      <button
+                        type="button"
+                        onClick={() => setExcludeFullSections(current => !current)}
+                        className={`relative inline-flex h-4 w-7 shrink-0 items-center rounded-full transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-500 ${
+                          excludeFullSections
+                            ? 'bg-purple-600 dark:bg-purple-500'
+                            : 'bg-gray-300 dark:bg-gray-600'
                         }`}
-                      />
-                    </button>
+                        role="switch"
+                        aria-label="Skip full sections"
+                        aria-checked={excludeFullSections}
+                        title={excludeFullSections ? 'Skip full sections: ON' : 'Skip full sections: OFF'}
+                      >
+                        <span
+                          className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform duration-300 ${
+                            excludeFullSections ? 'translate-x-3.5' : 'translate-x-0.5'
+                          }`}
+                        />
+                      </button>
                     </div>
                     <div className="flex items-center justify-between gap-2 text-[10px] leading-none font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
                       <span>Half-hour lines</span>
