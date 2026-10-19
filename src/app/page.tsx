@@ -2744,7 +2744,7 @@ export default function Home() {
                   </div>
 
                   <div className="flex flex-col gap-1 px-2 py-1 bg-white/50 dark:bg-[#1e1e1e]/50 backdrop-blur-sm rounded-lg border border-gray-200 dark:border-gray-700 flex-shrink-0">
-                    <label className="flex items-center justify-between gap-2 text-[10px] leading-none font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap cursor-pointer">
+                    <div className="flex items-center justify-between gap-2 text-[10px] leading-none font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
                       <span>Skip full</span>
                     <button
                       type="button"
@@ -2765,8 +2765,8 @@ export default function Home() {
                         }`}
                       />
                     </button>
-                    </label>
-                    <label className="flex items-center justify-between gap-2 text-[10px] leading-none font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap cursor-pointer">
+                    </div>
+                    <div className="flex items-center justify-between gap-2 text-[10px] leading-none font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
                       <span>Half-hour lines</span>
                       <button
                         type="button"
@@ -2785,7 +2785,7 @@ export default function Home() {
                           }`}
                         />
                       </button>
-                    </label>
+                    </div>
                   </div>
 
                   {/* Compact Generate Button */}
