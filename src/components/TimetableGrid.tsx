@@ -35,6 +35,7 @@ interface TimetableGridProps {
   onSwapWarning?: (message: string, type: 'full' | 'conflict') => void; // Callback for swap warnings
   appearance?: 'frosted' | 'modern';
   forceDesktopLayout?: boolean;
+  showHalfHourLines?: boolean;
 }
 
 const DEFAULT_COURSE_COLOR = '#8B5CF6';
@@ -260,6 +261,7 @@ export function TimetableGrid({
   onSwapWarning,
   appearance = 'modern',
   forceDesktopLayout = false,
+  showHalfHourLines = true,
 }: TimetableGridProps) {
   const [draggedCourse, setDraggedCourse] = useState<SelectedCourse | null>(null);
   const [, startTransition] = useTransition();
@@ -1179,7 +1181,7 @@ export function TimetableGrid({
                     style={{ top: `${(idx + 1) * slotHeight}px` }}
                   />
                 ))}
-                {hours.slice(0, -1).map((hour) => (
+                {showHalfHourLines && hours.slice(0, -1).map((hour) => (
                   <div
                     key={`${hour}-half`}
                     className={cn('absolute w-full border-t border-dashed', halfHourLineClassName)}

@@ -343,6 +343,7 @@ export default function Home() {
   });
 
   const [timetableAppearance, setTimetableAppearance] = useState<'modern' | 'frosted'>('modern');
+  const [showHalfHourLines, setShowHalfHourLines] = useState(true);
 
   const emptyTimetableClassName = timetableAppearance === 'frosted'
     ? 'bg-white/70 dark:bg-white/[0.06] backdrop-blur-xl border border-gray-200/30 dark:border-white/[0.12]'
@@ -2742,28 +2743,49 @@ export default function Home() {
                     ))}
                   </div>
 
-                  {/* Skip Full Sections Toggle */}
-                  <div className="flex items-center gap-2 px-2 py-1.5 bg-white/50 dark:bg-[#1e1e1e]/50 backdrop-blur-sm rounded-lg border border-gray-200 dark:border-gray-700 flex-shrink-0">
-                    <span className="text-[10px] font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                      Skip full
-                    </span>
+                  <div className="flex flex-col gap-1 px-2 py-1 bg-white/50 dark:bg-[#1e1e1e]/50 backdrop-blur-sm rounded-lg border border-gray-200 dark:border-gray-700 flex-shrink-0">
+                    <label className="flex items-center justify-between gap-2 text-[10px] leading-none font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap cursor-pointer">
+                      <span>Skip full</span>
                     <button
-                      onClick={() => setExcludeFullSections(!excludeFullSections)}
-                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-300 ${
+                      type="button"
+                      onClick={() => setExcludeFullSections(current => !current)}
+                      className={`relative inline-flex h-4 w-7 shrink-0 items-center rounded-full transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-500 ${
                         excludeFullSections 
                           ? 'bg-purple-600 dark:bg-purple-500' 
                           : 'bg-gray-300 dark:bg-gray-600'
                       }`}
                       role="switch"
+                      aria-label="Skip full sections"
                       aria-checked={excludeFullSections}
                       title={excludeFullSections ? "Skip full sections: ON" : "Skip full sections: OFF"}
                     >
                       <span
-                        className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform duration-300 ${
-                          excludeFullSections ? 'translate-x-5' : 'translate-x-0.5'
+                        className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform duration-300 ${
+                          excludeFullSections ? 'translate-x-3.5' : 'translate-x-0.5'
                         }`}
                       />
                     </button>
+                    </label>
+                    <label className="flex items-center justify-between gap-2 text-[10px] leading-none font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap cursor-pointer">
+                      <span>Half-hour lines</span>
+                      <button
+                        type="button"
+                        onClick={() => setShowHalfHourLines(current => !current)}
+                        className={`relative inline-flex h-4 w-7 shrink-0 items-center rounded-full transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-500 ${
+                          showHalfHourLines ? 'bg-purple-600 dark:bg-purple-500' : 'bg-gray-300 dark:bg-gray-600'
+                        }`}
+                        role="switch"
+                        aria-label="Show half-hour lines"
+                        aria-checked={showHalfHourLines}
+                        title={showHalfHourLines ? 'Lines every half hour' : 'Lines every hour'}
+                      >
+                        <span
+                          className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform duration-300 ${
+                            showHalfHourLines ? 'translate-x-3.5' : 'translate-x-0.5'
+                          }`}
+                        />
+                      </button>
+                    </label>
                   </div>
 
                   {/* Compact Generate Button */}
@@ -2909,6 +2931,7 @@ export default function Home() {
                     availableCourses={availableCourses}
                     onSwapWarning={handleSwapWarning}
                     appearance={timetableAppearance}
+                    showHalfHourLines={isMobile || showHalfHourLines}
                   />
                 </div>
               ) : (
@@ -3010,6 +3033,7 @@ export default function Home() {
               enableDragDrop={false}
               appearance={timetableAppearance}
               forceDesktopLayout
+              showHalfHourLines={isMobile || showHalfHourLines}
             />
           </div>
         )}
