@@ -97,7 +97,7 @@ https://github.com/user-attachments/assets/1219127c-e958-4496-b7ec-94ed48727549
 
 Queuesis is a CUHK-focused timetable planner that combines intuitive drag-and-drop editing with a powerful deterministic schedule generator. Course data is sourced from CUSIS and can optionally be synced to MongoDB Atlas via Prisma for enhanced performance.
 
-> 📅 Current Term Support: This version supports **2026-27 Term 1** in the scheduler.
+> 📅 Current Term Support: This version supports **2026-27 Term 1 and Term 2** in the scheduler. Run `npm run sync:cuhk:2026-t2` to fetch the Term 2 snapshot from GitHub.
 
 ### What's New (Recent Updates)
 

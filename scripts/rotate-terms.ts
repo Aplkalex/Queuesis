@@ -20,7 +20,7 @@ interface ArchivePayload {
 
 const parseArgs = (argv: string[]): CliOptions => {
   const options: CliOptions = {
-    keepTerms: ['2025-26-T1', '2025-26-T2', '2025-26-Summer'],
+    keepTerms: ['2025-26-T1', '2025-26-T2', '2025-26-Summer', '2026-27-T1', '2026-27-T2'],
     academicYear: undefined,
     archiveDir: path.resolve(process.cwd(), 'data/archive'),
     dryRun: false,

@@ -22,12 +22,16 @@ export const TERM_START_DATES: Partial<Record<TermType, string>> = {
   '2025-26-T1': '2025-09-01',
   '2025-26-T2': '2026-01-12',
   '2025-26-Summer': '2026-05-18',
+  '2026-27-T1': '2026-09-01',
+  '2026-27-T2': '2027-01-11',
 };
 
 const envTermStartDates: Partial<Record<TermType, string | undefined>> = {
   '2025-26-T1': process.env.NEXT_PUBLIC_TERM_START_2025_26_T1,
   '2025-26-T2': process.env.NEXT_PUBLIC_TERM_START_2025_26_T2,
   '2025-26-Summer': process.env.NEXT_PUBLIC_TERM_START_2025_26_SUMMER,
+  '2026-27-T1': process.env.NEXT_PUBLIC_TERM_START_2026_27_T1,
+  '2026-27-T2': process.env.NEXT_PUBLIC_TERM_START_2026_27_T2,
 };
 
 export const GOOGLE_CALENDAR_IMPORT_URL = 'https://calendar.google.com/calendar/u/0/r/settings/export';

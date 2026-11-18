@@ -45,6 +45,14 @@ npm run sync:cuhk:2026-t1
 
 This uses `data/2026-27`, filters `2026-27 Term 1`, writes `data/courses-2026-27-T1.json`, and creates or updates the matching database term.
 
+For 2026-27 Term 2, run:
+
+```bash
+npm run sync:cuhk:2026-t2
+```
+
+This uses the same `data/2026-27` GitHub directory, filters `2026-27 Term 2`, and writes `data/courses-2026-27-T2.json`.
+
 ## Required env vars
 
 - `MONGODB_URI` (required for non-dry-run)

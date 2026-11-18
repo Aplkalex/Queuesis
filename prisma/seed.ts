@@ -8,6 +8,8 @@ const defaultTerms = [
   { id: '2025-26-T1', name: '2025-26 Term 1' },
   { id: '2025-26-T2', name: '2025-26 Term 2' },
   { id: '2025-26-Summer', name: '2025-26 Summer' },
+  { id: '2026-27-T1', name: '2026-27 Term 1' },
+  { id: '2026-27-T2', name: '2026-27 Term 2' },
 ];
 
 type SeedCourse = (typeof mockCourses)[number];
