@@ -2641,7 +2641,9 @@ export default function Home() {
                         onClick={() => setSelectedDepartment(opt.value)}
                       >
                         <span title={opt.value} className="whitespace-nowrap">
-                          {opt.code ? `${opt.code} — ${opt.label}` : opt.label}
+                          {opt.code && opt.code.toLowerCase() !== opt.label.trim().toLowerCase()
+                            ? `${opt.code} — ${opt.label}`
+                            : opt.label}
                         </span>
                       </FilterButton>
                     ))}
