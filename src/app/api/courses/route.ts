@@ -91,9 +91,12 @@ export async function GET(request: NextRequest) {
   const useTestData = params.get('testMode') === 'true';
 
   let courses: SchedulerCourse[] = [];
+  const localSnapshot = term === '2026-27-T2' ? getGeneratedCoursesForTerm(term) : [];
 
   if (useTestData) {
     courses = testCourses;
+  } else if (localSnapshot.length > 0) {
+    courses = localSnapshot;
   } else if (hasDatabase) {
     try {
       const where: Prisma.CourseWhereInput = {
